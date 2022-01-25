@@ -11,9 +11,9 @@ arXiv:1605.08803
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from flonacomldft.models import MLP
-from torch.distributions.multivariate_normal import MultivariateNormal
+import torch.nn.functional as F # To a quite big amount of functions
+from flonacomldft.models import MLP # NN build in models.py
+from torch.distributions.multivariate_normal import MultivariateNormal # Gaussian distribution for several variables
 
 
 class ResidualAffineCoupling(nn.Module):
@@ -29,11 +29,13 @@ class ResidualAffineCoupling(nn.Module):
     def __init__(self, s=None, t=None, mask=None, dt=1):
         super(ResidualAffineCoupling, self).__init__()
 
-        self.mask = mask
+        # Some paramters associated to the class define above
+        self.mask = mask  
         self.scale_net = s
         self.trans_net = t
         self.dt = dt
 
+    # Foward for coupling layers
     def forward(self, x, log_det_jac=None, inverse=False):
         if log_det_jac is None:
             log_det_jac = 0

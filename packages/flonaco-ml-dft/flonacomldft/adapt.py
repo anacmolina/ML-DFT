@@ -4,18 +4,18 @@ import matplotlib.gridspec as gridspec
 import numpy as np
 import time
 import torch
-from torch.nn.utils import clip_grad_norm_
-import flonacomldft.gaussian_utils
-from flonacomldft.gaussian_utils import MoG
-from flonacomldft.sampling import (
+from torch.nn.utils import clip_grad_norm_ # Gradient norm
+import flonacomldft.gaussian_utils # Function from gaussian utils
+from flonacomldft.gaussian_utils import MoG # Mixture of Gaussians
+from flonacomldft.sampling import (  #All the samplings implemented in sampling.py
     run_MALA,
     run_metropolis,
     run_metromalangevin,
     compute_ESS
 )
 
-
-def run_mcmc_adapt(model, target, n_iter=10, lr=1e-1, bs=100,
+# Function to run the Markov Chain Monte Carlo
+def run_mcmc_adapt(model, target, n_iter=10, lr=1e-1, bs=100, 
           use_scheduler=False,
           step_schedule=10000,
           args_loss={'type': 'fwd', 'samp': 'direct'},
@@ -28,7 +28,7 @@ def run_mcmc_adapt(model, target, n_iter=10, lr=1e-1, bs=100,
 
     Args:
         model (Realnvp_MLP)
-        target (MoG, PhiFour)
+        target (MoG, PhiFour) # PhiFour????
         n_iter (int)
         lr (float): learning rate
         bs (int): batchsize
