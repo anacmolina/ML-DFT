@@ -34,8 +34,10 @@ class Structure:
         self.potential_energy = None
         self.calculator = None
 
-    def build_zmat_matrix(self, zmat_values_):
-        self.zmat_values = zmat_values_
+    def build_zmat_matrix(self, zmat_values_=None):
+        if(zmat_values_!=None):
+            self.zmat_values = zmat_values_
+        
         zmat_values = self.zmat_values.reshape(3, self.Natoms)
         zmat_values[1:] = np.rad2deg(zmat_values[1:])
 
@@ -69,3 +71,4 @@ class Structure:
         self.molecule.set_calculator(self.calculator)
         
         self.potential_energy = self.molecule.get_potential_energy()
+        
