@@ -7,10 +7,13 @@ import os
 import pandas as pd
 
 from flonacomldft.real_nvp_mlp import RealNVP_MLP
-from flonacomldft.adapt import run_mcmc_adapt
-from flonacomldft.gaussian_utils import (
-    MoG, plot_2d_level
-)
+from flonacomldft.train_from_data import train
+# from flonacomldft.adapt import run_mcmc_adapt
+# from flonacomldft.gaussian_utils import (
+#     MoG, plot_2d_level
+# )
+
+# from flonacomldft.dft_utils import Structure
 
 if os.path.isdir('/mnt/home/amolina/ceph/'):
     ceph_home = '/mnt/home/amolina/ceph/'
@@ -33,7 +36,7 @@ df = pd.read_csv(data_home + 'is1_zmat.csv')
 ## code to apply necessary transforms
 ##  and compute potential energy
 ## using the one here just for the test
-x = df.to_numpy()[:, 1:-1]
+x = torch.tensor(df.to_numpy()[:, 1:-1]).double()
 
 args_rnvp = {
     'dim': x.shape[1],
@@ -50,10 +53,15 @@ model = RealNVP_MLP(args_rnvp['dim'],
                     prior_arg=args_rnvp['args_prior'],
                     device=device)
 
+# target = Struture(....)
+
 model_init = copy.deepcopy(model)
 
+# train(.,....)
+
+## 
 # _ = run_mcmc_adapt(model, 
-#           target, ## to be replaced 
+#           target, ## to be replaced by something like Structure
 #           n_iter=10,
 #           lr=1e-1,
 #           bs=100,
