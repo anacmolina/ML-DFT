@@ -2,6 +2,7 @@ import chemcoord as cc
 import torch
 from gpaw import GPAW
 import numpy as np
+import pandas as pd
 
 # Transformation for angles 
 class Angles_tranformation(torch.Tensor):
@@ -72,3 +73,38 @@ class Structure:
         
         self.potential_energy = self.molecule.get_potential_energy()
         
+def AG6_construction_tables(isomer_):
+
+    if (isomer_=='is1'):
+
+        index = np.append(0, np.append(np.arange(2,6), 1))
+        construction_table_is1 = pd.DataFrame(index=index)
+
+        construction_table_is1['b'] = ['origin', 0, 2, 2, 4, 4]
+        construction_table_is1['a'] = ['e_z', 'e_z', 0, 3, 2, 2]
+        construction_table_is1['d'] = ['e_x', 'e_x', 'e_x', 0, 3, 3]
+        
+        return(construction_table_is1)
+    
+    elif (isomer_=='is2'):
+        
+        index = np.append(3, np.append(np.arange(0,3), [4, 5]))
+        construction_table_is2 = pd.DataFrame(index=index)
+
+        construction_table_is2['b'] = ['origin', 3, 0, 0, 1, 4]
+        construction_table_is2['a'] = ['e_z', 'e_z', 3, 1, 0, 1]
+        construction_table_is2['d'] = ['e_x', 'e_x', 'e_x', 3, 2, 0]
+        
+        return(construction_table_is2)
+
+    else:
+        
+        raise RuntimeError('The AG6 isomer can not be recognized')
+    
+         
+
+
+
+
+
+    
