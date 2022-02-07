@@ -218,13 +218,7 @@ class RealNVP_MLP(nn.Module):
     def nll(self, x):
         z, log_det_jac = self.backward(x)
 
-        if self.prior_arg['type']=='bridge':
-            a_min = torch.tensor([self.bridge_kwargs["x0"],self.bridge_kwargs["y0"]])
-            b_min = torch.tensor([self.bridge_kwargs["x1"],self.bridge_kwargs["y1"]])
-            dt = self.bridge_kwargs["dt"]
-            prior_nll = bridge_energy(z, dt=dt, a_min=a_min, b_min=b_min, device=self.device)
-            return prior_nll - log_det_jac
-        elif self.prior_arg['type'] == 'white':
+        if self.prior_arg['type'] == 'white':
                 z = z - self.prior_mean
 
         prior_ll = - 0.5 * torch.einsum('ki,ij,kj->k', z, self.prior_prec, z)
@@ -235,17 +229,7 @@ class RealNVP_MLP(nn.Module):
         return nll
 
     def sample(self, n):
-        if self.prior_arg['type'] == 'standn':
-            z = torch.randn(n, self.dim, device=self.device)
-        elif self.prior_arg['type'] == 'bridge':
-            # get a bridge
-            n_steps = self.bridge_kwargs["n_steps"]
-            bridges = torch.zeros(n, n_steps - 2, 1, 2, device=self.device)
-            for i in range(n):
-                bridges[i,:] = get_bridge(**self.bridge_kwargs)
-            z = bridges.detach().requires_grad_().view(n, -1)
-        else:
-            z = self.prior_distrib.rsample(torch.Size([n, ])).to(self.device)
+        z = self.prior_distrib.rsample(torch.Size([n, ])).to(self.device)
 
         return self.forward(z)[0]
 

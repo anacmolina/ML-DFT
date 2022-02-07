@@ -18,7 +18,7 @@ from flonacomldft.sampling import (
 def run_mcmc_adapt(model, target, n_iter=10, lr=1e-1, bs=100,
           use_scheduler=False,
           step_schedule=10000,
-          args_loss={'type': 'fwd', 'samp': 'direct'},
+          args_samp={'type': 'mhmalangevin'},
           estimate_tau=False,
           return_all_xs=True,
           save_splits=10,
@@ -34,14 +34,8 @@ def run_mcmc_adapt(model, target, n_iter=10, lr=1e-1, bs=100,
         bs (int): batchsize
         use_scheduler (bool): if learning rate schedule should be used
         step_schedule (int): iteration frequency of schedule   
-        args_loss (dict): 
-                    'type' - loss type 'fwd', 'bwd', 'js'
-                    'samp' - sampling method 'langevin', 'direct', 'mhlangevin' 
+        args_samp (dict): ampling method 'mhmalangevin', 'malalangevin'
                     + kwargs for sampling method
-                    Note that not all combinations are possible
-                    depending on target etc.
-        args_stop (dict): {'acc': x} with x in [0,1] Metropolis acceptance
-                    threshold to stop train
         estimate_tau: estimates autocorrelation time
         return_all_xs: will return samples produced on the fly
         save_splits: number of snapshots saved during training
@@ -51,25 +45,25 @@ def run_mcmc_adapt(model, target, n_iter=10, lr=1e-1, bs=100,
     def loss_func(x): return (model.nll(x) - target.U(x)).mean()
 
     # setting the sampling
-    if 'langevin' in args_loss['samp']:
+    if 'langevin' in args_samp['type']:
         ## setting initialization for chain methods
         skip_burnin = False
-        assert args_loss['n_tot'] <= bs
+        assert args_samp['n_tot'] <= bs
         
-        if args_loss['x_init_samp'] is not None:
-            x_init = args_loss['x_init_samp'][-args_loss['n_tot']:]
+        if args_samp['x_init_samp'] is not None:
+            x_init = args_samp['x_init_samp'][-args_samp['n_tot']:]
             skip_burnin = True
         elif isinstance(target, MoG) or isinstance(target, Croissants):
             x_init = torch.stack(target.means)
             x_init = x_init.repeat_interleave(
-                int(args_loss['n_tot'] / len(target.means)), dim=0)
+                int(args_samp['n_tot'] / len(target.means)), dim=0)
         else:
             raise NotImplementedError("TODO: Implement init within target class")
 
         x_init = x_init.detach().requires_grad_()
 
         ## setting samplimg functions
-        if args_loss['samp'] == 'mhmalangevin':
+        if args_samp['type'] == 'mhmalangevin':
 
             def sample_func(bs, x_init=x_init, dt=100, beta=1, alpha=0, acc_rate=None):
                 n_steps = int(bs / x_init.shape[0])
@@ -79,7 +73,7 @@ def run_mcmc_adapt(model, target, n_iter=10, lr=1e-1, bs=100,
                 kwargs['acc_rate'] = (acc.cpu().numpy() * 1).mean()
                 return x
     
-        elif args_loss['samp'] == 'malangevin':
+        elif args_samp['type'] == 'malangevin':
 
             def sample_func(bs, x_init=x_init, dt=100, beta=1, acc_rate=None):
                 n_steps = int(bs / x_init.shape[0])
@@ -90,14 +84,14 @@ def run_mcmc_adapt(model, target, n_iter=10, lr=1e-1, bs=100,
                 return x
 
         kwargs = {'x_init': x_init,
-                  'dt': args_loss['dt'],
-                  'beta': args_loss['beta']}
+                  'dt': args_samp['dt'],
+                  'beta': args_samp['beta']}
 
         if not skip_burnin:
-            bs_burnin = int(args_loss['n_steps_burnin'] * x_init.shape[0])
+            bs_burnin = int(args_samp['n_steps_burnin'] * x_init.shape[0])
             start = time.time()
             n_steps = int(bs_burnin / x_init.shape[0])
-            x, _ = run_MALA(target, x_init, n_steps, args_loss['dt'] * model.dim)
+            x, _ = run_MALA(target, x_init, n_steps, args_samp['dt'] * model.dim)
             kwargs['x_init'] = x[-1, ...].detach().requires_grad_()
             print('MALA burnin done! time: {:f}s'.format(time.time() - start))
 
@@ -130,8 +124,6 @@ def run_mcmc_adapt(model, target, n_iter=10, lr=1e-1, bs=100,
 
         x = x_.reshape(-1, model.dim).detach().requires_grad_()
         loss = loss_func(x)
-        if args_loss['samp'] == 'langevin_action':
-            loss = loss * target.dt * target.beta
 
         if return_all_xs or t % (n_iter / 10) == 0:
             xs.append(x_)
@@ -143,7 +135,6 @@ def run_mcmc_adapt(model, target, n_iter=10, lr=1e-1, bs=100,
         loss.backward()
         clip_grad_norm_(model.parameters(), max_norm=grad_clip)
         optimizer.step()
-
 
         #logs
         losses.append(loss.item())
@@ -168,7 +159,7 @@ def run_mcmc_adapt(model, target, n_iter=10, lr=1e-1, bs=100,
         _, acc = run_metropolis(model, target, x_last, 1)
         acc_rate = (acc.cpu().numpy() * 1).mean()
         acc_rates.append(acc_rate.item())
-        _, acc = run_MALA(target, x_last, 1,  dt=args_loss['dt'] * model.dim)
+        _, acc = run_MALA(target, x_last, 1,  dt=args_samp['dt'] * model.dim)
         acc_rate = (acc.cpu().numpy() * 1).mean()
         acc_rates_mala.append(acc_rate.item())
 
