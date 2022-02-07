@@ -64,7 +64,7 @@ class Structure:
         self.molecule.set_pbc(True)
 
         # DFT calculator low level precision but faster (takes 1 minute in serial)
-        self.calculator = GPAW(mode = 'lcao', h =0.2, xc = 'PBE', spinpol = True, nbands = -4)
+        self.calculator = GPAW(mode = 'lcao', h =0.2, xc = 'PBE', spinpol = True, nbands = -4, txt='ag6.out')
 
         #DFT calculator with higher precision but takes longer (about 30 minutes in serial).
         #calc = GPAW(mode = 'fd', h =0.18, xc = 'PBE', eigensolver = 'rmm-diis', spinpol = True, nbands=-4)
@@ -72,7 +72,8 @@ class Structure:
         self.molecule.set_calculator(self.calculator)
         
         self.potential_energy = self.molecule.get_potential_energy()
-        
+
+# Getting the construction table for each isomer        
 def AG6_construction_tables(isomer_):
 
     if (isomer_=='is1'):
