@@ -60,7 +60,7 @@ print("Done\n")
 #DATA I'M CURRENTLY USING !REMEMBER
 print("Loading the training data...")
 
-n = 200
+n = 20
 u = U[:n]
 x = X[:n]
 
@@ -151,8 +151,7 @@ mog = MoG(means, covars, weights=weights, dtype=dtype, device=device)
 ## 
 _ = train(model, 
            x_tensor, ## to be replaced by something like Structure
-           target=target,
-           n_iter=200,
+           n_iter=20,
            lr=1e-1,
            bs=100,
            use_scheduler=False,

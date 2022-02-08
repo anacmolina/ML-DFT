@@ -16,7 +16,6 @@ from flonacomldft.sampling import (
 
 
 def train(model, x_train, n_iter=10, lr=1e-1, bs=100,
-          target=None,
           use_scheduler=False,
           step_schedule=10000,
           args_loss={'type': 'fwd', 'samp': 'direct'},
@@ -27,7 +26,6 @@ def train(model, x_train, n_iter=10, lr=1e-1, bs=100,
     """"
     Args:
         model (Realnvp_MLP)
-        target (MoG, PhiFour)
         n_iter (int)
         lr (float): learning rate
         bs (int): batchsize
@@ -46,8 +44,8 @@ def train(model, x_train, n_iter=10, lr=1e-1, bs=100,
         save_splits: number of snapshots saved during training
     """
 
-    # setting up the loss  # Remove target
-    def loss_func(x): return (model.nll(x) - target.U(x)).mean()
+    # setting up the loss
+    def loss_func(x): return (model.nll(x)).mean()
 
     # setting the optimizer    
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -70,17 +68,16 @@ def train(model, x_train, n_iter=10, lr=1e-1, bs=100,
     #acc_rates_mala = []
     grad_norms = []
 
+    x = x_train
+
     for t in range(n_iter):
         optimizer.zero_grad()
 
-        #x_ = sample_func(bs, **kwargs)
-        x_ = x_train # Out - Check shape
-
-        x = x_.reshape(-1, model.dim).detach().requires_grad_()
         loss = loss_func(x)
 
-        if return_all_xs or t % (n_iter / 10) == 0:
-            xs.append(x_)
+        ### In case we are running out of memory
+        #if return_all_xs or t % (n_iter / 10) == 0:
+        #    xs.append(x_)
 
         if torch.isinf(loss).any():
             print('Stopped because loss became inf!')
@@ -104,10 +101,10 @@ def train(model, x_train, n_iter=10, lr=1e-1, bs=100,
         if use_scheduler:
             scheduler.step()
 
-        if estimate_tau:
-            tau = x.shape[0] * x.shape[1] / \
-                np.mean(compute_ESS(x.detach().cpu()))
-            taus.append(tau)
+        #if estimate_tau:
+        #    tau = x.shape[0] * x.shape[1] / \
+        #        np.mean(compute_ESS(x.detach().cpu()))
+        #    taus.append(tau)
 
         #x_last = x.clone()
         #_, acc = run_metropolis(model, target, x_last, 1)
@@ -154,7 +151,7 @@ def train(model, x_train, n_iter=10, lr=1e-1, bs=100,
         'losses': losses,
         'xs': xs,
         'models': models,
-        'taus': taus,
+        #'taus': taus,
         #'acc_rates': acc_rates,
         #'acc_rates_mala': acc_rates_mala,
         'grad_norms': grad_norms,
