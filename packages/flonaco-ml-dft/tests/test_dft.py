@@ -18,7 +18,8 @@ from flonacomldft.gaussian_utils import (
 
 from flonacomldft.dft_utils import (
     Structure, 
-    AG6_construction_tables
+    AG6_construction_tables,
+    Angles_tranformation
     )
 from flonacomldft.train_from_data import train
 
@@ -60,7 +61,7 @@ print("Done\n")
 #DATA I'M CURRENTLY USING !REMEMBER
 print("Loading the training data...")
 
-n = 20
+n = 100
 u = U[:n]
 x = X[:n]
 
@@ -79,15 +80,15 @@ symbols = np.full(6, 'Ag')
 ct1 = AG6_construction_tables('is1')
 ag6 = Structure(construction_table_=ct1, symbols_=symbols, Natoms_=len(symbols))
 
-ag6.calculate_potential_energy(x[i])
-pot_energy = ag6.potential_energy
+#ag6.calculate_potential_energy(x[i])
+#pot_energy = ag6.potential_energy
 
-print("Potential Energy")
-print(pot_energy, u[i], pot_energy-u[i])
+print("Potential Energy: skipping")
+#print(pot_energy, u[i], pot_energy-u[i])
 #print(ag6.molecule.get_potential_energy(), 
 # ag6.molecule.get_total_energy(),
 # ag6.molecule.get_kinetic_energy())
-os.remove("ag6.out")
+#os.remove("ag6.out")
 print("Done\n")
 
 ## code to apply necessary transforms (tanh -- MISSING )
@@ -112,46 +113,17 @@ model = RealNVP_MLP(args_rnvp['dim'],
                     device=device)
 
 
-# target = Struture(....)
 
 model_init = copy.deepcopy(model)
 
-class Probs:
-    def __init__(self, U):
-        #self.X_ = X
-        self.U_ = U
+x_tensor = Angles_tranformation(x_tensor)
+x_tensor.inv_transf()
 
-    def U(self, x):
-        return self.U_
-    
-target = Probs(U_tensor)
-"""
-dim = 1
-k = 1
-means = []
-covars = []
-weights = []
-cv = 1 * torch.eye(dim, dtype=dtype)
-offset = 5
+print(x_tensor[0])
 
-means_ = [torch.tensor([U_tensor.mean()], dtype=dtype)]
-
-for c in range(k):   
-    means.append(means_[c])
-    covars.append(cv)
-    weights.append(1)
-
-weights[0] = 2
-covars[0][0,0] = U_tensor.std()**2
-
-mog = MoG(means, covars, weights=weights, dtype=dtype, device=device)
-"""
-# train(.,....)
-
-## 
 _ = train(model, 
            x_tensor, ## to be replaced by something like Structure
-           n_iter=20,
+           n_iter=50,
            lr=1e-1,
            bs=100,
            use_scheduler=False,

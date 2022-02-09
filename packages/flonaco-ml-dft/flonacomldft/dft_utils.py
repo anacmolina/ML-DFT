@@ -8,18 +8,27 @@ import pandas as pd
 class Angles_tranformation(torch.Tensor):
     def __init__(self, x_):
         super().__init__()
+        
+        if torch.is_tensor(x_):
+            pass
+        else:
+            raise RuntimeError("It must be a tensor.")
+        
         self.x = x_
         self.n = 6
-
-    def transf(self, n_=None):
-        if n_!=None:
-            self.n = n_
-        self.x[self.n:-1] = torch.tanh(self.x[self.n:])
-
-    def inv_transf(self, n_=None):
-        if n_!=None:
-            self.n = n_
-        self.x[self.n:-1] = torch.arctanh(self.x[self.n:])
+        self.dims = len(x_.shape)
+        
+    def transf(self):
+        if self.dims==1:
+            self.x[self.n:] = torch.tan(self.x[self.n:])
+        else:
+            self.x[:,self.n:] = torch.tan(self.x[:,self.n:])
+    
+    def inv_transf(self):
+        if self.dims==1:
+            self.x[self.n:] = torch.arctan(self.x[self.n:])
+        else:
+            self.x[:,self.n:] = torch.arctan(self.x[:,self.n:])
 
 # Calculating the energy
 
