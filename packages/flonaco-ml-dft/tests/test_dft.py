@@ -12,9 +12,6 @@ import pandas as pd
 from flonacomldft.real_nvp_mlp import RealNVP_MLP
 from flonacomldft.train_from_data import train
 # from flonacomldft.adapt import run_mcmc_adapt
-from flonacomldft.gaussian_utils import (
-     MoG, plot_2d_level
- )
 
 from flonacomldft.dft_utils import (
     Structure, 
@@ -24,12 +21,14 @@ from flonacomldft.dft_utils import (
 from flonacomldft.train_from_data import train
 
 print("Done\n")
-#if os.path.isdir('/mnt/home/amolina/ceph/'):
-#    ceph_home = '/mnt/home/amolina/ceph/'
-#elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'):
-#    ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'
-#else:
-#    raise RuntimeError('Data path not understood')
+if os.path.isdir('/mnt/home/amolina/ceph/'):
+   ceph_home = '/mnt/home/amolina/ceph/'
+elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'):
+   ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'
+elif os.path.isdir('/home/anacristina/Monte Carlo Project/Trajectories/Data_4/'):
+    ceph_home = '/home/anacristina/Monte Carlo Project/Trajectories/Data_4/'
+else:
+   raise RuntimeError('Data path not understood')
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 dtype=torch.float32
@@ -43,7 +42,6 @@ print('Device: %s...\n'%device)
 
 print("Loading the database...")
 
-ceph_home = '/home/anacristina/Monte Carlo Project/Trajectories/Data_4/'
 data_home = ceph_home + 'Database/'
 
 df = pd.read_csv(data_home + 'is1_zmat.csv')
@@ -68,6 +66,13 @@ x = X[:n]
 x_tensor = torch.from_numpy(x).float()
 U_tensor = torch.from_numpy(u).float()
 
+x_tensor = Angles_tranformation(x_tensor)
+x_tensor.inv_transf()
+
+# Compute mean and cov to put in base distribution of NF models
+mean = x_tensor.mean(0)
+cov = (x_tensor - mean).T @ (x_tensor - mean) / n 
+
 #print(x_tensor.shape, U_tensor.shape)
 
 #"""
@@ -91,17 +96,14 @@ print("Potential Energy: skipping")
 #os.remove("ag6.out")
 print("Done\n")
 
-## code to apply necessary transforms (tanh -- MISSING )
-##  and compute potential energy (Done)
-## using the one here just for the test
-
 print("Normalizing flow training")
 
 args_rnvp = {
     'dim': x.shape[1],
     'n_realnvp_block': 2,
     'block_depth': 1,
-    'args_prior': {'type': 'standn'},
+    # 'args_prior': {'type': 'standn'}, # standard Gaussian base
+    'args_prior': {'type': 'white', 'cov': cov, 'mean': mean}# Gaussian with non-trival mean and covariance for base
     'init_weight_scale': 1e-6,
 }
 
@@ -115,9 +117,6 @@ model = RealNVP_MLP(args_rnvp['dim'],
 
 
 model_init = copy.deepcopy(model)
-
-x_tensor = Angles_tranformation(x_tensor)
-x_tensor.inv_transf()
 
 print(x_tensor[0])
 
