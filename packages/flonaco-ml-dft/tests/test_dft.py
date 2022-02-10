@@ -21,6 +21,7 @@ from flonacomldft.dft_utils import (
 from flonacomldft.train_from_data import train
 
 print("Done\n")
+
 if os.path.isdir('/mnt/home/amolina/ceph/'):
    ceph_home = '/mnt/home/amolina/ceph/'
 elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'):
@@ -51,27 +52,33 @@ print("Done\n")
 
 print("Setting the input...")
 
-U = df.energies.to_numpy()
-X = df.drop(['energies'], axis=1).to_numpy()
+U = df.energies#.to_numpy()
+X = df.drop(['energies'], axis=1)#.to_numpy()
 
 print("Done\n")
 
 #DATA I'M CURRENTLY USING !REMEMBER
 print("Loading the training data...")
 
-n = 100
+n = -1
 u = U[:n]
 x = X[:n]
 
-x_tensor = torch.from_numpy(x).float()
-U_tensor = torch.from_numpy(u).float()
+columns = x.columns.to_list()[6:]
+x = x.apply(lambda y: np.arctan(y) if y.name in columns else y)
 
-x_tensor = Angles_tranformation(x_tensor)
-x_tensor.inv_transf()
+cov = torch.tensor(x.cov().to_numpy()).float()
+mean = torch.tensor(x.describe().iloc[1]).float()
+
+x_tensor = torch.from_numpy(x.to_numpy()).float()
+U_tensor = torch.from_numpy(u.to_numpy()).float()
+
+#x_tensor = Angles_tranformation(x_tensor)
+#x_tensor.inv_transf()
 
 # Compute mean and cov to put in base distribution of NF models
-mean = x_tensor.mean(0)
-cov = (x_tensor - mean).T @ (x_tensor - mean) / n 
+#mean = x_tensor.mean(0)
+#cov = (x_tensor - mean).T @ (x_tensor - mean) / n 
 
 #print(x_tensor.shape, U_tensor.shape)
 
@@ -103,7 +110,7 @@ args_rnvp = {
     'n_realnvp_block': 2,
     'block_depth': 1,
     # 'args_prior': {'type': 'standn'}, # standard Gaussian base
-    'args_prior': {'type': 'white', 'cov': cov, 'mean': mean}# Gaussian with non-trival mean and covariance for base
+    'args_prior': {'type': 'white', 'cov': cov, 'mean': mean}, # Gaussian with non-trival mean and covariance for base
     'init_weight_scale': 1e-6,
 }
 
@@ -117,8 +124,6 @@ model = RealNVP_MLP(args_rnvp['dim'],
 
 
 model_init = copy.deepcopy(model)
-
-print(x_tensor[0])
 
 _ = train(model, 
            x_tensor, ## to be replaced by something like Structure
@@ -134,3 +139,8 @@ _ = train(model,
            grad_clip=1e4)
 
 #"""
+
+model = _['models'][0]
+
+print(x_tensor[0])
+print(model.sample(10))
