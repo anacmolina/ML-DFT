@@ -15,7 +15,7 @@ from flonacomldft.train_from_data import train
 
 from flonacomldft.dft_utils import *
 from flonacomldft.train_from_data import train
-from flonacomldft.FES.plotter2 import Plotter
+from flonacomldft.plotter2 import Plotter
 
 #from pathlib import Path
 #sys.path.insert(0,str(Path.home())+'/utils/python')
@@ -109,16 +109,16 @@ _ = train(model,
            return_all_xs=True,
            save_splits=10,
            grad_clip=1e4)
-"""
+
 losses = _['losses']
 plt.figure(figsize=(7, 5))
 plt.plot(losses)
 plt.ylabel('Losses')
 plt.grid()
 plt.show()
-"""
+
 models = _['models']
-N_samples=10
+N_samples=100
 
 for i in range(len(models)):
    print("Model: ", i)
