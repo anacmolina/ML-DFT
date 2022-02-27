@@ -19,7 +19,7 @@ mol_is2 = Atoms('Ag6', positions=np.array([[ 6.591008,  5.595878,  7.13902 ],
                                        [ 8.      ,  9.919833,  7.129457]]))
 
 isomer = str(sys.argv[1])
-method = str(sys.argv[2])
+mode = str(sys.argv[2])
 
 mol = None
 
@@ -36,12 +36,12 @@ mol.center()
 
 calc = None
 
-name = isomer+"_"+method
-if (method=="fd"):
+name = isomer+"_"+mode
+if (mode=="fd"):
     calc_fd = GPAW(mode="fd", h=0.18, spinpol=True, xc="PBE", symmetry="off", nbands = -4,
                    txt="ag6_"+name+".out")
     calc = calc_fd
-elif (method=="lcao"):
+elif (mode=="lcao"):
     calc_lcao = GPAW(mode="lcao", h=0.2, basis="pvalence.dz", spinpol=True, xc="PBE", symmetry="off",
                      nbands = -4, txt="ag6_"+name+".out")
     calc = calc_lcao

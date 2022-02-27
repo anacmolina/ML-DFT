@@ -23,8 +23,8 @@ else:
    raise RuntimeError('Data path not understood')
 
 isomer = str(sys.argv[1])
-method = str(sys.argv[2])
-name = isomer+"_"+method
+mode = str(sys.argv[2])
+name = isomer+"_"+mode
 mol = read(ceph_home + 'ag6_'+name+'.xyz')
 
 mol.set_cell([16, 16, 16])

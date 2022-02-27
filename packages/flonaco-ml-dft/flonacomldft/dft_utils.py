@@ -3,6 +3,26 @@ import torch
 from gpaw import GPAW
 import numpy as np
 import pandas as pd
+import ase
+import sys
+import os
+
+from pathlib import Path
+sys.path.insert(0,str(Path.home())+'/utils/python')
+from plotter2 import Plotter
+
+print("Done\n")
+
+if os.path.isdir('/mnt/home/amolina/ceph/database'):
+   ceph_home = '/mnt/home/amolina/ceph/database'
+elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'):
+   ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'
+elif os.path.isdir('/home/anacristina/ml_dft_project/database/'):
+    ceph_home = '/home/anacristina/ml_dft_project/database/'
+elif os.path.isdir('/home/amolina/ml_dft_project/database/'):
+    ceph_home = '/home/amolina/ml_dft_project/database/'
+else:
+   raise RuntimeError('Data path not understood')
 
 # Transformation for angles 
 class Angles_tranformation(torch.Tensor):
@@ -44,28 +64,30 @@ class Structure:
         self.potential_energy = None
         self.calculator = None
 
-    def build_zmat_matrix(self, zmat_values_=None):
-        if(zmat_values_!=None):
-            self.zmat_values = zmat_values_
+    def build_zmat_matrix(self, zmat_values_):
+        self.zmat_values = zmat_values_.copy()
         
-        zmat_values = self.zmat_values.reshape(3, self.Natoms)
-        zmat_values[1:] = np.rad2deg(zmat_values[1:])
+        if(self.zmat_values is None):
+            raise RuntimeError('No data')
 
+        zmat_array = zmat_values_.copy()
+        angles = np.rad2deg(zmat_array[6:])
+        zmat_values = np.append(zmat_array[:6], angles).reshape(3, self.Natoms)
+        zmat_values = zmat_values.astype('float64')
+        
         zmat_matrix = self.construction_table.copy()
-       
+    
         zmat_matrix.insert(0, "atom", self.symbols, True)  
         zmat_matrix.insert(2, "bond", zmat_values[0], True)
         zmat_matrix.insert(4, "angle", zmat_values[1], True)
         zmat_matrix.insert(6, "dihedral", zmat_values[2], True)
-
+        
         self.zmat_matrix = cc.Zmat(zmat_matrix)
         self.molecule = self.zmat_matrix.get_cartesian().get_ase_atoms()
 
     def calculate_potential_energy(self, zmat_values_):
-        self.zmat_values = zmat_values_
-
-        if (self.molecule == None):
-            self.build_zmat_matrix()
+        
+        self.build_zmat_matrix(zmat_values_)
         
         cell = [16, 16, 16]
         self.molecule.set_cell(cell)
@@ -73,7 +95,7 @@ class Structure:
         self.molecule.set_pbc(True)
 
         # DFT calculator low level precision but faster (takes 1 minute in serial)
-        self.calculator = GPAW(mode = 'lcao', h =0.2, xc = 'PBE', spinpol = True, nbands = -4, txt='ag6.out')
+        self.calculator = GPAW(mode = 'lcao', basis='pvalence.dz', h =0.2, xc = 'PBE', spinpol = True, nbands = -4, txt='ag6.out')
 
         #DFT calculator with higher precision but takes longer (about 30 minutes in serial).
         #calc = GPAW(mode = 'fd', h =0.18, xc = 'PBE', eigensolver = 'rmm-diis', spinpol = True, nbands=-4)
@@ -111,10 +133,62 @@ def AG6_construction_tables(isomer_):
         
         raise RuntimeError('The AG6 isomer can not be recognized')
     
-         
+# Getting the collective variables
 
+def get_CVs(data):
+    symbols = np.full(6, 'Ag')
+    ct1 = AG6_construction_tables('is1')
+    C_vals = []
+    R_vals = []
+    for x in data:
+        ag6 = Structure(construction_table_=ct1, symbols_=symbols, Natoms_=len(symbols))
+        ag6.build_zmat_matrix(x)
+        atoms = ag6.molecule                                                                                  
+        C_vals.append(C(atoms))
+        R_vals.append(R(atoms))
+    return C_vals, R_vals
 
+d=2.8
+rij_d = lambda rij: rij/d
 
+def X_i(i, r):
+    value=0
+    for j in range(len(r)):
+        if(i!=j):
+            value = value + (1 - rij_d(r[i][j])**8)/(1 - rij_d(r[i][j])**16)
+    return value
+
+def C(atoms):
+    r = atoms.get_all_distances()
+    return np.array([X_i(i, r) for i in range(atoms.get_global_number_of_atoms())]).sum()
+
+def R(atoms):
+    r_rcm = atoms.get_positions() - atoms.get_center_of_mass()
+    result = np.sqrt(np.array([np.linalg.norm(ri)**2 for ri in r_rcm]).sum()/atoms.get_global_number_of_atoms())
+    return result         
+
+#Plotting FES and database
+
+def plotting_fes_db(isomer_, mode_):
+
+    isomer = str(isomer_)
+    mode = str(mode_)
+    name=isomer+'_'+mode
+    
+    plotting = Plotter(400, 'Ag6')
+    plotting.readfile(ceph_home + 'unrotated_300.txt')
+
+    ax = plotting.plot_fes(0.1, 300, delta2=0.1, shift=1)
+    
+    db = pd.read_csv(ceph_home + name +'_zmat.csv')
+    db = db.drop(['energies'], axis=1)
+    db = db.to_numpy()
+
+    c_db, r_db = get_CVs(db)
+
+    ax.plot(c_db, r_db, 'c.', label='Database')
+
+    return ax
 
 
     
