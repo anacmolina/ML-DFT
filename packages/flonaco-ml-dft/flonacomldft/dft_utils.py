@@ -9,7 +9,7 @@ import os
 
 #from pathlib import Path
 #sys.path.insert(0,str(Path.home())+'/utils/python')
-from flonacomldft.plotter2 import Plotter
+from flonacomldft.FES.plotter2 import Plotter
 
 print("Done\n")
 
