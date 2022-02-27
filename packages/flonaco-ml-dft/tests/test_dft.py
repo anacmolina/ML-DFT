@@ -15,7 +15,7 @@ from flonacomldft.train_from_data import train
 
 from flonacomldft.dft_utils import *
 from flonacomldft.train_from_data import train
-from flonacomldft.plotter2 import Plotter
+from flonacomldft.FES.plotter2 import Plotter
 
 #from pathlib import Path
 #sys.path.insert(0,str(Path.home())+'/utils/python')
@@ -99,7 +99,7 @@ model_init = copy.deepcopy(model)
 
 _ = train(model, 
            x_tensor,
-           n_iter=10,
+           n_iter=5000,
            lr=5e-3,
            bs=100,
            use_scheduler=False,
@@ -115,7 +115,7 @@ plt.figure(figsize=(7, 5))
 plt.plot(losses)
 plt.ylabel('Losses')
 plt.grid()
-plt.show()
+plt.savefig('losses.png')
 
 models = _['models']
 N_samples=100
