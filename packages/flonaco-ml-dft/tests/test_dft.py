@@ -15,10 +15,11 @@ from flonacomldft.train_from_data import train
 
 from flonacomldft.dft_utils import *
 from flonacomldft.train_from_data import train
+from flonacomldft.plotter2 import Plotter
 
-from pathlib import Path
-sys.path.insert(0,str(Path.home())+'/utils/python')
-from plotter2 import Plotter
+#from pathlib import Path
+#sys.path.insert(0,str(Path.home())+'/utils/python')
+#from plotter2 import Plotter
 
 print("Done\n")
 
@@ -98,7 +99,7 @@ model_init = copy.deepcopy(model)
 
 _ = train(model, 
            x_tensor,
-           n_iter=5000,
+           n_iter=10,
            lr=5e-3,
            bs=100,
            use_scheduler=False,
@@ -125,6 +126,8 @@ for i in range(len(models)):
    x = Angles_tranformation(x)
    x.transf()
    x = x.clone().data.cpu().numpy()
+   m_pd = pd.DataFrame(x)
+   m_pd.to_csv("model_"+str(i)+".csv",index=False)
    c_, r_ = get_CVs(x)
 
    ax = plotting_fes_db('is1', 'lcao')

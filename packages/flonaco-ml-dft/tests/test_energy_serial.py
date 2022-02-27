@@ -39,10 +39,18 @@ print('Device: %s...\n'%device)
 
 print("Loading the database...")
 
-isomer = sys.argv[1]
-mode = sys.argv[2]
-name = isomer+"_"+mode
+print(len(sys.argv))
 
+if(len(sys.argv)>1):
+
+   isomer = sys.argv[1]
+   mode = sys.argv[2]
+
+else:
+   isomer = "is1"
+   mode = "lcao"
+
+name = isomer+"_"+mode
 df = pd.read_csv(ceph_home + name +"_zmat.csv")
 
 print("Done\n")

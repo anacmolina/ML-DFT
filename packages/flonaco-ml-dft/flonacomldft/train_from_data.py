@@ -54,10 +54,10 @@ def train(model, x_train, n_iter=10, lr=1e-1, bs=100,
                                                     step_size=step_schedule, 
                                                     gamma=0.5)
 
-    fig = plt.figure(figsize=(15, 5))
-    gs = gridspec.GridSpec(2, 5)
-    axs = [fig.add_subplot(gs[a]) for a in range(10)]
-    a = 0  # counter index for axs
+    #fig = plt.figure(figsize=(15, 5))
+    #gs = gridspec.GridSpec(2, 5)
+    #axs = [fig.add_subplot(gs[a]) for a in range(10)]
+    #a = 0  # counter index for axs
 
     # logs
     xs = []
@@ -68,7 +68,7 @@ def train(model, x_train, n_iter=10, lr=1e-1, bs=100,
     #acc_rates_mala = []
     grad_norms = []
 
-    x = x_train
+    x = x_train.detach().requires_grad_()
 
     for t in range(n_iter):
         optimizer.zero_grad()
