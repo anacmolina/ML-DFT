@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as mpe
@@ -7,8 +8,7 @@ import cmocean.cm as cmo
 import matplotlib as mpl
 import sys
 from pathlib import Path
-#sys.path.insert(0,str(Path.home())+'/utils')
-#from functions import cvs_points
+
 from flonacomldft.FES.minimizator_path import Path_
 from pytest import approx
 
@@ -754,8 +754,15 @@ class CVs:
 
 # from functions.py
 def cvs_points():
-    infoa = np.loadtxt(str(Path.home())+'/flonaco-ml-dft/flonacomldft/FES/points_cvsLCAO.dat', unpack=True, usecols=[0,1], dtype=np.str)
-    infob = np.loadtxt(str(Path.home())+'/flonaco-ml-dft/flonacomldft/FES/points_cvsLCAO.dat', unpack=True, usecols=[2,3,4])
+    if os.path.isdir(str(Path.home())+'/flonaco-ml-dft/flonacomldft/FES/'):
+        path_data_points = str(Path.home())+'/flonaco-ml-dft/flonacomldft/FES/'
+    elif os.path.isdir(str(Path.home())+'/ML-DFT/packages/flonaco-ml-dft/flonacomldft/FES/'):
+        path_data_points = str(Path.home())+'/ML-DFT/packages/flonaco-ml-dft/flonacomldft/FES/'
+    else:
+        raise RuntimeError('Path to points_cvsLCAO.dat not understood')
+    
+    infoa = np.loadtxt(path_data_points+'points_cvsLCAO.dat', unpack=True, usecols=[0,1], dtype=np.str)
+    infob = np.loadtxt(path_data_points+'points_cvsLCAO.dat', unpack=True, usecols=[2,3,4])
     info_dic = {}
     for cluster in infoa[0]:
         info_dic[cluster]=[]

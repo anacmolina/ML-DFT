@@ -1,5 +1,5 @@
 '''
-Script with all sampling methods. 
+11;rgb:3030/0a0a/2424Script with all sampling methods. 
 
 Computation of effective sampling size from:
 https://github.com/jwalton3141/jwalton3141.github.io
@@ -10,6 +10,13 @@ ref Gelman, Andrew, J. B. Carlin, Hal S. Stern, David B. Dunson, Aki Vehtari, an
 import numpy as np
 import torch
 
+from ase.parallel import parprint as print
+from datetime import datetime
+from flonacomldft.dft_utils import (
+    Angles_transformation,
+    Structure,
+    AG6_construction_tables
+)
 
 def run_langevin(model, x, n_steps, dt):
     '''
@@ -72,7 +79,7 @@ def run_MALA(target, x_init, n_steps, dt):
 
     return torch.stack(xs), torch.stack(accs)
 
-
+"""
 def run_metropolis(model, target, x_init, n_steps):
     xs = []
     accs = []
@@ -90,7 +97,55 @@ def run_metropolis(model, target, x_init, n_steps):
         x_init = x.clone()
 
     return torch.stack(xs), torch.stack(accs)
+"""
 
+def run_metropolis(model, n_sample, u_init, x_init, ct, n_steps):
+    xs = []
+    accs = []
+
+    N_sample = n_sample
+    x_init = x_init[:N_sample]
+
+    T=300
+    kb = 8.617333262e-5
+    beta = 1/(kb*T)
+    
+    for dt in range(n_steps):
+        x = model.sample(N_sample)
+        x = Angles_transformation(x)                                                                               
+        x.transf()                                                                                                
+        x = x.clone().data.cpu().numpy()
+
+        symbols = np.full(6, 'Ag')       
+        ag6 = Structure(construction_table_=ct, symbols_=symbols, Natoms_=len(symbols))
+        
+        U = []
+        i=0
+        for i in range(len(x)):
+            try:
+                #startTime = datetime.now()
+                ag6.calculate_potential_energy(x[i])
+                U.append(ag6.potential_energy)
+                #print("Time: ", datetime.now() - startTime)
+            except:
+                # Fix this bug!!!!
+                print("Error calculating the energy, adding 0.")
+                U.append(0) # adding value to the array to keep the size 
+
+        U = torch.tensor(U).float()
+        ratio =  - beta * (U) + model.nll(torch.tensor(x).float())
+        ratio += beta * u_init[:N_sample] - model.nll(x_init[:N_sample])
+        ratio = torch.exp(ratio)
+        u = torch.rand_like(ratio)
+        acc = u < torch.min(ratio, torch.ones_like(ratio))
+        x[~acc] = x_init[~acc]
+        xs.append(torch.tensor(x).float().clone())
+        accs.append(acc)
+        x_init = torch.tensor(x).float().clone()
+
+        #print("Acceptance porcentage: %.1f%%"%(np.array(acc).sum()*100/len(acc)))
+        return torch.stack(xs), torch.stack(accs)
+    
 
 def run_metrolangevin(model, target, x_lang, n_steps, dt, lag=1):
     '''

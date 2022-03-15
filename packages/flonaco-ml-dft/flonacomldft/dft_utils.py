@@ -7,25 +7,27 @@ import ase
 import sys
 import os
 
-#from pathlib import Path
-#sys.path.insert(0,str(Path.home())+'/utils/python')
+from ase.parallel import parprint as print
+from ase.visualize.plot import plot_atoms
+
 from flonacomldft.FES.plotter2 import Plotter
 
-print("Done\n")
+# Get path to database
+def get_path():
+   if os.path.isdir('/mnt/home/amolina/ceph/database'):
+      ceph_home = '/mnt/home/amolina/ceph/database'
+   elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'):
+      ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'
+   elif os.path.isdir('/home/anacristina/ml_dft_project/database/'):
+      ceph_home = '/home/anacristina/ml_dft_project/database/'
+   elif os.path.isdir('/home/amolina/ml_dft_project/database/'):
+      ceph_home = '/home/amolina/ml_dft_project/database/'
+   else:
+      raise RuntimeError('Data path not understood')
+   return ceph_home
 
-if os.path.isdir('/mnt/home/amolina/ceph/database'):
-   ceph_home = '/mnt/home/amolina/ceph/database'
-elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'):
-   ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'
-elif os.path.isdir('/home/anacristina/ml_dft_project/database/'):
-    ceph_home = '/home/anacristina/ml_dft_project/database/'
-elif os.path.isdir('/home/amolina/ml_dft_project/database/'):
-    ceph_home = '/home/amolina/ml_dft_project/database/'
-else:
-   raise RuntimeError('Data path not understood')
-
-# Transformation for angles 
-class Angles_tranformation(torch.Tensor):
+# Transformation for angles (torch.tensor) 
+class Angles_transformation(torch.Tensor):
     def __init__(self, x_):
         super().__init__()
         
@@ -50,8 +52,7 @@ class Angles_tranformation(torch.Tensor):
         else:
             self.x[:,self.n:] = torch.arctan(self.x[:,self.n:])
 
-# Calculating the energy
-
+# Calculating the energy (pd.DataFrame, np.array or list, int)
 class Structure:
     def __init__(self, construction_table_, symbols_, Natoms_):
         super().__init__()
@@ -64,6 +65,7 @@ class Structure:
         self.potential_energy = None
         self.calculator = None
 
+        # (np.array (add tensor type))
     def build_zmat_matrix(self, zmat_values_):
         self.zmat_values = zmat_values_.copy()
         
@@ -85,6 +87,7 @@ class Structure:
         self.zmat_matrix = cc.Zmat(zmat_matrix)
         self.molecule = self.zmat_matrix.get_cartesian().get_ase_atoms()
 
+        # (np.array (add tensor type))
     def calculate_potential_energy(self, zmat_values_):
         
         self.build_zmat_matrix(zmat_values_)
@@ -103,7 +106,30 @@ class Structure:
         self.molecule.set_calculator(self.calculator)
         
         self.potential_energy = self.molecule.get_potential_energy()
+"""
+    def calculate_potential_energy_parallel(self, zmat_values_, comm):
 
+        import gpaw.mpi as mpi
+
+        # DFT calculator low level precision but faster (takes 1 minute in serial)                                
+        self.calculator = GPAW(mode = 'lcao', basis='pvalence.dz', h =0.2, xc = 'PBE', spinpol = True, nbands = -4, communicator = comm, txt='ag6.out')
+
+        #DFT calculator with higher precision but takes longer (about 30 minutes in serial).                      
+	#calc = GPAW(mode = 'fd', h =0.18, xc = 'PBE', eigensolver = 'rmm-diis', spinpol = True, nbands=-4)  
+        
+        self.build_zmat_matrix(zmat_values_)
+        
+        cell = [16, 16, 16]
+        self.molecule.set_cell(cell)
+        self.molecule.center()
+        self.molecule.set_pbc(True)
+
+        
+        self.molecule.set_calculator(self.calculator)
+        
+        self.potential_energy = self.molecule.get_potential_energy()
+"""
+        
 # Getting the construction table for each isomer        
 def AG6_construction_tables(isomer_):
 
@@ -171,24 +197,33 @@ def R(atoms):
 
 def plotting_fes_db(isomer_, mode_):
 
+    ceph_home = get_path()
+   
     isomer = str(isomer_)
     mode = str(mode_)
     name=isomer+'_'+mode
     
     plotting = Plotter(400, 'Ag6')
     plotting.readfile(ceph_home + 'unrotated_300.txt')
-
+    
     ax = plotting.plot_fes(0.1, 300, delta2=0.1, shift=1)
     
     db = pd.read_csv(ceph_home + name +'_zmat.csv')
     db = db.drop(['energies'], axis=1)
     db = db.to_numpy()
-
+   
     c_db, r_db = get_CVs(db)
 
     ax.plot(c_db, r_db, 'c.', label='Database')
-
-    return ax
-
-
     
+    return ax
+ 
+# Plot a molecule 2D (MISSING! Center the structure!)    
+def plot_sample(x, name):
+    fig, ax = plt.subplots()
+    symbols = np.full(6, 'Ag')
+    ct1 = AG6_construction_tables('is1')
+    ag6 = Structure(construction_table_=ct1, symbols_=symbols, Natoms_=len(symbols))
+    ag6.build_zmat_matrix(x)
+    plot_atoms(ag6.molecule, ax)
+    fig.savefig('ag6_'+name+'.png')

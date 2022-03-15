@@ -5,6 +5,9 @@ import numpy as np
 import time
 import torch
 from torch.nn.utils import clip_grad_norm_
+
+from ase.parallel import parprint as print
+
 import flonacomldft.gaussian_utils
 from flonacomldft.gaussian_utils import MoG
 from flonacomldft.sampling import (

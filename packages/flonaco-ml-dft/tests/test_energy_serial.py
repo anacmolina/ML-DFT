@@ -1,3 +1,6 @@
+from ase.parallel import parprint as print
+from datetime import datetime
+
 print('Starting...\n')
 
 print("Loading the libraries...")
@@ -9,23 +12,15 @@ import sys
 import pandas as pd
 
 from flonacomldft.dft_utils import (
-    Structure,
-    AG6_construction_tables,
-    Angles_tranformation
-    )
+   get_path,
+   Structure,
+   AG6_construction_tables,
+   Angles_transformation
+)
 
 print("Done\n")
 
-if os.path.isdir('/mnt/home/amolina/ceph/database'):
-   ceph_home = '/mnt/home/amolina/ceph/database'
-elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'):
-   ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'
-elif os.path.isdir('/home/anacristina/ml_dft_project/database/'):
-    ceph_home = '/home/anacristina/ml_dft_project/database/'
-elif os.path.isdir('/home/amolina/ml_dft_project/database/'):
-    ceph_home = '/home/amolina/ml_dft_project/database/'
-else:
-   raise RuntimeError('Data path not understood')
+ceph_home = get_path()
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 dtype=torch.float32
@@ -38,8 +33,6 @@ print('Date:', date)
 print('Device: %s...\n'%device)
 
 print("Loading the database...")
-
-print(len(sys.argv))
 
 if(len(sys.argv)>1):
 
@@ -64,19 +57,21 @@ print("Done\n")
 
 print("Calculating the energy for one configuration")
 
-i=0
 symbols = np.full(6, 'Ag')
 ct1 = AG6_construction_tables('is1')
+
 ag6 = Structure(construction_table_=ct1, symbols_=symbols, Natoms_=len(symbols))
 
-ag6.calculate_potential_energy(np.array(X[i]))
-pot_energy = ag6.potential_energy
+for i in range(5):
+   startTime = datetime.now()
+   ag6.calculate_potential_energy(np.array(X[i]))
+   pot_energy = ag6.potential_energy
+   print("Time: ", datetime.now() - startTime)
 
-print("PE calculate \t PE database \t Difference")
-print("----------------------------------------------------")
-print("%.5f \t %.5f \t %.5f"%(pot_energy, U[i], pot_energy-U[i]))
+   print("PE calculate \t PE database \t Difference")
+   print("----------------------------------------------------")
+   print("%.5f \t %.5f \t %.5f"%(pot_energy, U[i], pot_energy-U[i]))
 
-os.remove("ag6.out")
 print("Done\n")
 
 print("Finished")
