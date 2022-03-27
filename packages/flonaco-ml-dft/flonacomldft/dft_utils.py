@@ -14,8 +14,8 @@ from flonacomldft.FES.plotter2 import Plotter
 
 # Get path to database
 def get_path():
-   if os.path.isdir('/mnt/home/amolina/ceph/database'):
-      ceph_home = '/mnt/home/amolina/ceph/database'
+   if os.path.isdir('/mnt/home/amolina/ceph/database/'):
+      ceph_home = '/mnt/home/amolina/ceph/database/'
    elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'):
       ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'
    elif os.path.isdir('/home/anacristina/ml_dft_project/database/'):
