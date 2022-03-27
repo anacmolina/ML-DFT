@@ -206,9 +206,13 @@ def get_CVs(data):
     ct1 = AG6_construction_tables('is1')
     C_vals = []
     R_vals = []
+    dim = data.shape[1]
     for x in data:
         ag6 = Structure(construction_table_=ct1, symbols_=symbols, Natoms_=len(symbols))
-        ag6.build_zmat_matrix(x)
+        if dim==18:
+           ag6.build_zmat_matrix(x)
+        else:
+           ag6.build_zmat_matrix_rd(x)
         atoms = ag6.molecule                                                                                  
         C_vals.append(C(atoms))
         R_vals.append(R(atoms))
