@@ -37,16 +37,18 @@ class Angles_transformation(torch.Tensor):
             raise RuntimeError("It must be a tensor.")
         
         self.x = x_
-        self.n = 6
+        self.n = None
         self.dims = len(x_.shape)
         
-    def transf(self):
+    def transf(self, n_):
+        self.n = n_
         if self.dims==1:
             self.x[self.n:] = torch.tan(self.x[self.n:])
         else:
             self.x[:,self.n:] = torch.tan(self.x[:,self.n:])
     
-    def inv_transf(self):
+    def inv_transf(self, n_):
+        self.n = n_       
         if self.dims==1:
             self.x[self.n:] = torch.arctan(self.x[self.n:])
         else:
@@ -87,10 +89,48 @@ class Structure:
         self.zmat_matrix = cc.Zmat(zmat_matrix)
         self.molecule = self.zmat_matrix.get_cartesian().get_ase_atoms()
 
-        # (np.array (add tensor type))
-    def calculate_potential_energy(self, zmat_values_):
+    def build_zmat_matrix_rd(self, zmat_values_):
+        z_values = zmat_values_.copy()
+
+        if(z_values is None):
+            raise RuntimeError('No data')
+
+        zmat_matrix = self.construction_table.copy()
+    
+        b = np.zeros(6)
+        a = np.zeros(6)
+        d = np.zeros(6)
+    
+        b[1:] = z_values[:5]
+        a[1:] = z_values[5:10]
+        d[1:] = z_values[10:]
+    
+        a = np.rad2deg(a)
+        d = np.rad2deg(d)
+
+        zmat_matrix.insert(0, "atom", self.symbols, True)
+        zmat_matrix.insert(2, "bond", b, True)
+        zmat_matrix.insert(4, "angle", a, True)
+        zmat_matrix.insert(6, "dihedral", d, True)
+    
+        self.zmat_matrix = cc.Zmat(zmat_matrix)
+        self.molecule = self.zmat_matrix.get_cartesian().get_ase_atoms()    
         
-        self.build_zmat_matrix(zmat_values_)
+        # (np.array (add tensor type))
+    def calculate_potential_energy(self, zmat_values_=None):
+
+        if(zmat_values_ is None and self.zmat_values is not None):
+           dim = self.zmat_values.shape[0]
+        elif(zmat_values_ is not None):
+           self.zmat_values = zmat_values_
+           dim = self.zmat_values.shape[0]
+        elif(zmat_values_ is None and self.zmat_values is None):
+           raise RuntimeError('No data')
+        
+        if dim == 18: 
+           self.build_zmat_matrix(zmat_values_)
+        else:
+           self.build_zmat_matrix_rd(zmat_values_)
         
         cell = [16, 16, 16]
         self.molecule.set_cell(cell)

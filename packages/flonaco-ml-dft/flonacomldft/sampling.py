@@ -1,5 +1,5 @@
 '''
-11;rgb:3030/0a0a/2424Script with all sampling methods. 
+Script with all sampling methods. 
 
 Computation of effective sampling size from:
 https://github.com/jwalton3141/jwalton3141.github.io
@@ -113,6 +113,10 @@ def run_metropolis(model, n_sample, u_init, x_init, ct, n_steps):
     for dt in range(n_steps):
         x = model.sample(N_sample)
         x = Angles_transformation(x)                                                                               
+
+        nll_x = model.nll(x)
+        nll_x_init = model.nll(x_init)
+
         x.transf()                                                                                                
         x = x.clone().data.cpu().numpy()
 
@@ -123,18 +127,15 @@ def run_metropolis(model, n_sample, u_init, x_init, ct, n_steps):
         i=0
         for i in range(len(x)):
             try:
-                #startTime = datetime.now()
                 ag6.calculate_potential_energy(x[i])
                 U.append(ag6.potential_energy)
-                #print("Time: ", datetime.now() - startTime)
             except:
-                # Fix this bug!!!!
                 print("Error calculating the energy, adding 0.")
-                U.append(0) # adding value to the array to keep the size 
+                U.append(0) 
 
         U = torch.tensor(U).float()
-        ratio =  - beta * (U) + model.nll(torch.tensor(x).float())
-        ratio += beta * u_init[:N_sample] - model.nll(x_init[:N_sample])
+        ratio =  - beta * (U) + nll_x
+        ratio += beta * u_init[:N_sample] - nll_x_init
         ratio = torch.exp(ratio)
         u = torch.rand_like(ratio)
         acc = u < torch.min(ratio, torch.ones_like(ratio))
@@ -143,7 +144,7 @@ def run_metropolis(model, n_sample, u_init, x_init, ct, n_steps):
         accs.append(acc)
         x_init = torch.tensor(x).float().clone()
 
-        #print("Acceptance porcentage: %.1f%%"%(np.array(acc).sum()*100/len(acc)))
+        print("Acceptance porcentage: %.1f%%"%(np.array(acc).sum()*100/len(acc)))
         return torch.stack(xs), torch.stack(accs)
     
 

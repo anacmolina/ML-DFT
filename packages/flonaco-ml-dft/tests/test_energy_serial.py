@@ -44,7 +44,11 @@ else:
    mode = "lcao"
 
 name = isomer+"_"+mode
-df = pd.read_csv(ceph_home + name +"_zmat.csv")
+#df = pd.read_csv(ceph_home + name +"_zmat.csv")
+
+#df = pd.read_csv(ceph_home + name +"_zmat_tr.csv")
+
+df = pd.read_csv(ceph_home + name +"_zmat_rb.csv")
 
 print("Done\n")
 
@@ -62,7 +66,7 @@ ct1 = AG6_construction_tables('is1')
 
 ag6 = Structure(construction_table_=ct1, symbols_=symbols, Natoms_=len(symbols))
 
-for i in range(5):
+for i in range(2):
    startTime = datetime.now()
    ag6.calculate_potential_energy(np.array(X[i]))
    pot_energy = ag6.potential_energy
