@@ -99,7 +99,7 @@ def run_metropolis(model, target, x_init, n_steps):
     return torch.stack(xs), torch.stack(accs)
 """
 
-def run_metropolis(model, n_sample, u_init, x_init, ct, n_steps):
+def run_metropolis(model, n_sample, u_init, x_init, ct, n_steps, n):
     xs = []
     accs = []
 
@@ -117,7 +117,7 @@ def run_metropolis(model, n_sample, u_init, x_init, ct, n_steps):
         nll_x = model.nll(x)
         nll_x_init = model.nll(x_init)
 
-        x.transf()                                                                                                
+        x.transf(n)                                                                                                
         x = x.clone().data.cpu().numpy()
 
         symbols = np.full(6, 'Ag')       
@@ -143,10 +143,14 @@ def run_metropolis(model, n_sample, u_init, x_init, ct, n_steps):
         xs.append(torch.tensor(x).float().clone())
         accs.append(acc)
         x_init = torch.tensor(x).float().clone()
-
+        
+        print('NLL diff')
+        print(nll_x - nll_x_init)
+        print('Energy diff')
+        print(beta * u_init[:N_sample] - beta * (U))
+        
         print("Acceptance porcentage: %.1f%%"%(np.array(acc).sum()*100/len(acc)))
         return torch.stack(xs), torch.stack(accs)
-    
 
 def run_metrolangevin(model, target, x_lang, n_steps, dt, lag=1):
     '''
