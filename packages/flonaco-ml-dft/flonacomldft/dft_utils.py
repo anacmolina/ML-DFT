@@ -201,14 +201,14 @@ def AG6_construction_tables(isomer_):
     
 # Getting the collective variables
 
-def get_CVs(data):
+def get_CVs(data, ct):
     symbols = np.full(6, 'Ag')
-    ct1 = AG6_construction_tables('is1')
+    ct_ = ct
     C_vals = []
     R_vals = []
     dim = data.shape[1]
     for x in data:
-        ag6 = Structure(construction_table_=ct1, symbols_=symbols, Natoms_=len(symbols))
+        ag6 = Structure(construction_table_=ct_, symbols_=symbols, Natoms_=len(symbols))
         if dim==18:
            ag6.build_zmat_matrix(x)
         else:
@@ -239,7 +239,7 @@ def R(atoms):
 
 #Plotting FES and database
 
-def plotting_fes_db(isomer_, mode_):
+def plotting_fes_db(isomer_, mode_, ct):
 
     ceph_home = get_path()
    
@@ -256,18 +256,18 @@ def plotting_fes_db(isomer_, mode_):
     db = db.drop(['energies'], axis=1)
     db = db.to_numpy()
    
-    c_db, r_db = get_CVs(db)
+    c_db, r_db = get_CVs(db, ct)
 
     ax.plot(c_db, r_db, 'c.', label='Database')
     
     return ax
  
 # Plot a molecule 2D (MISSING! Center the structure!)    
-def plot_sample(x, name):
+def plot_sample(x, name, ct):
     fig, ax = plt.subplots()
     symbols = np.full(6, 'Ag')
-    ct1 = AG6_construction_tables('is1')
-    ag6 = Structure(construction_table_=ct1, symbols_=symbols, Natoms_=len(symbols))
+    ct_ = ct
+    ag6 = Structure(construction_table_=ct_, symbols_=symbols, Natoms_=len(symbols))
     ag6.build_zmat_matrix(x)
     plot_atoms(ag6.molecule, ax)
     fig.savefig('ag6_'+name+'.png')
