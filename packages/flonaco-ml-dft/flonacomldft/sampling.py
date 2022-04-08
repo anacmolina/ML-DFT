@@ -99,46 +99,49 @@ def run_metropolis(model, target, x_init, n_steps):
     return torch.stack(xs), torch.stack(accs)
 """
 
-def run_metropolis(model, n_sample, u_init, x_init, ct, n_steps, n):
+def run_metropolis(model, n_sample, u_init, x_init, n_steps):
     xs = []
     accs = []
 
-    N_sample = n_sample
-    x_init = x_init[:N_sample]
+    x_init = x_init[:n_sample]
 
     T=300
     kb = 8.617333262e-5
     beta = 1/(kb*T)
     
     for dt in range(n_steps):
-        x = model.sample(N_sample)
-        x = Angles_transformation(x)                                                                               
+        x = model.sample(n_sample)
+        x = Angles_transformation(x)                                                                              
 
         nll_x = model.nll(x)
         nll_x_init = model.nll(x_init)
 
-        x.transf(n)                                                                                                
-        x = x.clone().data.cpu().numpy()
-
-        symbols = np.full(6, 'Ag')       
-        ag6 = Structure(construction_table_=ct, symbols_=symbols, Natoms_=len(symbols))
+        x.transf()                                                                                                
+        #x = x.clone().data.cpu().numpy()
+       
+        ag6 = Structure()
         
         U = []
         i=0
-        for i in range(len(x)):
+        indexes_nc = []
+        for i in range(n_sample):
             try:
                 ag6.calculate_potential_energy(x[i])
                 U.append(ag6.potential_energy)
             except:
-                print("Error calculating the energy, adding 0.")
-                U.append(0) 
+                print("Error calculating the energy, adding 0 to keep the size.")
+                U.append(0)
+                indexes_nc.append(i)
 
+        indexes_nc = torch.tensor(indexes_nc)
         U = torch.tensor(U).float()
         ratio =  - beta * (U) + nll_x
         ratio += beta * u_init[:N_sample] - nll_x_init
         ratio = torch.exp(ratio)
         u = torch.rand_like(ratio)
         acc = u < torch.min(ratio, torch.ones_like(ratio))
+        if(indexes_nc.shape[0] != 0):
+            acc[indexes_nc] = torch.full((1, len(indexes_nc)), False)
         x[~acc] = x_init[~acc]
         xs.append(torch.tensor(x).float().clone())
         accs.append(acc)
