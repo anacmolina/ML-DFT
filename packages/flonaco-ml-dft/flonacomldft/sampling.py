@@ -136,7 +136,7 @@ def run_metropolis(model, n_sample, u_init, x_init, n_steps):
         indexes_nc = torch.tensor(indexes_nc)
         U = torch.tensor(U).float()
         ratio =  - beta * (U) + nll_x
-        ratio += beta * u_init[:N_sample] - nll_x_init
+        ratio += beta * u_init[:n_sample] - nll_x_init
         ratio = torch.exp(ratio)
         u = torch.rand_like(ratio)
         acc = u < torch.min(ratio, torch.ones_like(ratio))
