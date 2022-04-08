@@ -150,7 +150,7 @@ def run_metropolis(model, n_sample, u_init, x_init, n_steps):
         print('NLL diff')
         print(nll_x - nll_x_init)
         print('Energy diff')
-        print(beta * u_init[:N_sample] - beta * (U))
+        print(beta * u_init[:n_sample] - beta * (U))
         
         print("Acceptance porcentage: %.1f%%"%(np.array(acc).sum()*100/len(acc)))
         return torch.stack(xs), torch.stack(accs)
