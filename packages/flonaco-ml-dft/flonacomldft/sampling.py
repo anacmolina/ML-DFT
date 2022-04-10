@@ -153,7 +153,7 @@ def run_metropolis(model, n_sample, u_init, x_init, n_steps):
         print(beta * u_init[:n_sample] - beta * (U))
         
         print("Acceptance porcentage: %.1f%%"%(np.array(acc).sum()*100/len(acc)))
-        return torch.stack(xs), torch.stack(accs)
+        return torch.stack(xs), torch.stack(accs), U
 
 def run_metrolangevin(model, target, x_lang, n_steps, dt, lag=1):
     '''
