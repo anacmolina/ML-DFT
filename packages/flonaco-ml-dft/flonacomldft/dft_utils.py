@@ -9,6 +9,8 @@ import ase
 import sys
 import os
 
+import matplotlib.pyplot as plt
+
 from ase.visualize.plot import plot_atoms
 from flonacomldft.FES.plotter2 import Plotter
 
@@ -269,7 +271,7 @@ def plotting_fes_db(isomer_, mode_):
    return ax
 
 # Plot a molecule 2D (Plot with structure NOT always center!)    
-def plot_sample(x, name):
+def plot_sample(x):
    fig, ax = plt.subplots()
    symbols = np.full(6, 'Ag')
    ag6 = Structure()
