@@ -147,13 +147,13 @@ def run_metropolis(model, n_sample, u_init, x_init, n_steps):
         accs.append(acc)
         x_init = torch.tensor(x).float().clone()
         
-        print('NLL diff')
-        print(nll_x - nll_x_init)
-        print('Energy diff')
-        print(beta * u_init[:n_sample] - beta * (U))
+        #print('NLL diff')
+        #print(nll_x - nll_x_init)
+        #print('Energy diff')
+        #print(beta * u_init[:n_sample] - beta * (U))
         
         print("Acceptance porcentage: %.1f%%"%(np.array(acc).sum()*100/len(acc)))
-        return torch.stack(xs), torch.stack(accs), U
+        return torch.stack(xs), torch.stack(accs), U, nll_x
 
 def run_metrolangevin(model, target, x_lang, n_steps, dt, lag=1):
     '''
