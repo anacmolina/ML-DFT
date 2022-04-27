@@ -102,7 +102,9 @@ def run_metropolis(model, target, x_init, n_steps):
 def run_metropolis(model, n_sample, u_init, x_init, n_steps):
     xs = []
     accs = []
-
+    us = []
+    nlls = []
+    
     x_init = x_init[:n_sample]
 
     T=300
@@ -110,6 +112,7 @@ def run_metropolis(model, n_sample, u_init, x_init, n_steps):
     beta = 1/(kb*T)
     
     for dt in range(n_steps):
+        print(dt)
         x = model.sample(n_sample)
         x = Angles_transformation(x)                                                                              
 
@@ -117,24 +120,25 @@ def run_metropolis(model, n_sample, u_init, x_init, n_steps):
         nll_x_init = model.nll(x_init)
 
         x.transf()                                                                                                
-        #x = x.clone().data.cpu().numpy()
-       
+               
         ag6 = Structure()
         
-        U = []
+        U_ = []
         i=0
         indexes_nc = []
         for i in range(n_sample):
+            print(dt, i)
             try:
+                print(i)
                 ag6.calculate_potential_energy(x[i])
-                U.append(ag6.potential_energy)
+                U_.append(ag6.potential_energy)
             except:
                 print("Error calculating the energy, adding 0 to keep the size.")
-                U.append(0)
+                U_.append(0)
                 indexes_nc.append(i)
 
         indexes_nc = torch.tensor(indexes_nc)
-        U = torch.tensor(U).float()
+        U = torch.tensor(U_).float()
         ratio =  - beta * (U) + nll_x
         ratio += beta * u_init[:n_sample] - nll_x_init
         ratio = torch.exp(ratio)
@@ -144,7 +148,11 @@ def run_metropolis(model, n_sample, u_init, x_init, n_steps):
             acc[indexes_nc] = torch.full((1, len(indexes_nc)), False)
         x[~acc] = x_init[~acc]
         xs.append(torch.tensor(x).float().clone())
-        accs.append(acc)
+        accs.append(acc.float().clone())
+        us.append(U.float().clone())
+        nlls.append(nll_x.float().clone())
+        
+        
         x_init = torch.tensor(x).float().clone()
         
         #print('NLL diff')
@@ -153,7 +161,8 @@ def run_metropolis(model, n_sample, u_init, x_init, n_steps):
         #print(beta * u_init[:n_sample] - beta * (U))
         
         print("Acceptance porcentage: %.1f%%"%(np.array(acc).sum()*100/len(acc)))
-        return torch.stack(xs), torch.stack(accs), U, nll_x
+
+    return torch.stack(xs), torch.stack(accs), torch.stack(us), torch.stack(nlls)
 
 def run_metrolangevin(model, target, x_lang, n_steps, dt, lag=1):
     '''
