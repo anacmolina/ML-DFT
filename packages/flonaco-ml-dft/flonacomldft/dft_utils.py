@@ -11,23 +11,6 @@ import os
 
 import matplotlib.pyplot as plt
 
-from ase.visualize.plot import plot_atoms
-from flonacomldft.FES.plotter2 import Plotter
-
-# Get path to database
-def get_path():
-   if os.path.isdir('/mnt/home/amolina/ceph/database/'):
-      ceph_home = '/mnt/home/amolina/ceph/database/'
-   elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'):
-      ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'
-   elif os.path.isdir('/home/ana/ml_dft_project/database/'):
-      ceph_home = '/home/ana/ml_dft_project/database/'
-   elif os.path.isdir('/home/amolina/ml_dft_project/database/'):
-      ceph_home = '/home/amolina/ml_dft_project/database/'
-   else:
-      raise RuntimeError('Data path not understood')
-   return ceph_home
-
 # Transformation for angles (torch.tensor)
 class Angles_transformation(torch.Tensor):
    def __init__(self, x_):
@@ -46,13 +29,13 @@ class Angles_transformation(torch.Tensor):
          self.Nsample = x_.shape[0]
          
       if self.Nsample==1:
-         self.dim = self.x.shape[0]
+         self.dims = self.x.shape[0]
       else:
-         self.dim = self.x.shape[1]
+         self.dims = self.x.shape[1]
          
-      if self.dim==12:
+      if self.dims==12:
          self.n = 5
-      elif self.dim==18:
+      elif self.dims==18:
          self.n = 6
       else:
          raise RuntimeError('Can not define transformation')
@@ -247,31 +230,38 @@ def R(atoms):
 
 #Plotting FES and database
 
-def plotting_fes_db(isomer_, mode_):
-   
+def plotting_fes_db():
+   from flonacomldft.FES.plotter2 import Plotter
+   from flonacomldft.files_utils import get_path
+
    ceph_home = get_path()
-   
-   isomer = str(isomer_)
-   mode = str(mode_)
-   name=isomer+'_'+mode
    
    plotting = Plotter(400, 'Ag6')
    plotting.readfile(ceph_home + 'unrotated_300.txt')
    
    ax = plotting.plot_fes(0.1, 300, delta2=0.1, shift=1)
    
-   db = pd.read_csv(ceph_home + name +'_zmat.csv')
-   db = db.drop(['energies'], axis=1)
-   db = db.to_numpy()
+   db1 = pd.read_csv(ceph_home + 'is1_lcao_zmat.csv')
+   db1 = db1.drop(['energies'], axis=1)
+   db1 = db1.to_numpy()
    
-   c_db, r_db = get_CVs(db)
+   c_db1, r_db1 = get_CVs(db1)
+
+   db2 = pd.read_csv(ceph_home + 'is2_lcao_zmat.csv')
+   db2 = db2.drop(['energies'], axis=1)
+   db2 = db2.to_numpy()
    
-   ax.plot(c_db, r_db, 'c.', label='Database')
+   c_db1, r_db1 = get_CVs(db1)
+   c_db2, r_db2 = get_CVs(db2)
+   
+   ax.plot(c_db1, r_db1, 'c.', label='DB is1')
+   ax.plot(c_db2, r_db2, 'c.', label='DB is2')
    
    return ax
 
 # Plot a molecule 2D (Plot with structure NOT always center!)    
 def plot_sample(x):
+   from ase.visualize.plot import plot_atoms
    fig, ax = plt.subplots()
    symbols = np.full(6, 'Ag')
    ag6 = Structure()

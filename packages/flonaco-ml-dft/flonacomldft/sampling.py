@@ -99,70 +99,116 @@ def run_metropolis(model, target, x_init, n_steps):
     return torch.stack(xs), torch.stack(accs)
 """
 
-def run_metropolis(model, n_sample, u_init, x_init, n_steps):
+def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture=False):
+    
+    import gpaw.mpi as mpi
+
     xs = []
     accs = []
     us = []
     nlls = []
+    counts = []
     
-    x_init = x_init[:n_sample]
+    u_init=u_init[:n_sample]
+    x_init=x_init[:n_sample]
+    count_init=count_init[:n_sample]
 
     T=300
     kb = 8.617333262e-5
     beta = 1/(kb*T)
-    
-    for dt in range(n_steps):
-        print(dt)
-        x = model.sample(n_sample)
-        x = Angles_transformation(x)                                                                              
 
+    for dt in range(n_steps):
+        print('Iteration: ', dt)
+
+        
+        if mixture:
+            x, count = model.sample(n_sample, return_mus=True)
+        else:
+            x = model.sample(n_sample)
+            count = count_init
+                        
+        x = torch.tensor(x).detach().float()
+        count = torch.tensor(count).detach().float()
+
+        #print('Init: \n', rank, x_init)
+        print('Propusal: ', x)
+        
+        #print('Counts init: \n', count_init)
+        #print('Counts: \n', count)
+    
+        x = Angles_transformation(x)
+        x_init = Angles_transformation(x_init)
+    
         nll_x = model.nll(x)
         nll_x_init = model.nll(x_init)
-
-        x.transf()                                                                                                
-               
+    
+        x.transf()
+        x_init.transf()
+    
         ag6 = Structure()
         
         U_ = []
-        i=0
         indexes_nc = []
         for i in range(n_sample):
-            print(dt, i)
             try:
-                print(i)
-                ag6.calculate_potential_energy(x[i])
-                U_.append(ag6.potential_energy)
+                print('# Energy sample calculation: ', i)
+                #ag6.calculate_potential_energy(x[i])
+                #U_.append(ag6.potential_energy)
+                U_.append(-6.3*(1+np.random.rand()*0.1))
             except:
-                print("Error calculating the energy, adding 0 to keep the size.")
+                print("Error calculating the energy, adding 0 to keep the size. Sample: ", i)
                 U_.append(0)
                 indexes_nc.append(i)
-
+    
         indexes_nc = torch.tensor(indexes_nc)
         U = torch.tensor(U_).float()
         ratio =  - beta * (U) + nll_x
-        ratio += beta * u_init[:n_sample] - nll_x_init
+        ratio += beta * u_init - nll_x_init
         ratio = torch.exp(ratio)
         u = torch.rand_like(ratio)
         acc = u < torch.min(ratio, torch.ones_like(ratio))
+    
         if(indexes_nc.shape[0] != 0):
             acc[indexes_nc] = torch.full((1, len(indexes_nc)), False)
+    
+        
+        print('Init: \n', x_init)
+        print('Propusal: \n', x)
+        print('\n')
+        print('Acceptance: \n', acc)
+    
         x[~acc] = x_init[~acc]
-        xs.append(torch.tensor(x).float().clone())
+        U[~acc] = u_init[~acc]
+    
+        print('Init + accepted: \n', x)
+        
+        if mixture:
+            count[~acc] = count_init[~acc]
+        else:
+            count = count_init
+        
+        xs.append(x.float().clone())
         accs.append(acc.float().clone())
         us.append(U.float().clone())
         nlls.append(nll_x.float().clone())
+        counts.append(count.float().clone())
+    
+        x_init = x.clone().detach()
+        u_init = U.clone().detach()
+        count_init = count.clone().detach()
         
+        print('Counts init: \n', count_init)
         
-        x_init = torch.tensor(x).float().clone()
+        x_init = Angles_transformation(x_init)
+        x_init.inv_transf()
+    
+        mpi.world.barrier()
         
-        #print('NLL diff')
-        #print(nll_x - nll_x_init)
-        #print('Energy diff')
-        #print(beta * u_init[:n_sample] - beta * (U))
+        print('New Init: \n', x_init)
         
         print("Acceptance porcentage: %.1f%%"%(np.array(acc).sum()*100/len(acc)))
 
-    return torch.stack(xs), torch.stack(accs), torch.stack(us), torch.stack(nlls)
+    return torch.stack(xs), torch.stack(accs), torch.stack(us), torch.stack(nlls), torch.stack(counts)
 
 def run_metrolangevin(model, target, x_lang, n_steps, dt, lag=1):
     '''

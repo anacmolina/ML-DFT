@@ -38,8 +38,8 @@ class Mixture(nn.Module):
 
         if shuffle:
             perm = torch.randperm(n)
-            x = x[perm, :]
-            cs = torch.tensor(cs)[perm]
+            x = x[perm, :].float()
+            cs = torch.tensor(cs)[perm].float()
 
         if return_mus:
             return x, cs

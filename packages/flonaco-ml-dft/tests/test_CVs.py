@@ -18,12 +18,12 @@ from flonacomldft.train_from_data import train
 from flonacomldft.FES.plotter2 import Plotter
 
 from flonacomldft.dft_utils import (
-    get_path,
     Angles_transformation,
     get_CVs,
     plotting_fes_db
 )
 
+from flonacomldft.files_utils import get_path
 
 print("Done\n")
 
@@ -94,9 +94,9 @@ model_init = copy.deepcopy(model)
 
 _ = train(model, 
            x_tensor,
-           n_iter=5000,
-           lr=5e-3,
-           bs=100,
+           n_iter=100,
+           lr=5e-2,
+           bs=10,
            use_scheduler=False,
            step_schedule=100,
            args_loss={'type': 'fwd', 'samp': 'direct'},
@@ -128,7 +128,7 @@ outfile.close()
 
 print("Done\n")
 
-print("Sampling and plotting CVs on FES")
+"""print("Sampling and plotting CVs on FES")
 
 N_samples=100
 
@@ -146,3 +146,4 @@ for i in range(8, len(models)):
    plt.savefig('fe_model_'+str(i)+'.png')
 
 print("Done\n")
+"""

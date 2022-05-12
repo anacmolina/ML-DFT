@@ -12,11 +12,12 @@ import sys
 import pandas as pd
 
 from flonacomldft.dft_utils import (
-   get_path,
    Structure,
    AG6_construction_tables,
    Angles_transformation
 )
+
+from flonacomldft.files_utils import get_path
 
 print("Done\n")
 
@@ -44,11 +45,7 @@ else:
    mode = "lcao"
 
 name = isomer+"_"+mode
-#df = pd.read_csv(ceph_home + name +"_zmat.csv")
-
-#df = pd.read_csv(ceph_home + name +"_zmat_tr.csv")
-
-df = pd.read_csv(ceph_home + name +"_zmat_rb.csv")
+df = pd.read_csv(ceph_home + name +"_zmat.csv")
 
 print("Done\n")
 
@@ -61,10 +58,7 @@ print("Done\n")
 
 print("Calculating the energy for one configuration")
 
-symbols = np.full(6, 'Ag')
-ct1 = AG6_construction_tables('is1')
-
-ag6 = Structure(construction_table_=ct1, symbols_=symbols, Natoms_=len(symbols))
+ag6 = Structure()
 
 for i in range(2):
    startTime = datetime.now()
