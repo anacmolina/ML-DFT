@@ -171,15 +171,18 @@ def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture
         if(indexes_nc.shape[0] != 0):
             acc[indexes_nc] = torch.full((1, len(indexes_nc)), False)
     
-        
+        mpi.world.barrier()
         print('Init: \n', x_init)
         print('Propusal: \n', x)
         print('\n')
         print('Acceptance: \n', acc)
     
+        mpi.world.barrier()
+
         x[~acc] = x_init[~acc]
         U[~acc] = u_init[~acc]
     
+        mpi.world.barrier()
         print('Init + accepted: \n', x)
         
         if mixture:
@@ -187,16 +190,19 @@ def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture
         else:
             count = count_init
         
+        mpi.world.barrier()
         xs.append(x.float().clone())
         accs.append(acc.float().clone())
         us.append(U.float().clone())
         nlls.append(nll_x.float().clone())
         counts.append(count.float().clone())
     
+        mpi.world.barrier()
         x_init = x.clone().detach()
         u_init = U.clone().detach()
         count_init = count.clone().detach()
         
+        mpi.world.barrier()
         print('Counts init: \n', count_init)
         
         x_init = Angles_transformation(x_init)
