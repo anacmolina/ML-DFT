@@ -232,7 +232,7 @@ def R(atoms):
 
 def plotting_fes_db(train_data=None):
    from flonacomldft.FES.plotter2 import Plotter
-   from flonacomldft.files_utils import get_path
+   from flonacomldft.md_utils import get_path
 
    ceph_home = get_path()
    
