@@ -68,17 +68,17 @@ def deg_to_rad(zmat):
         zmat[label] = np.deg2rad(zmat[label].tolist())
     return zmat
 
-def get_internal_coordinates(md_run):
+def get_internal_coordinates(traj):
 
-    traj = Trajectory(md_run)
-    ct1 = AG6
+    traj = traj
+    construction_table = AG6_construction_tables('ct1')
     energies = [traj_.get_potential_energy() for traj_ in traj]
     
     xyz = []
     for traj_ in traj:
         xyz.append(cc.Cartesian.from_ase_atoms(traj_))
     
-    zmat = [xyz_.get_zmat(ct1) for xyz_ in xyz]
+    zmat = [xyz_.get_zmat(construction_table) for xyz_ in xyz]
     
     b = construction_table.b.to_numpy()
     a = construction_table.a.to_numpy()
@@ -99,7 +99,30 @@ def get_internal_coordinates(md_run):
     new_zmat = deg_to_rad(new_zmat)
     new_zmat = rephase(new_zmat)
 
-    return torch.tensor(new_zmat).detach().requires_grad()
+    new_zmat = new_zmat.to_numpy()
+    new_zmat.astype(np.float32)
+
+    return new_zmat
+
+def get_is1():
+    pos = np.array([[7.9804600, 5.464791, 8.0],
+                    [7.9611420, 10.16485, 8.0],
+                    [6.5837500, 7.868667, 8.0],
+                    [5.2993890, 5.513795, 8.0],
+                    [9.3697860, 7.876240, 8.0],
+                    [10.665305, 5.524828, 8.0]])
+    isomer = Atoms('Ag6', positions=pos)
+    return isomer
+
+def get_is2():
+    pos = np.array([[6.5910080, 5.595878, 7.139020],
+                    [9.4089920, 5.595878, 7.139020],
+                    [5.7157570, 8.272920, 7.161092],
+                    [8.0000000, 7.529808, 8.358414],
+                    [10.284243, 8.272920, 7.161092],
+                    [8.0000000, 9.919833, 7.129457]])
+    isomer = Atoms('Ag6', positions=pos)
+    return isomer
 
 def run_molecular_dynamics(molecule, iters, name, i):
     ceph_home = get_path()
