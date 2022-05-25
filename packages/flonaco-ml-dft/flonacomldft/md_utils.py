@@ -99,10 +99,9 @@ def get_internal_coordinates(traj):
     new_zmat = deg_to_rad(new_zmat)
     new_zmat = rephase(new_zmat)
 
-    new_zmat = new_zmat.to_numpy()
-    new_zmat.astype(np.float32)
+    new_zmat = new_zmat.to_numpy(dtype=np.float32)
 
-    return new_zmat
+    return torch.from_numpy(new_zmat).float()
 
 def get_is1():
     pos = np.array([[7.9804600, 5.464791, 8.0],
