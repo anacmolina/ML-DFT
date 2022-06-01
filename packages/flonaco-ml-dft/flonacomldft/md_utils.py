@@ -99,6 +99,8 @@ def get_internal_coordinates(traj):
     new_zmat = deg_to_rad(new_zmat)
     new_zmat = rephase(new_zmat)
 
+    new_zmat = new_zmat.drop(["bond0origin", "angle0e_z", "angle2e_z", "dihedral0e_x", "dihedral2e_x", "dihedral3e_x"], axis=1)
+
     new_zmat = new_zmat.to_numpy(dtype=np.float32)
 
     return torch.from_numpy(new_zmat).float()
