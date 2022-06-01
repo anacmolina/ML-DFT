@@ -82,6 +82,9 @@ def get_NF(molecule, iterations, name, model=None, i=0):
 
     print(x_tensor)
     cov = torch.cov(x_tensor.T)
+    if cov.min()<0:
+        print(cov.min())
+        cov = cov+(-1)*cov.min()
     print(cov)
     mean = x_tensor.mean(0)
 
@@ -117,8 +120,9 @@ def get_NF(molecule, iterations, name, model=None, i=0):
 
     return x_tensor, u_tensor, count_tensor, _
 
-xi_is1, ui_is1, ci_is1, _is1 = get_NF(get_is1(), 2, 'is1')
-xi_is2, ui_is2, ci_is2, _is2 = get_NF(get_is2(), 2, 'is2')
+xi_is1, ui_is1, ci_is1, _is1 = get_NF(get_is1(), 3, 'is1')
+mpi.world.barrier()
+xi_is2, ui_is2, ci_is2, _is2 = get_NF(get_is2(), 3, 'is2')
 
 NF_is1 = _is1['models'][-1]
 NF_is2 = _is2['models'][-1]

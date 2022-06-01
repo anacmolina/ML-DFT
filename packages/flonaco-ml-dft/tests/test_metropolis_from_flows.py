@@ -81,3 +81,4 @@ filename = 'metropolis_mix_'+str(n_chains)+'_'+str(n_sts)+''
 outfile = open(filename, 'wb')
 pickle.dump(_, outfile)
 outfile.close()
+
