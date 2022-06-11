@@ -23,7 +23,7 @@ from flonacomldft.dft_utils import (
     plotting_fes_db
 )
 
-from flonacomldft.files_utils import get_path
+from flonacomldft.md_utils import get_path
 
 print("Done\n")
 
@@ -67,6 +67,8 @@ print("Samples", x_tensor.shape[0])
 cov = torch.cov(x_tensor.T)
 mean = x_tensor.mean(0)
 
+print(cov)
+
 x_tensor = Angles_transformation(x_tensor)
 x_tensor.inv_transf()
 
@@ -109,22 +111,22 @@ print("Done\n")
 
 print("Plotting log_losses")
 
-losses = torch.log(torch.tensor(_['losses']))
-plt.figure(figsize=(7, 5))
-plt.plot(losses)
-plt.ylabel('Losses')
-plt.grid()
-plt.savefig('losses.png')
+#losses = torch.log(torch.tensor(_['losses']))
+#plt.figure(figsize=(7, 5))
+#plt.plot(losses)
+#plt.ylabel('Losses')
+#plt.grid()
+#plt.savefig('losses.png')
 
-print("Done\n")
+#print("Done\n")
 
-print("Saving the models")
-filename = 'models'
-outfile = open(filename,'wb')
+#print("Saving the models")
+#filename = 'models'
+#outfile = open(filename,'wb')
 
-models = _['models']
-pickle.dump(models, outfile)
-outfile.close()
+#models = _['models']
+#pickle.dump(models, outfile)
+#outfile.close()
 
 print("Done\n")
 

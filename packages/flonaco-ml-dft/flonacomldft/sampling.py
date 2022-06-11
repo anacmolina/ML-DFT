@@ -14,8 +14,7 @@ from ase.parallel import parprint as print
 from datetime import datetime
 from flonacomldft.dft_utils import (
     Angles_transformation,
-    Structure,
-    AG6_construction_tables
+    Structure
 )
 
 def run_langevin(model, x, n_steps, dt):

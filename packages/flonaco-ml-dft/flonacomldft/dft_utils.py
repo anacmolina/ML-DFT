@@ -1,13 +1,11 @@
 from ase.parallel import parprint as print
 
-import chemcoord as cc
-import torch
-from gpaw import GPAW
 import numpy as np
 import pandas as pd
 import ase
-import sys
-import os
+import chemcoord as cc
+import torch
+from gpaw import GPAW
 
 import matplotlib.pyplot as plt
 
@@ -22,68 +20,45 @@ class Angles_transformation(torch.Tensor):
          raise RuntimeError("It must be a tensor")
       
       self.x = x_
+
+      print(self.x, self.x.shape)
+      if(len(self.x.shape)==1):
+         self.x = self.x.reshape(1, 12)
       
-      if (len(x_.shape)==1):
-         self.Nsample = len(x_.shape)
-      else:
-         self.Nsample = x_.shape[0]
-         
-      if self.Nsample==1:
-         self.dims = self.x.shape[0]
-      else:
-         self.dims = self.x.shape[1]
-         
+      print(self.x, self.x.shape)
+
+      self.dims = self.x.shape[1]
+      self.Nsample = self.x.shape[0]
+
+      print(self.dims, self.Nsample)   
       if self.dims==12:
          self.n = 5
-      elif self.dims==18:
-         self.n = 6
       else:
          raise RuntimeError('Can not define transformation')
 
    def transf(self):
-      if self.Nsample==1:
-         self.x[self.n:] = torch.tan(self.x[self.n:])
-      else:
          self.x[:,self.n:] = torch.tan(self.x[:,self.n:])
+         #self.x = self.x.reshape(self.Nsample, self.dims)
          
    def inv_transf(self):
-      if self.Nsample==1:
-         self.x[self.n:] = torch.arctan(self.x[self.n:])
-      else:
          self.x[:,self.n:] = torch.arctan(self.x[:,self.n:])
+         #self.x = self.x.reshape(self.Nsample, self.dims)
 
 # Getting the construction table for each isomer        
-def AG6_construction_tables(ct):
-   
-   if (ct=='ct1'):
-      
-      index = np.append(0, np.append(np.arange(2,6), 1))
-      construction_table1 = pd.DataFrame(index=index)
-      
-      construction_table1['b'] = ['origin', 0, 2, 2, 4, 4]
-      construction_table1['a'] = ['e_z', 'e_z', 0, 3, 2, 2]
-      construction_table1['d'] = ['e_x', 'e_x', 'e_x', 0, 3, 3]
-      
-      return(construction_table1)
+def get_construction_table():
 
-   elif (ct=='ct2'):
-       
-      index = np.append(3, np.append(np.arange(0,3), [4, 5]))
-      construction_table2 = pd.DataFrame(index=index)
+   index = np.append(0, np.append(np.arange(2,6), 1))
+   construction_table1 = pd.DataFrame(index=index)
       
-      construction_table2['b'] = ['origin', 3, 0, 0, 1, 4]
-      construction_table2['a'] = ['e_z', 'e_z', 3, 1, 0, 1]
-      construction_table2['d'] = ['e_x', 'e_x', 'e_x', 3, 2, 0]
+   construction_table1['b'] = ['origin', 0, 2, 2, 4, 4]
+   construction_table1['a'] = ['e_z', 'e_z', 0, 3, 2, 2]
+   construction_table1['d'] = ['e_x', 'e_x', 'e_x', 0, 3, 3]
       
-      return(construction_table2)
-   
-   else:
-
-      raise RuntimeError('The construction table can not be recognized')         
+   return(construction_table1)        
          
 # Calculating the energy (pd.DataFrame, np.array or list, int)
 class Structure:
-   def __init__(self, construction_table_=AG6_construction_tables('ct1'), symbols_=np.full(6, 'Ag')):
+   def __init__(self, construction_table_=get_construction_table(), symbols_=np.full(6, 'Ag')):
       super().__init__()
       
       self.construction_table = construction_table_.copy()
@@ -140,27 +115,6 @@ class Structure:
          self.zmat_matrix = cc.Zmat(zmat_matrix)
          self.molecule = self.zmat_matrix.get_cartesian().get_ase_atoms()
 
-      elif len(self.zmat_values)==18:
-         
-         b = self.zmat_values[:6]
-         a = self.zmat_values[6:12]
-         d = self.zmat_values[12:]
-         
-         a = np.rad2deg(a)
-         d = np.rad2deg(d)
-         
-         b = np.double(b)
-         a = np.double(a)
-         d = np.double(d)
-         
-         zmat_matrix.insert(0, "atom", self.symbols, True)
-         zmat_matrix.insert(2, "bond", b, True)
-         zmat_matrix.insert(4, "angle", a, True)
-         zmat_matrix.insert(6, "dihedral", d, True)
-
-         self.zmat_matrix = None
-         self.zmat_matrix = cc.Zmat(zmat_matrix)
-         self.molecule = self.zmat_matrix.get_cartesian().get_ase_atoms()
       else:
          raise RuntimeError('Data not valid')
       

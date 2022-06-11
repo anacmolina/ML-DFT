@@ -1,13 +1,14 @@
+from ase.parallel import parprint as print
+
+import os
 import numpy as np
 import pandas as pd
 import torch
 import pickle
-import os
 import chemcoord as cc
-from flonacomldft.dft_utils import AG6_construction_tables
+from flonacomldft.dft_utils import get_construction_table
 
 from ase import Atoms
-from ase.parallel import parprint
 from ase.io import read
 from gpaw import GPAW
 from ase.optimize import BFGS
@@ -37,7 +38,7 @@ def load_from_pickle(file):
     file_loaded.close()
     return _
 
-def load_csv(isomer):
+def load_is_csv(isomer):
     ceph_home = get_path()
     file = '_lcao_zmat.csv'
     u_init = torch.tensor(pd.read_csv(ceph_home + isomer + file)['energies'].to_numpy()).float()
@@ -71,7 +72,7 @@ def deg_to_rad(zmat):
 def get_internal_coordinates(traj):
 
     traj = traj
-    construction_table = AG6_construction_tables('ct1')
+    construction_table = get_construction_table()
     energies = [traj_.get_potential_energy() for traj_ in traj]
     
     xyz = []
@@ -129,6 +130,8 @@ def run_molecular_dynamics(molecule, iters, name, i):
     ceph_home = get_path()
     mol = molecule
     
+    torch.manual_seed(42)
+
     #Add attribute if you build a class to write the isomer_file
     
     mol.set_cell([16, 16, 16])

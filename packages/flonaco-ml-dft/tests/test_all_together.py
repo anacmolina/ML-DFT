@@ -5,6 +5,7 @@ import gpaw.mpi as mpi
 import torch
 import pickle
 import pandas as pd
+import copy
 
 from flonacomldft.dft_utils import (
     Angles_transformation,
@@ -16,7 +17,7 @@ from flonacomldft.sampling import run_metropolis
 from flonacomldft.md_utils import (
     get_path,
     load_from_pickle,
-    load_csv, 
+    load_is_csv, 
     shuffle_arr,
     get_is1,
     get_is2,
@@ -42,7 +43,8 @@ if rank == 0:
 comm.broadcast(num_seed, 0)
 
 print(rank, num_seed)
-torch.manual_seed(num_seed[0])
+#torch.manual_seed(num_seed[0])
+torch.manual_seed(42)
 
 mpi.world.barrier()
 
@@ -51,9 +53,9 @@ ceph_home = get_path()
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 dtype = torch.float32
 
-def init_model(dim, cov, mean):
+def init_model(mean, cov):
     args_rnvp = {
-        'dim': dim,
+        'dim': cov.shape[0],
         'n_realnvp_block': 15,
         'block_depth': 1,
         # 'args_prior': {'type': 'standn'}, # standard Gaussian base
@@ -80,12 +82,10 @@ def get_NF(molecule, iterations, name, model=None, i=0):
     u_tensor = zmat[:, -1]
     x_tensor = zmat[:, :-1]
 
-    print(x_tensor)
+    #print(x_tensor)
     cov = torch.cov(x_tensor.T)
-    if cov.min()<0:
-        print(cov.min())
-        cov = cov+(-1)*cov.min()
-    print(cov)
+    cov = torch.eye(12)*cov.mean()
+    #print(cov)
     mean = x_tensor.mean(0)
 
     if name=='is1':
@@ -99,7 +99,7 @@ def get_NF(molecule, iterations, name, model=None, i=0):
     x_tensor.inv_transf()
 
     if i==0:
-        model = init_model(x_tensor.shape[1], cov, mean)    
+        model = init_model(mean, cov)    
     else:
         model=model
 
@@ -135,6 +135,8 @@ xis = shuffle_arr([xi_is1, xi_is2], indexes)
 uis = shuffle_arr([ui_is1, ui_is2], indexes)
 cis = shuffle_arr([ci_is1, ci_is2], indexes)
 
+print(xis)
+
 models = np.array([NF_is1, NF_is2])
 mixture = Mixture(models, torch.tensor([0.75, 0.25]).detach())
 
@@ -148,7 +150,7 @@ while j<3:
 
     filename = 'metropolis_mix_'+str(n_chains)+'_'+str(n_sts)+'_'+str(j)+''
     outfile = open(filename, 'wb')
-    pickle.dump(_, outfile)
+    pickle.dump(mcmc, outfile)
     outfile.close()
 
     ag6 = Structure()
@@ -157,14 +159,16 @@ while j<3:
     x_new = Angles_transformation(x_new)
     x_new.transf()
     print(x_new)
-    ag6.build_zmat(x_new)
+    ag6.build_zmat_matrix(x_new[0])
     is_ = ag6.molecule
 
     if c_new == 0:
-        xi_is1, ui_is1, ci_is1, _is1 = get_NF(is_, 2, 'is1', j=j+1)
+        j=j+1
+        xi_is1, ui_is1, ci_is1, _is1 = get_NF(is_, 2, 'is1', i=j)
         NF_is1 = _is['models'][-1]
     elif c_new == 1:
-        xi_is2, ui_is2, ci_is2, _is2 = get_NF(is_, 2, 'is2', j=j+1)
+        j=j+1
+        xi_is2, ui_is2, ci_is2, _is2 = get_NF(is_, 2, 'is2', i=j)
         NF_is1 = _is['models'][-1]
     else:
         raise RuntimeError('No valid isomer')
