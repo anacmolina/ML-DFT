@@ -101,6 +101,9 @@ def run_metropolis(model, target, x_init, n_steps):
 def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture=False):
     
     import gpaw.mpi as mpi
+    rank = mpi.world.rank
+
+    torch.manual_seed(42)
 
     xs = []
     accs = []
@@ -151,9 +154,9 @@ def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture
         for i in range(n_sample):
             try:
                 print('# Energy sample calculation: ', i)
-                #ag6.calculate_potential_energy(x[i])
-                #U_.append(ag6.potential_energy)
-                U_.append(-6.3*(1+np.random.rand()*0.1))
+                ag6.calculate_potential_energy(x[i])
+                U_.append(ag6.potential_energy)
+                #U_.append(-6.3*(1+np.random.rand()*0.1))
             except:
                 print("Error calculating the energy, adding 0 to keep the size. Sample: ", i)
                 U_.append(0)
@@ -209,7 +212,7 @@ def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture
     
         mpi.world.barrier()
         
-        print('New Init: \n', x_init)
+        print('New Init: \n', rank, x_init)
         
         print("Acceptance porcentage: %.1f%%"%(np.array(acc).sum()*100/len(acc)))
 

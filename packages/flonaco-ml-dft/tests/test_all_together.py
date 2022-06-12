@@ -1,4 +1,4 @@
-from ase.parallel import parprint as print
+#from ase.parallel import parprint as print
 import numpy as np
 
 import gpaw.mpi as mpi
@@ -53,7 +53,7 @@ ceph_home = get_path()
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 dtype = torch.float32
 
-def init_model(mean, cov):
+def init_model(mean, cov, device):
     args_rnvp = {
         'dim': cov.shape[0],
         'n_realnvp_block': 15,
@@ -72,7 +72,7 @@ def init_model(mean, cov):
 
     return model
 
-def get_NF(molecule, iterations, name, model=None, i=0):
+def run_NF(molecule, iterations, name, model=None, i=0):
     
     traj = run_molecular_dynamics(molecule, iterations, name, i)
     zmat = get_internal_coordinates(traj)
@@ -140,6 +140,7 @@ print(xis)
 models = np.array([NF_is1, NF_is2])
 mixture = Mixture(models, torch.tensor([0.75, 0.25]).detach())
 
+
 j = 0
 while j<3:
 
@@ -153,12 +154,15 @@ while j<3:
     pickle.dump(mcmc, outfile)
     outfile.close()
 
+    mpi.world.barrier()
+
     ag6 = Structure()
+    print('mcmc_real', mcmc[0])
     x_new = mcmc[0][-1, :]
     c_new = mcmc[-1][-1]
     x_new = Angles_transformation(x_new)
     x_new.transf()
-    print(x_new)
+    print('mh results',rank, x_new)
     ag6.build_zmat_matrix(x_new[0])
     is_ = ag6.molecule
 

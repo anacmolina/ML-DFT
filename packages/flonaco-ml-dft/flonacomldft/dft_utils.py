@@ -1,4 +1,4 @@
-from ase.parallel import parprint as print
+#from ase.parallel import parprint as print
 
 import numpy as np
 import pandas as pd
@@ -9,7 +9,11 @@ from gpaw import GPAW
 
 import matplotlib.pyplot as plt
 
+import gpaw.mpi as mpi
+rank = mpi.world.rank
+
 # Transformation for angles (torch.tensor)
+
 class Angles_transformation(torch.Tensor):
    def __init__(self, x_):
       super().__init__()
@@ -43,7 +47,7 @@ class Angles_transformation(torch.Tensor):
    def inv_transf(self):
          self.x[:,self.n:] = torch.arctan(self.x[:,self.n:])
          #self.x = self.x.reshape(self.Nsample, self.dims)
-
+   
 # Getting the construction table for each isomer        
 def get_construction_table():
 

@@ -1,4 +1,4 @@
-from ase.parallel import parprint as print
+#from ase.parallel import parprint as print
 
 import os
 import numpy as np
@@ -127,6 +127,9 @@ def get_is2():
     return isomer
 
 def run_molecular_dynamics(molecule, iters, name, i):
+    import gpaw.mpi as mpi
+    rank = mpi.world.rank
+
     ceph_home = get_path()
     mol = molecule
     
@@ -149,7 +152,10 @@ def run_molecular_dynamics(molecule, iters, name, i):
     file = ceph_home+'ag6_'+name+'_'+str(i)+'.traj'
 
     dyn = NVTBerendsen(mol, 5 * units.fs, taut = 50, temperature_K=300, trajectory=file)
+    #print('rank, md_pos', rank, mol.positions)
+    #print(rank, iters)
     dyn.run(iters)
     
+    mpi.world.barrier()
     traj = Trajectory(file)
     return traj
