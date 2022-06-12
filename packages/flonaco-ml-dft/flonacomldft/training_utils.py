@@ -73,9 +73,9 @@ def run_NF(molecule, iterations, name, device, model, i):
 
     _ = train(model, 
            x_tensor,
-           n_iter=100,
-           lr=5e-2,
-           bs=10,
+           n_iter=10000,
+           lr=5e-3,
+           bs=100,
            use_scheduler=False,
            step_schedule=100,
            args_loss={'type': 'fwd', 'samp': 'direct'},
