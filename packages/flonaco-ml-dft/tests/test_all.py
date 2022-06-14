@@ -122,7 +122,7 @@ while j<3:
     elif c_new == 1:
         j=j+1
         xi_is2, ui_is2, ci_is2, _is2 = run_NF(is_, 2, 'is2', device,  models[1], i=j)
-        NF_is1 = _is2['models'][-1]
+        NF_is2 = _is2['models'][-1]
     else:
         raise RuntimeError('No valid isomer')
 
