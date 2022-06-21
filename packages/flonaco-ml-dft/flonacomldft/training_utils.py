@@ -40,18 +40,14 @@ def run_NF(molecule, iterations, name, device, model, i):
 
     traj = run_molecular_dynamics(molecule, iterations, name, i)
     mpi.world.barrier()
-    #print('traj', rank, len(traj))
     zmat = get_internal_coordinates(traj)
 
-    #print('zmat ', rank, zmat, zmat.shape)
 
     u_tensor = zmat[:, -1]
     x_tensor = zmat[:, :-1]
 
-    #print(x_tensor)
     cov = torch.cov(x_tensor.T)
     cov = torch.eye(12)*cov.mean()
-    #print(cov)
     mean = x_tensor.mean(0)
 
     if name=='is1':

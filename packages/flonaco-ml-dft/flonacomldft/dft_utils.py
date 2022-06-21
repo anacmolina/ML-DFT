@@ -136,6 +136,8 @@ class Structure:
       elif (zmat_values_ is None and self.zmat_values is None):
          raise RuntimeError('No data')
       
+      # Setting the cell parameters
+
       cell = [16, 16, 16]
       self.molecule.set_cell(cell)
       self.molecule.center()
@@ -152,6 +154,7 @@ class Structure:
          
       self.molecule.set_calculator(self.calculator)
       
+      # Calculating the potential energy
       self.potential_energy = self.molecule.get_potential_energy()
    
 # Getting the collective variables

@@ -98,12 +98,11 @@ def run_metropolis(model, target, x_init, n_steps):
     return torch.stack(xs), torch.stack(accs)
 """
 
+# MCMC we are running Metropolis-Hastings
 def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture=False):
     
     import gpaw.mpi as mpi
     rank = mpi.world.rank
-
-    torch.manual_seed(42)
 
     xs = []
     accs = []
@@ -120,8 +119,6 @@ def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture
     beta = 1/(kb*T)
 
     for dt in range(n_steps):
-        print('Iteration: ', dt)
-
         
         if mixture:
             x, count = model.sample(n_sample, return_mus=True)
@@ -131,12 +128,6 @@ def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture
                         
         x = torch.tensor(x).detach().float()
         count = torch.tensor(count).detach().float()
-
-        #print('Init: \n', rank, x_init)
-        print('Propusal: ', x)
-        
-        #print('Counts init: \n', count_init)
-        #print('Counts: \n', count)
     
         x = Angles_transformation(x)
         x_init = Angles_transformation(x_init)
@@ -174,18 +165,11 @@ def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture
             acc[indexes_nc] = torch.full((1, len(indexes_nc)), False)
     
         mpi.world.barrier()
-        print('Init: \n', x_init)
-        print('Propusal: \n', x)
-        print('\n')
-        print('Acceptance: \n', acc)
-    
-        mpi.world.barrier()
 
         x[~acc] = x_init[~acc]
         U[~acc] = u_init[~acc]
     
         mpi.world.barrier()
-        print('Init + accepted: \n', x)
         
         if mixture:
             count[~acc] = count_init[~acc]
@@ -205,14 +189,11 @@ def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture
         count_init = count.clone().detach()
         
         mpi.world.barrier()
-        print('Counts init: \n', count_init)
         
         x_init = Angles_transformation(x_init)
         x_init.inv_transf()
     
         mpi.world.barrier()
-        
-        print('New Init: \n', rank, x_init)
         
         print("Acceptance porcentage: %.1f%%"%(np.array(acc).sum()*100/len(acc)))
 

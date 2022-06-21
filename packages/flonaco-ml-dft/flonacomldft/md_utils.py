@@ -106,6 +106,8 @@ def get_internal_coordinates(traj):
 
     return torch.from_numpy(new_zmat).float()
 
+# Molecular structures, minimums
+
 def get_is1():
     pos = np.array([[7.9804600, 5.464791, 8.0],
                     [7.9611420, 10.16485, 8.0],
@@ -126,36 +128,38 @@ def get_is2():
     isomer = Atoms('Ag6', positions=pos)
     return isomer
 
+# Running MD
 def run_molecular_dynamics(molecule, iters, name, i):
     import gpaw.mpi as mpi
     rank = mpi.world.rank
 
     ceph_home = get_path()
     mol = molecule
-    
-    torch.manual_seed(42)
 
-    #Add attribute if you build a class to write the isomer_file
-    
+    #Setting the cell
+
     mol.set_cell([16, 16, 16])
     mol.set_pbc(True)
     mol.center()
 
+    # Building calculator
     calc = GPAW(mode="lcao", h=0.2, basis="pvalence.dz", spinpol=True, xc="PBE", symmetry="off", nbands = -4, txt='ag6_md_.out')
 
     mol.set_calculator(calc)
 
+    # Adding conditions to the MD simulation
     MaxwellBoltzmannDistribution(mol, temperature_K=300)
     Stationary(mol)
     ZeroRotation(mol)
     
     file = ceph_home+'ag6_'+name+'_'+str(i)+'.traj'
 
+    # Running the MD
     dyn = NVTBerendsen(mol, 5 * units.fs, taut = 50, temperature_K=300, trajectory=file)
-    #print('rank, md_pos', rank, mol.positions)
-    #print(rank, iters)
     dyn.run(iters)
     
+    # Getting the MD trajectory
     mpi.world.barrier()
     traj = Trajectory(file)
+
     return traj
