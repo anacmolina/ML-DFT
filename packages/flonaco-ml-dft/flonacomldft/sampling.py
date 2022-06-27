@@ -13,7 +13,7 @@ import torch
 from ase.parallel import parprint as print
 from datetime import datetime
 from flonacomldft.dft_utils import (
-    Angles_transformation,
+    Angles_mapping,
     Structure
 )
 
