@@ -118,6 +118,8 @@ def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture
     kb = 8.617333262e-5
     beta = 1/(kb*T)
 
+    M = Angles_mapping()
+
     for dt in range(n_steps):
         
         if mixture:
@@ -129,14 +131,16 @@ def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture
         x = torch.tensor(x).detach().float()
         count = torch.tensor(count).detach().float()
     
-        x = Angles_transformation(x)
-        x_init = Angles_transformation(x_init)
+        #x = Angles_transformation(x)
+        #x_init = Angles_transformation(x_init)
     
         nll_x = model.nll(x)
         nll_x_init = model.nll(x_init)
     
-        x.transf()
-        x_init.transf()
+        M.mapping(x)
+        M.mapping(x_init)
+        #x.transf()
+        #x_init.transf()
     
         ag6 = Structure()
         
@@ -190,9 +194,11 @@ def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture
         
         mpi.world.barrier()
         
-        x_init = Angles_transformation(x_init)
-        x_init.inv_transf()
+        #x_init = Angles_transformation(x_init)
+        #x_init.inv_transf()
     
+        M.inv_mapping(x_init)
+
         mpi.world.barrier()
         
         print("Acceptance porcentage: %.1f%%"%(np.array(acc).sum()*100/len(acc)))
