@@ -13,7 +13,7 @@ import gpaw.mpi as mpi
 rank = mpi.world.rank
 
 # Transformation for angles (torch.tensor)
-
+# Changes
 class Angles_transformation(torch.Tensor):
    def __init__(self, x_):
       super().__init__()
