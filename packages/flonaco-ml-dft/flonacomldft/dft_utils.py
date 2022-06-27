@@ -12,41 +12,32 @@ import matplotlib.pyplot as plt
 import gpaw.mpi as mpi
 rank = mpi.world.rank
 
-# Transformation for angles (torch.tensor)
+# Angles mapping (Object)
 
-class Angles_transformation(torch.Tensor):
-   def __init__(self, x_):
-      super().__init__()
-      
-      if torch.is_tensor(x_):
-         pass
-      else:
-         raise RuntimeError("It must be a tensor")
-      
-      self.x = x_
 
-      print(self.x, self.x.shape)
-      if(len(self.x.shape)==1):
-         self.x = self.x.reshape(1, 12)
-      
-      print(self.x, self.x.shape)
+class Angles_mapping:
+    
+    def __init__(self, n=5):
+        self.n = n
+    
+    def tensor_checking(self, x):
+        if torch.is_tensor(x):
+             pass
+        else:
+             raise RuntimeError("It must be a tensor")
+        
+        if len(x.shape)==2:
+            pass
+        else:
+            raise RuntimeError("Shape not accepted")
 
-      self.dims = self.x.shape[1]
-      self.Nsample = self.x.shape[0]
-
-      print(self.dims, self.Nsample)   
-      if self.dims==12:
-         self.n = 5
-      else:
-         raise RuntimeError('Can not define transformation')
-
-   def transf(self):
-         self.x[:,self.n:] = torch.tan(self.x[:,self.n:])
-         #self.x = self.x.reshape(self.Nsample, self.dims)
-         
-   def inv_transf(self):
-         self.x[:,self.n:] = torch.arctan(self.x[:,self.n:])
-         #self.x = self.x.reshape(self.Nsample, self.dims)
+    def mapping(self, x):
+        self.tensor_checking(x)
+        x[:, self.n:] = x[:, self.n:].tan()
+        
+    def inv_mapping(self, x):
+        self.tensor_checking(x)
+        x[:, self.n:] = x[:, self.n:].arctan()
    
 # Getting the construction table for each isomer        
 def get_construction_table():
@@ -58,7 +49,7 @@ def get_construction_table():
    construction_table1['a'] = ['e_z', 'e_z', 0, 3, 2, 2]
    construction_table1['d'] = ['e_x', 'e_x', 'e_x', 0, 3, 3]
       
-   return(construction_table1)        
+   return construction_table1        
          
 # Calculating the energy (pd.DataFrame, np.array or list, int)
 class Structure:
