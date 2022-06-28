@@ -11,7 +11,8 @@ import random
 # Angles transformation is for applying tan and arctan to the angles
 # Structure is a class to build the atom and calculate the energy 
 from flonacomldft.dft_utils import (
-    Angles_transformation,
+    #Angles_transformation,
+    Angles_mapping,
     Structure
 )
 
@@ -102,13 +103,16 @@ while j<3:
 
     mpi.world.barrier()
 
+    M = Angles_mapping()
+
     #Getting the last molecular structure of MH
 
     ag6 = Structure()
     x_new = mcmc[0][-1, :]
     c_new = mcmc[-1][-1]
-    x_new = Angles_transformation(x_new)
-    x_new.transf()
+    #x_new = Angles_transformation(x_new)
+    #x_new.transf()
+    Angles_mapping.mapping(x_new)
     ag6.build_zmat_matrix(x_new[0])
     is_ = ag6.molecule
 

@@ -8,7 +8,8 @@ import pandas as pd
 import copy
 
 from flonacomldft.dft_utils import (
-    Angles_transformation,
+    #Angles_transformation,
+    Angles_mapping,
     Structure
 )
 
@@ -48,6 +49,7 @@ torch.manual_seed(42)
 
 mpi.world.barrier()
 
+M = Angles_mapping()
 
 ceph_home = get_path()
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -95,8 +97,10 @@ def run_NF(molecule, iterations, name, model=None, i=0):
     else:
         raise RuntimeError('Can not find isomer!')
     
-    x_tensor = Angles_transformation(x_tensor)
-    x_tensor.inv_transf()
+    #x_tensor = Angles_transformation(x_tensor)
+    #x_tensor.inv_transf()
+
+    M.inv_mapping(x_tensor)
 
     if i==0:
         model = init_model(mean, cov)    
@@ -160,8 +164,9 @@ while j<3:
     print('mcmc_real', mcmc[0])
     x_new = mcmc[0][-1, :]
     c_new = mcmc[-1][-1]
-    x_new = Angles_transformation(x_new)
-    x_new.transf()
+    #x_new = Angles_transformation(x_new)
+    #x_new.transf()
+    M.mapping(x_new)
     print('mh results',rank, x_new)
     ag6.build_zmat_matrix(x_new[0])
     is_ = ag6.molecule

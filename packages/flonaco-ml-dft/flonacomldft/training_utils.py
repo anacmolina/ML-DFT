@@ -11,7 +11,7 @@ from flonacomldft.md_utils import (
 )
 
 from flonacomldft.dft_utils import (
-    Angles_transformation
+    Angles_mapping
 )
 
 def init_model(mean, cov, device):
@@ -57,8 +57,10 @@ def run_NF(molecule, iterations, name, device, model, i):
     else:
         raise RuntimeError('Can not find isomer!')
     
-    x_tensor = Angles_transformation(x_tensor)
-    x_tensor.inv_transf()
+    M = Angles_mapping()
+    M.inv_mapping(x_tensor)
+    #x_tensor = Angles_transformation(x_tensor)
+    #x_tensor.inv_transf()
 
     if i==0:
         model = init_model(mean, cov, device)    
