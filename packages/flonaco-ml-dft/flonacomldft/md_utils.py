@@ -1,10 +1,12 @@
 #from ase.parallel import parprint as print
 
 import os
+import pickle
+
 import numpy as np
 import pandas as pd
 import torch
-import pickle
+
 import chemcoord as cc
 from flonacomldft.dft_utils import get_construction_table
 

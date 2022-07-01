@@ -2,56 +2,57 @@
 
 import numpy as np
 import pandas as pd
-import ase
-import chemcoord as cc
-import torch
-from gpaw import GPAW
-
 import matplotlib.pyplot as plt
 
-import gpaw.mpi as mpi
-rank = mpi.world.rank
+import torch
 
-# Angles mapping (Object)
+import ase
+import chemcoord as cc
+from gpaw import GPAW
 
 
+
+#import gpaw.mpi as mpi
+#rank = mpi.world.rank
+
+# Angles mapping (Object) Makes mapping (tangent or arctangent) to the tensor that receives
 class Angles_mapping:
     
     def __init__(self, n=5):
         self.n = n
     
-    def tensor_checking(self, x):
-        if torch.is_tensor(x):
+    def tensor_checking(self, tensor):
+        if torch.is_tensor(tensor):
              pass
         else:
              raise RuntimeError("It must be a tensor")
         
-        if len(x.shape)==2:
+        if len(tensor.shape)==2:
             pass
         else:
             raise RuntimeError("Shape not accepted")
 
-    def mapping(self, x):
-        self.tensor_checking(x)
-        x[:, self.n:] = x[:, self.n:].tan()
+    def mapping(self, tensor):
+        self.tensor_checking(tensor)
+        tensor[:, self.n:] = tensor[:, self.n:].tan()
         
-    def inv_mapping(self, x):
-        self.tensor_checking(x)
-        x[:, self.n:] = x[:, self.n:].arctan()
+    def inv_mapping(self, tensor):
+        self.tensor_checking(tensor)
+        tensor[:, self.n:] = tensor[:, self.n:].arctan()
    
-# Getting the construction table for each isomer        
+# Construction table for both isomers, pandas dataframe (convention we chose)
 def get_construction_table():
 
    index = np.append(0, np.append(np.arange(2,6), 1))
-   construction_table1 = pd.DataFrame(index=index)
+   construction_table = pd.DataFrame(index=index)
       
-   construction_table1['b'] = ['origin', 0, 2, 2, 4, 4]
-   construction_table1['a'] = ['e_z', 'e_z', 0, 3, 2, 2]
-   construction_table1['d'] = ['e_x', 'e_x', 'e_x', 0, 3, 3]
+   construction_table['b'] = ['origin', 0, 2, 2, 4, 4]
+   construction_table['a'] = ['e_z', 'e_z', 0, 3, 2, 2]
+   construction_table['d'] = ['e_x', 'e_x', 'e_x', 0, 3, 3]
       
-   return construction_table1        
+   return construction_table        
          
-# Calculating the energy (pd.DataFrame, np.array or list, int)
+# Structure: Class that uses construction table and symbols to build a molecules
 class Structure:
    def __init__(self, construction_table_=get_construction_table(), symbols_=np.full(6, 'Ag')):
       super().__init__()
@@ -148,9 +149,9 @@ class Structure:
       # Calculating the potential energy
       self.potential_energy = self.molecule.get_potential_energy()
    
-# Getting the collective variables
+# Getting the collective variables from internal coordinates
 def get_CVs(data):
-   symbols = np.full(6, 'Ag')
+   #symbols = np.full(6, 'Ag')
    C_vals = []
    R_vals = []
    for x in data:
@@ -170,18 +171,19 @@ def X_i(i, r):
       if(i!=j):
          value = value + (1 - rij_d(r[i][j])**8)/(1 - rij_d(r[i][j])**16)
    return value
-         
+
+# Coordination number  
 def C(atoms):
    r = atoms.get_all_distances()
    return np.array([X_i(i, r) for i in range(atoms.get_global_number_of_atoms())]).sum()
 
+# Radius of gyration
 def R(atoms):
    r_rcm = atoms.get_positions() - atoms.get_center_of_mass()
    result = np.sqrt(np.array([np.linalg.norm(ri)**2 for ri in r_rcm]).sum()/atoms.get_global_number_of_atoms())
    return result         
 
-#Plotting FES and database
-
+# Plotting FES and database
 def plotting_fes_db(train_data=None):
    from flonacomldft.FES.plotter2 import Plotter
    from flonacomldft.md_utils import get_path
@@ -213,7 +215,7 @@ def plotting_fes_db(train_data=None):
    
    return ax
 
-# Plot a molecule 2D (Plot with structure NOT always center!)    
+# Plot a molecule 2D (Plot with structure NOT center!)    
 def plot_sample(x):
    from ase.visualize.plot import plot_atoms
    fig, ax = plt.subplots()
