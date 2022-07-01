@@ -132,8 +132,8 @@ def get_is2():
 
 # Running MD
 def run_molecular_dynamics(molecule, iters, name):
-    #import gpaw.mpi as mpi
-    #rank = mpi.world.rank
+    import gpaw.mpi as mpi
+    rank = mpi.world.rank
 
     ceph_home = get_path()
     mol = molecule
@@ -161,7 +161,7 @@ def run_molecular_dynamics(molecule, iters, name):
     dyn.run(iters)
     
     # Getting the MD trajectory
-    #mpi.world.barrier()
+    mpi.world.barrier()
     traj = Trajectory(file)
 
     return traj
