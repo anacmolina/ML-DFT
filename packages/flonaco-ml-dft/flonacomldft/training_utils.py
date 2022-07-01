@@ -46,7 +46,7 @@ def run_NF(molecule, iterations, name, device, model, i):
     u_tensor = zmat[:, -1]
     x_tensor = zmat[:, :-1]
 
-    cov = torch.cov(x_tensor.T)
+    #cov = torch.cov(x_tensor.T)
     cov = torch.eye(12)*cov.mean()
     mean = x_tensor.mean(0)
 

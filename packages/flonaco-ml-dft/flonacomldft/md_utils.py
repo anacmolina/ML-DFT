@@ -129,9 +129,9 @@ def get_is2():
     return isomer
 
 # Running MD
-def run_molecular_dynamics(molecule, iters, name, i):
-    import gpaw.mpi as mpi
-    rank = mpi.world.rank
+def run_molecular_dynamics(molecule, iters, name):
+    #import gpaw.mpi as mpi
+    #rank = mpi.world.rank
 
     ceph_home = get_path()
     mol = molecule
@@ -143,7 +143,7 @@ def run_molecular_dynamics(molecule, iters, name, i):
     mol.center()
 
     # Building calculator
-    calc = GPAW(mode="lcao", h=0.2, basis="pvalence.dz", spinpol=True, xc="PBE", symmetry="off", nbands = -4, txt='ag6_md_.out')
+    calc = GPAW(mode="lcao", h=0.2, basis="pvalence.dz", spinpol=True, xc="PBE", symmetry="off", nbands = -4, txt='ag6_md_'+name+'.out')
 
     mol.set_calculator(calc)
 
@@ -152,14 +152,14 @@ def run_molecular_dynamics(molecule, iters, name, i):
     Stationary(mol)
     ZeroRotation(mol)
     
-    file = ceph_home+'ag6_'+name+'_'+str(i)+'.traj'
+    file = ceph_home+'ag6_'+name+'.traj'
 
     # Running the MD
     dyn = NVTBerendsen(mol, 5 * units.fs, taut = 50, temperature_K=300, trajectory=file)
     dyn.run(iters)
     
     # Getting the MD trajectory
-    mpi.world.barrier()
+    #mpi.world.barrier()
     traj = Trajectory(file)
 
     return traj

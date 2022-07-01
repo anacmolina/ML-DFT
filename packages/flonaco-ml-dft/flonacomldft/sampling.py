@@ -121,6 +121,8 @@ def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture
     M = Angles_mapping()
 
     for dt in range(n_steps):
+
+        M.inv_mapping(x_init)
         
         if mixture:
             x, count = model.sample(n_sample, return_mus=True)
@@ -197,13 +199,14 @@ def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture
         #x_init = Angles_transformation(x_init)
         #x_init.inv_transf()
     
-        M.inv_mapping(x_init)
+        #M.inv_mapping(x_init)
 
         mpi.world.barrier()
         
         print("Acceptance porcentage: %.1f%%"%(np.array(acc).sum()*100/len(acc)))
 
-    return torch.stack(xs), torch.stack(accs), torch.stack(us), torch.stack(nlls), torch.stack(counts)
+    #return torch.stack(xs), torch.stack(accs), torch.stack(us), torch.stack(nlls), torch.stack(counts)
+    return torch.stack(xs), torch.stack(accs), torch.stack(us), torch.stack(counts)
 
 def run_metrolangevin(model, target, x_lang, n_steps, dt, lag=1):
     '''
