@@ -156,6 +156,8 @@ def run_molecular_dynamics(molecule, iters, name):
     
     file = ceph_home+'ag6_'+name+'.traj'
 
+    mpi.world.barrier()
+
     # Running the MD
     dyn = NVTBerendsen(mol, 5 * units.fs, taut = 50, temperature_K=300, trajectory=file)
     dyn.run(iters)
