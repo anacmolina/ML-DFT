@@ -13,11 +13,9 @@ import pandas as pd
 
 from flonacomldft.dft_utils import (
    Structure,
-   AG6_construction_tables,
-   Angles_transformation
 )
 
-from flonacomldft.files_utils import get_path
+from flonacomldft.data_utils import get_path
 
 print("Done\n")
 
@@ -60,7 +58,7 @@ print("Calculating the energy for one configuration")
 
 ag6 = Structure()
 
-for i in range(2):
+for i in range(1):
    startTime = datetime.now()
    ag6.calculate_potential_energy(np.array(X[i]))
    pot_energy = ag6.potential_energy

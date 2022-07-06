@@ -24,7 +24,26 @@ import torch
 
 from ase.io.trajectory import Trajectory
 
+import gpaw.mpi as mpi
+
 from flonacomldft.sampling import run_metropolis
+
+ranks = np.arange(0, mpi.world.size)
+rank = mpi.world.rank
+comm = mpi.world.new_communicator(ranks)
+
+num_seed = np.array([0])
+
+if rank == 0:
+    num_seed = np.array([np.random.randint(1e5)])
+    print(rank, num_seed)
+    
+comm.broadcast(num_seed, 0)
+
+print(rank, num_seed)
+torch.manual_seed(num_seed[0])
+
+mpi.world.barrier()
 
 ceph_home = get_path()
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -82,7 +101,7 @@ def run_nf(zmat, model):
     M = Angles_mapping()
     M.inv_mapping(x_tensor)
 
-    model_init = copy.deepcopy(model)
+    model_init = copy.deepcopy(model) # Do I need this?
 
     _ = train(model, 
            x_tensor,
@@ -179,6 +198,7 @@ for i in range(2):
     data_is2 = torch.cat((data_is2, is2_acc))
     
     x_ = xs_acc[i].unique_consecutive(dim=0)[-1]
+    u_ = us_acc[i].unique_consecutive(dim=0)[-1]
     c_ = cs_acc[i].unique_consecutive(dim=0)[-1]
     
     ag6 = Structure()
@@ -211,7 +231,7 @@ for i in range(2):
     models.append([model_is1, model_is2])
     
     mixture = Mixture(models[i+1], torch.tensor([0.75, 0.25]).detach())
-    xs__, accs__, us__, counts__ = run_metropolis(model=mixture, u_init=uis, x_init=xis, count_init=cis, n_sample=n_chains, n_steps=n_sts, mixture=True)
+    xs__, accs__, us__, counts__ = run_metropolis(model=mixture, u_init=u_, x_init=x_, count_init=cis, n_sample=n_chains, n_steps=n_sts, mixture=True)
 
     xs_acc.append(xs__)
     accs_s.append(accs__)
