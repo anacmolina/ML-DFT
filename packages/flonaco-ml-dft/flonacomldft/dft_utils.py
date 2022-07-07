@@ -1,21 +1,17 @@
-#from ase.parallel import parprint as print
+import os
+import pickle
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
 import torch
 
 #from ase.parallel import parprint as print
-
-import os
-import pickle
 
 import ase
 import chemcoord as cc
 from gpaw import GPAW
 from ase import Atoms
-from ase.io import read # Check if it's need it
 from ase.optimize import BFGS
 from ase.md.nvtberendsen import NVTBerendsen
 from ase import units
@@ -26,7 +22,23 @@ from ase.io import Trajectory
 #import gpaw.mpi as mpi
 #rank = mpi.world.rank
 
-# Angles mapping (Object) Makes mapping (tangent or arctangent) to the tensor that receives
+"""
+---------------------------
+| Angles mapping (Object) |
+---------------------------
+
+Mapping: tangent
+Inverse Mapping: arctangent
+
+Accepts only tensor type, size(s, l)
+
+y = x[s, n:], n<l
+
+n: Element to start mapping or inv_mapping
+
+y --> inv_mapping(y) --> y_M
+y_M --> mapping(y) --> y
+"""
 class Angles_mapping:
     
     def __init__(self, n=5):
@@ -50,7 +62,15 @@ class Angles_mapping:
     def inv_mapping(self, tensor):
         self.tensor_checking(tensor)
         tensor[:, self.n:] = tensor[:, self.n:].arctan()
-   
+
+"""
+---------------------------
+| Construction table      |
+---------------------------
+
+Internal coordinates (ZMAT)
+
+"""
 # Construction table for both isomers, pandas dataframe (convention we chose)
 def get_construction_table():
 
@@ -63,6 +83,17 @@ def get_construction_table():
       
    return construction_table        
          
+"""
+---------------------------
+| Structure (Object)      |
+---------------------------
+
+zmat ---> xyz
+xyz <--- zmat
+
+get_potential_energy()
+"""
+
 # Structure: Class that uses construction table and symbols to build a molecules
 class Structure:
    def __init__(self, construction_table_=get_construction_table(), symbols_=np.full(6, 'Ag')):

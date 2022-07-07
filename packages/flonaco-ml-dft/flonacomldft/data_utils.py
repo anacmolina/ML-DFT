@@ -5,7 +5,10 @@ import numpy as np
 import pandas as pd
 import torch
 
-# Get path to database
+# Build a folder to save all trajectories
+
+
+# Path to database folder
 def get_path():
    if os.path.isdir('/mnt/home/amolina/ceph/database/'):
       ceph_home = '/mnt/home/amolina/ceph/database/'
@@ -19,12 +22,16 @@ def get_path():
       raise RuntimeError('Data path not understood')
    return ceph_home
 
+# def load_pickle_file(file):
 def load_from_pickle(file):
     file_loaded = open(file, 'rb')
     _ = pickle.load(file_loaded)
     file_loaded.close()
     return _
 
+# save_pickle_file()
+
+# load_zmat_csv()
 def load_is_csv(isomer):
     ceph_home = get_path()
     file = '_lcao_zmat.csv'
@@ -37,3 +44,5 @@ def load_is_csv(isomer):
     else:
         raise RuntimeError('Can not find isomer!')
     return x_init, u_init, count_init
+
+# save_zmat_csv()
