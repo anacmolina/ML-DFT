@@ -86,12 +86,12 @@ MCMC parameters:
     - n_sts: MCMC steps
 """
 
-n_runs = 1
+n_runs = 10
 n_chains = 1
 n_sts = 3
 
 # MD iterations
-md_iters = 2
+md_iters = 10
 
 # Building the NF mixture model
 mixture = Mixture(models[0], torch.tensor([0.75, 0.25]).detach())
@@ -150,7 +150,7 @@ for i in range(n_runs):
         raise RuntimeError('Unknown value')
 
     mpi.world.barrier()
-    if ((i+1)%5==0):
+    if ((i+1)%2==0):
         md_data = run_md_get_zmat(ag6.molecule, md_iters, name+'_'+str(i+1))
     
         if c_==0:
@@ -178,7 +178,7 @@ for i in range(n_runs):
     us_acc.append(us__)                    
     cs_acc.append(counts__)
 
-    filename_ = 'mcmc_md_'+str(n_runs)+'_'+str(n_chains)+'_'+str(n_sts)
+    filename_ = 'mcmc_md_'+str(i)+'_'+str(n_chains)+'_'+str(n_sts)
     save_pickle_file([xs_acc, us_acc, accs_s, cs_acc], filename_)
 
 mcmc_md = [data_is1, data_is2, xs_acc, accs_s, us_acc, cs_acc]
