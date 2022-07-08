@@ -9,7 +9,7 @@ import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 
-from flonacomldft.md_utils import (
+from flonacomldft.dft_utils import (
     get_is1, 
     get_is2, 
     get_path,
