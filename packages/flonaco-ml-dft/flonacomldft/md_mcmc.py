@@ -12,11 +12,12 @@ import numpy as np
 from flonacomldft.dft_utils import (
     get_is1, 
     get_is2, 
-    get_path,
     shuffle_arr,
     run_molecular_dynamics, 
     get_internal_coordinates
 )
+
+from flonacomldft.data_utils import get_path
 
 from flonacomldft.dft_utils import Angles_mapping, Structure
 from flonacomldft.train_from_data import train
