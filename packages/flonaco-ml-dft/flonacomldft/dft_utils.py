@@ -1,5 +1,6 @@
 import os
 import pickle
+from flonacomldft.data_utils import trajectories_folder
 
 import numpy as np
 import pandas as pd
@@ -345,10 +346,20 @@ def get_is2():
 
 # Running MD
 def run_molecular_dynamics(molecule, iters, name):
+    #from flonacomldft.data_utils import trajectories_folder
     import gpaw.mpi as mpi
     rank = mpi.world.rank
 
-    ceph_home = get_path()
+    path = os.path.join(os.getcwd(), 'trajectories')
+    mpi.world.barrier()
+   
+    if rank==0 and os.path.isdir(path)==False:
+       print('Folder created: %s Rank: %d '%(path, rank))
+       os.mkdir(path)
+    else:
+       pass
+    
+    mpi.world.barrier()
     mol = molecule
 
     #Setting the cell
@@ -357,8 +368,10 @@ def run_molecular_dynamics(molecule, iters, name):
     mol.set_pbc(True)
     mol.center()
 
+    file = path+'/ag6_'+name
+
     # Building calculator
-    calc = GPAW(mode="lcao", h=0.2, basis="pvalence.dz", spinpol=True, xc="PBE", symmetry="off", nbands = -4, txt='ag6_md_'+name+'.out')
+    calc = GPAW(mode="lcao", h=0.2, basis="pvalence.dz", spinpol=True, xc="PBE", symmetry="off", nbands = -4, txt=file+'.out')
 
     mol.set_calculator(calc)
 
@@ -366,17 +379,16 @@ def run_molecular_dynamics(molecule, iters, name):
     MaxwellBoltzmannDistribution(mol, temperature_K=300)
     Stationary(mol)
     ZeroRotation(mol)
-    
-    file = ceph_home+'ag6_'+name+'.traj'
 
     mpi.world.barrier()
 
     # Running the MD
-    dyn = NVTBerendsen(mol, 5 * units.fs, taut = 50, temperature_K=300, trajectory=file)
+    dyn = NVTBerendsen(mol, 5 * units.fs, taut = 50, temperature_K=300, trajectory=file+'.traj')
     dyn.run(iters)
     
     # Getting the MD trajectory
     mpi.world.barrier()
-    traj = Trajectory(file)
+    traj = Trajectory(file+'.traj')
 
     return traj
+

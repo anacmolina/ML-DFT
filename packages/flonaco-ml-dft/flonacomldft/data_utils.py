@@ -5,10 +5,13 @@ import numpy as np
 import pandas as pd
 import torch
 
+from ase.io.trajectory import Trajectory
+
 # Build a folder to save all trajectories
+def trajectories_folder(name='trajectories', path=os.getcwd()):
+    os.makedirs(path+'/'+name)
 
-
-# Path to database folder
+# Path to database folder (initial trajectories)
 def get_path():
    if os.path.isdir('/mnt/home/amolina/ceph/database/'):
       ceph_home = '/mnt/home/amolina/ceph/database/'
@@ -29,9 +32,18 @@ def load_from_pickle(file):
     file_loaded.close()
     return _
 
-# save_pickle_file()
+# save_pickle_file(data, filename)
+def save_pickle_file(data, filename):
+    outfile = open(filename, 'wb')
+    pickle.dump(data, outfile)
+    outfile.close()
 
-# load_zmat_csv()
+
+def load_zmat_csv(isomer):
+    path = get_path()+isomer+'_lcao_zmat.csv'
+    zmat = torch.tensor(pd.read_csv(path).to_numpy()).float()
+    return zmat
+"""
 def load_is_csv(isomer):
     ceph_home = get_path()
     file = '_lcao_zmat.csv'
@@ -44,5 +56,6 @@ def load_is_csv(isomer):
     else:
         raise RuntimeError('Can not find isomer!')
     return x_init, u_init, count_init
-
+"""
 # save_zmat_csv()
+

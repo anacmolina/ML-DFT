@@ -119,6 +119,7 @@ def get_mix_data(data_1, data_2):
     cis = shuffle_arr([ci_is1, ci_is2], indexes)
     return xis, uis, cis
 
+"""
 def md_mcmc(molecules, states, models, trainig_data, arg_md, arg_mcmc):
 
     data = []
@@ -132,3 +133,4 @@ def md_mcmc(molecules, states, models, trainig_data, arg_md, arg_mcmc):
 
 
     return 0
+"""
