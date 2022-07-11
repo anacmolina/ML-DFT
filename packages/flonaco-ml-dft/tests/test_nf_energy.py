@@ -71,8 +71,8 @@ def train_isomer(data):
 
     _ = train(model, 
             data,
-            n_iter=500,
-            lr=1e-2,
+            n_iter=2500,
+            lr=1e-3,
             bs=10,
             use_scheduler=False,
             step_schedule=100,

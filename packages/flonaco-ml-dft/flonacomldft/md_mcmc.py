@@ -90,8 +90,8 @@ def run_nf(zmat, model):
 
     _ = train(model, 
            x_tensor,
-           n_iter=100,
-           lr=5e-2,
+           n_iter=1000,
+           lr=1e-3,
            bs=100,
            use_scheduler=False,
            step_schedule=100,
