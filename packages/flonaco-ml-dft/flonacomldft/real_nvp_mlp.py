@@ -80,7 +80,7 @@ class RealNVP_MLP(nn.Module):
                  prior_arg={'type': 'standn'},
                  mask_type='half',  
                  hidden_dim=100,
-                 hidden_depth=3,
+                 hidden_depth=10,
                  hidden_bias=True,
                  hidden_activation=torch.relu,
                  device='cpu'):

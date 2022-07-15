@@ -23,6 +23,43 @@ from ase.io import Trajectory
 #import gpaw.mpi as mpi
 #rank = mpi.world.rank
 
+
+
+class Angles_transformation(torch.Tensor):
+   def __init__(self, x_):
+      super().__init__()
+
+      if torch.is_tensor(x_):
+         pass
+      else:
+         raise RuntimeError("It must be a tensor")
+
+      self.x = x_
+
+      print(self.x, self.x.shape)
+      if(len(self.x.shape)==1):
+         self.x = self.x.reshape(1, 12)
+
+      print(self.x, self.x.shape)
+
+      self.dims = self.x.shape[1]
+      self.Nsample = self.x.shape[0]
+
+      print(self.dims, self.Nsample)   
+      if self.dims==12:
+         self.n = 5
+      else:
+         raise RuntimeError('Can not define transformation')
+
+   def transf(self):
+         self.x[:,self.n:] = torch.tan(self.x[:,self.n:])
+         #self.x = self.x.reshape(self.Nsample, self.dims)
+
+   def inv_transf(self):
+         self.x[:,self.n:] = torch.arctan(self.x[:,self.n:])
+         #self.x = self.x.reshape(self.Nsample, self.dims)
+
+
 """
 ---------------------------
 | Angles mapping (Object) |
@@ -345,7 +382,7 @@ def get_is2():
     return isomer
 
 # Running MD
-def run_molecular_dynamics(molecule, iters, name):
+def run_molecular_dynamics(molecule, iters, name, starting=True):
     #from flonacomldft.data_utils import trajectories_folder
     import gpaw.mpi as mpi
     rank = mpi.world.rank
@@ -374,11 +411,14 @@ def run_molecular_dynamics(molecule, iters, name):
     calc = GPAW(mode="lcao", h=0.2, basis="pvalence.dz", spinpol=True, xc="PBE", symmetry="off", nbands = -4, txt=file+'.out')
 
     mol.set_calculator(calc)
-
-    # Adding conditions to the MD simulation
-    MaxwellBoltzmannDistribution(mol, temperature_K=300)
-    Stationary(mol)
-    ZeroRotation(mol)
+   
+    if starting==True:
+       # Adding conditions to the MD simulation
+       MaxwellBoltzmannDistribution(mol, temperature_K=300)
+       Stationary(mol)
+       ZeroRotation(mol)
+    else:
+       pass
 
     mpi.world.barrier()
 
