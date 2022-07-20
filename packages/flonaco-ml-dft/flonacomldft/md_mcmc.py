@@ -41,8 +41,8 @@ def get_pos_energy(zmat):
     return x_tensor, u_tensor
 
 # move to dft_utils.py
-def run_md_get_zmat(molecule, iterations, file_name):
-    traj = run_molecular_dynamics(molecule, iterations, file_name)
+def run_md_get_zmat(molecule, iterations, file_name, starting=True):
+    traj = run_molecular_dynamics(molecule, iterations, file_name, starting)
     zmat = get_internal_coordinates(traj).detach()
     return zmat
 

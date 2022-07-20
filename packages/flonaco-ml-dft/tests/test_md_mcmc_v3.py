@@ -11,7 +11,8 @@ from flonacomldft.sampling import run_metropolis
 from flonacomldft.data_utils import (
     get_path,
     load_zmat_csv,
-    save_pickle_file
+    save_pickle_file,
+    load_from_pickle
     )
 
 from flonacomldft.dft_utils import (
@@ -65,8 +66,10 @@ data_is1 = load_zmat_csv('is1')
 data_is2 = load_zmat_csv('is2')
 
 # Train initial NFs
-init_nf_is1 = run_nf(data_is1, init_model(data_is1))
-init_nf_is2 = run_nf(data_is2, init_model(data_is2))
+#init_nf_is1 = run_nf(data_is1, init_model(data_is1))
+#init_nf_is2 = run_nf(data_is2, init_model(data_is2))
+init_nf_is1 = load_from_pickle(get_path() + 'training_is1')
+init_nf_is2 = load_from_pickle(get_path() + 'training_is2')
 """ 
 List to save info:
 

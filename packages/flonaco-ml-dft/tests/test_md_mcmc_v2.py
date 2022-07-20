@@ -11,7 +11,8 @@ from flonacomldft.sampling import run_metropolis
 from flonacomldft.data_utils import (
     get_path,
     load_zmat_csv,
-    save_pickle_file
+    save_pickle_file,
+    load_from_pickle
     )
 
 from flonacomldft.dft_utils import (
@@ -65,14 +66,17 @@ data_is1 = load_zmat_csv('is1')
 data_is2 = load_zmat_csv('is2')
 
 # Train initial NFs
-init_nf_is1 = run_nf(data_is1, init_model(data_is1))
-init_nf_is2 = run_nf(data_is2, init_model(data_is2))
+#init_nf_is1 = run_nf(data_is1, init_model(data_is1))
+#init_nf_is2 = run_nf(data_is2, init_model(data_is2))
 """ 
 List to save info:
 
     - NFs trained
     - Models
 """
+init_nf_is1 = load_from_pickle(get_path() + 'training_is1')
+init_nf_is2 = load_from_pickle(get_path() + 'training_is2')
+
 nf = [[init_nf_is1, init_nf_is2], ]
 models = [get_models(nf[0]), ]
 
@@ -86,12 +90,12 @@ MCMC parameters:
     - n_sts: MCMC steps
 """
 
-n_runs = 10
+n_runs = 20
 n_chains = 1
-n_sts = 3
+n_sts = 200
 
 # MD iterations
-md_iters = 10
+md_iters = 1000
 
 # Building the NF mixture model
 mixture = Mixture(models[0], torch.tensor([0.75, 0.25]).detach())
@@ -150,7 +154,7 @@ for i in range(n_runs):
         raise RuntimeError('Unknown value')
 
     mpi.world.barrier()
-    if ((i+1)%2==0):
+    if ((i+1)%4==0):
         md_data = run_md_get_zmat(ag6.molecule, md_iters, name+'_'+str(i+1))
     
         if c_==0:
@@ -179,7 +183,7 @@ for i in range(n_runs):
     cs_acc.append(counts__)
 
     filename_ = 'mcmc_md_'+str(i)+'_'+str(n_chains)+'_'+str(n_sts)
-    save_pickle_file([xs_acc, us_acc, accs_s, cs_acc], filename_)
+    save_pickle_file([xs_acc, us_acc, accs_s, cs_acc, nf], filename_)
 
 mcmc_md = [data_is1, data_is2, xs_acc, accs_s, us_acc, cs_acc]
 
