@@ -23,8 +23,6 @@ from ase.io import Trajectory
 #import gpaw.mpi as mpi
 #rank = mpi.world.rank
 
-
-
 class Angles_transformation(torch.Tensor):
    def __init__(self, x_):
       super().__init__()
