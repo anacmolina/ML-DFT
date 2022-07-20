@@ -90,7 +90,7 @@ def run_nf(zmat, model):
 
     _ = train(model, 
            x_tensor,
-           n_iter=5000,
+           n_iter=3000,
            lr=5e-3,
            bs=100,
            use_scheduler=False,
