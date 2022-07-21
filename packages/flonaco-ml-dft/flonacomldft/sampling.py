@@ -170,9 +170,12 @@ def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture
         if(indexes_nc.shape[0] != 0):
             acc[indexes_nc] = torch.full((1, len(indexes_nc)), False)
     
+
         mpi.world.barrier()
-        
-        print(u[0], U[0], u_init[0], acc[0], count[0])
+
+        print(u, ratio, U, u_init, acc, count)
+
+        mpi.world.barrier()
 
         x[~acc] = x_init[~acc]
         U[~acc] = u_init[~acc]
