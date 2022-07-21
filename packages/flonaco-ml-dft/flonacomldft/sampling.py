@@ -150,12 +150,12 @@ def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture
         indexes_nc = []
         for i in range(n_sample):
             try:
-                print('# Energy sample calculation: ', i)
+                #print('# Energy sample calculation: ', i)
                 ag6.calculate_potential_energy(x[i])
                 U_.append(ag6.potential_energy)
                 #U_.append(-6.3*(1+np.random.rand()*0.1))
             except:
-                print("Error calculating the energy, adding 0 to keep the size. Sample: ", i)
+                #print("Error calculating the energy, adding 0 to keep the size. Sample: ", i)
                 U_.append(0)
                 indexes_nc.append(i)
     
@@ -171,6 +171,8 @@ def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture
             acc[indexes_nc] = torch.full((1, len(indexes_nc)), False)
     
         mpi.world.barrier()
+        
+        print(u[0], U[0], u_init[0], acc[0], count[0])
 
         x[~acc] = x_init[~acc]
         U[~acc] = u_init[~acc]
