@@ -192,7 +192,7 @@ class Structure:
       else:
          raise RuntimeError('Data not valid')
       
-   def calculate_potential_energy(self, zmat_values_=None):
+   def calculate_potential_energy(self, zmat_values_=None, txt='ag6.out'):
       
       if (zmat_values_ is None and self.zmat_values is not None):
          dim = self.zmat_values.shape[0]
@@ -216,7 +216,7 @@ class Structure:
       # DFT calculator low level precision but faster (takes 1 minute in serial)                                \
          
       self.calculator = GPAW(mode = 'lcao', basis='pvalence.dz', h =0.2, xc = 'PBE', spinpol = True, nbands = -4\
-                             , txt='ag6.out')
+                             , txt=txt)
 
       #DFT calculator with higher precision but takes longer (about 30 minutes in serial).                      \
          
