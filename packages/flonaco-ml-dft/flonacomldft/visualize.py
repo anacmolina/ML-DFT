@@ -16,7 +16,6 @@ def plot_sample(x):
    ag6.build_zmat_matrix(x)
    plot_atoms(ag6.molecule, ax)
 
-# Plotting FES and database
 def plotting_fes_db(train_data=None):
    
    ceph_home = get_path()

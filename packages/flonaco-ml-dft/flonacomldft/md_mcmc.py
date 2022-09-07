@@ -1,50 +1,31 @@
-
-# Get init configs <----------|  
-# Run MD                      |
-# Train NF                    |
-# Run MCMC -------------------|
-
 import pickle
+import copy
+import torch
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 from flonacomldft.dft_utils import (
-    #get_is1, 
-    #get_is2, 
-    #shuffle_arr,
-    run_molecular_dynamics, 
-    get_internal_coordinates
+    run_molecular_dynamics
 )
 
 from flonacomldft.data_utils import get_path
 from flonacomldft.internal_coordinates import (
+    get_internal_coordinates,
     Angles_mapping,
     get_pos_energy,
     shuffle_arr
 )
 
-#from flonacomldft.dft_utils import Angles_mapping, Structure
 from flonacomldft.dft_utils import Structure
 from flonacomldft.train_from_data import train
-
-from flonacomldft.training_utils import run_NF
 from flonacomldft.mixture import Mixture
-
 from flonacomldft.real_nvp_mlp import RealNVP_MLP
-import copy
-import torch
+from flonacomldft.sampling import run_metropolis
 
 from ase.io.trajectory import Trajectory
-
 import gpaw.mpi as mpi
 
-from flonacomldft.sampling import run_metropolis
-""" 
-def get_pos_energy(zmat):
-    u_tensor = zmat[:, -1]
-    x_tensor = zmat[:, :-1]
-    return x_tensor, u_tensor """
 
 # move to dft_utils.py
 def run_md_get_zmat(molecule, iterations, file_name, starting=True):
@@ -81,9 +62,6 @@ def init_model(zmat):
 
     return model
 
-def get_models(nf_):
-    return [nf_[0]['models'][-1], nf_[1]['models'][-1]]
-
 def run_nf(zmat, model):
 
     #do clone to copy and not touch the memory space
@@ -96,8 +74,8 @@ def run_nf(zmat, model):
 
     _ = train(model, 
            x_tensor,
-           n_iter=3000,
-           lr=5e-3,
+           n_iter=500,
+           lr=5e-2,
            bs=100,
            use_scheduler=False,
            step_schedule=100,
@@ -111,19 +89,6 @@ def run_nf(zmat, model):
 
     return _
 
-""" def get_mix_data(data_1, data_2):
-    xi_is1, ui_is1 = get_pos_energy(data_1)
-    xi_is2, ui_is2 = get_pos_energy(data_2)
-    ci_is1, ci_is2 = torch.zeros(xi_is1.shape[0]), torch.ones(xi_is2.shape[0]) 
 
-    n_points = xi_is1.shape[0] + xi_is2.shape[0]
-
-    indexes = torch.randperm(n_points)
-
-    # Unifying all data from MD and shuffling in order to to Metropolis-Hastings
-    xis = shuffle_arr([xi_is1, xi_is2], indexes)
-    uis = shuffle_arr([ui_is1, ui_is2], indexes)
-    cis = shuffle_arr([ci_is1, ci_is2], indexes)
-    return xis, uis, cis """
 
 

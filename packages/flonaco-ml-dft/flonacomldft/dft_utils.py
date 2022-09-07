@@ -22,8 +22,6 @@ from ase.io import Trajectory
 
 from flonacomldft.internal_coordinates import get_construction_table
 
-#import gpaw.mpi as mpi
-#rank = mpi.world.rank
 
 class Angles_transformation(torch.Tensor):
    def __init__(self, x_):

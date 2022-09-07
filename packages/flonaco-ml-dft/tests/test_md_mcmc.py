@@ -15,7 +15,6 @@ from flonacomldft.md_utils import (
 from flonacomldft.dft_utils import Angles_mapping, Structure
 from flonacomldft.train_from_data import train
 
-from flonacomldft.training_utils import run_NF
 from flonacomldft.mixture import Mixture
 
 from flonacomldft.real_nvp_mlp import RealNVP_MLP

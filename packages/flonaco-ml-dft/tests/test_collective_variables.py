@@ -84,9 +84,9 @@ model_init = copy.deepcopy(model)
 
 _ = train(model, 
            x_tensor,
-           n_iter=50,
-           lr=5e-1,
-           bs=10,
+           n_iter=100,
+           lr=5e-3,
+           bs=100,
            use_scheduler=False,
            step_schedule=100,
            args_loss={'type': 'fwd', 'samp': 'direct'},
