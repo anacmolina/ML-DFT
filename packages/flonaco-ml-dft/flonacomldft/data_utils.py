@@ -38,11 +38,11 @@ def save_pickle_file(data, filename):
     pickle.dump(data, outfile)
     outfile.close()
 
-
 def load_zmat_csv(isomer):
     path = get_path()+isomer+'_lcao_zmat.csv'
     zmat = torch.tensor(pd.read_csv(path).to_numpy()).float()
     return zmat
+    
 """
 def load_is_csv(isomer):
     ceph_home = get_path()
@@ -57,5 +57,6 @@ def load_is_csv(isomer):
         raise RuntimeError('Can not find isomer!')
     return x_init, u_init, count_init
 """
+
 # save_zmat_csv()
 

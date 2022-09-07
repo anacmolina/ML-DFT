@@ -10,16 +10,22 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from flonacomldft.dft_utils import (
-    get_is1, 
-    get_is2, 
-    shuffle_arr,
+    #get_is1, 
+    #get_is2, 
+    #shuffle_arr,
     run_molecular_dynamics, 
     get_internal_coordinates
 )
 
 from flonacomldft.data_utils import get_path
+from flonacomldft.internal_coordinates import (
+    Angles_mapping,
+    get_pos_energy,
+    shuffle_arr
+)
 
-from flonacomldft.dft_utils import Angles_mapping, Structure
+#from flonacomldft.dft_utils import Angles_mapping, Structure
+from flonacomldft.dft_utils import Structure
 from flonacomldft.train_from_data import train
 
 from flonacomldft.training_utils import run_NF
@@ -34,11 +40,11 @@ from ase.io.trajectory import Trajectory
 import gpaw.mpi as mpi
 
 from flonacomldft.sampling import run_metropolis
-
+""" 
 def get_pos_energy(zmat):
     u_tensor = zmat[:, -1]
     x_tensor = zmat[:, :-1]
-    return x_tensor, u_tensor
+    return x_tensor, u_tensor """
 
 # move to dft_utils.py
 def run_md_get_zmat(molecule, iterations, file_name, starting=True):
@@ -105,7 +111,7 @@ def run_nf(zmat, model):
 
     return _
 
-def get_mix_data(data_1, data_2):
+""" def get_mix_data(data_1, data_2):
     xi_is1, ui_is1 = get_pos_energy(data_1)
     xi_is2, ui_is2 = get_pos_energy(data_2)
     ci_is1, ci_is2 = torch.zeros(xi_is1.shape[0]), torch.ones(xi_is2.shape[0]) 
@@ -118,20 +124,6 @@ def get_mix_data(data_1, data_2):
     xis = shuffle_arr([xi_is1, xi_is2], indexes)
     uis = shuffle_arr([ui_is1, ui_is2], indexes)
     cis = shuffle_arr([ci_is1, ci_is2], indexes)
-    return xis, uis, cis
-
-"""
-def md_mcmc(molecules, states, models, trainig_data, arg_md, arg_mcmc):
-
-    data = []
-
-    for molecule, state in zip(molecules):
-        data_ = run_md_get_zmat(get_is1(), md_iters, str(state))
-        data.append(data_)
-
-    
+    return xis, uis, cis """
 
 
-
-    return 0
-"""

@@ -7,12 +7,10 @@ print("Loading the libraries...")
 import numpy as np
 import torch
 import time
-import os
-import sys
 import pandas as pd
 
 from flonacomldft.dft_utils import (
-   Structure,
+   Structure
 )
 
 from flonacomldft.data_utils import get_path
@@ -26,6 +24,7 @@ dtype=torch.float32
 
 date = time.strftime('%d-%m-%Y')
 random_id = str(np.random.randint(100))
+
 print('random id!', random_id)
 print('Date:', date)
 
@@ -33,40 +32,37 @@ print('Device: %s...\n'%device)
 
 print("Loading the database...")
 
-if(len(sys.argv)>1):
-
-   isomer = sys.argv[1]
-   mode = sys.argv[2]
-
-else:
-   isomer = "is1"
-   mode = "lcao"
-
-name = isomer+"_"+mode
-df = pd.read_csv(ceph_home + name +"_zmat.csv")
+df_is1 = pd.read_csv(ceph_home + "is1_lcao_zmat.csv")
+df_is2 = pd.read_csv(ceph_home + "is2_lcao_zmat.csv")
 
 print("Done\n")
 
 print("Setting the input...")
 
-U = df.energies.to_numpy()
-X = df.drop(['energies'], axis=1).to_numpy()
+U_is1 = df_is1.energies.to_numpy()
+X_is1 = df_is1.drop(['energies'], axis=1).to_numpy()
+
+U_is2 = df_is2.energies.to_numpy()
+X_is2 = df_is2.drop(['energies'], axis=1).to_numpy()
 
 print("Done\n")
 
-print("Calculating the energy for one configuration")
+print("Calculating the energy for the two isomers\n")
 
 ag6 = Structure()
 
-for i in range(1):
-   startTime = datetime.now()
-   ag6.calculate_potential_energy(np.array(X[i]))
-   pot_energy = ag6.potential_energy
-   print("Time: ", datetime.now() - startTime)
+print("t [s] \t PE [eV] \t PE_md [eV] \t Diff [eV]")
+print("------------------------------------------------")
+   
+i = 0
 
-   print("PE calculate \t PE database \t Difference")
-   print("----------------------------------------------------")
-   print("%.5f \t %.5f \t %.5f"%(pot_energy, U[i], pot_energy-U[i]))
+for x, u in zip([X_is1[i], X_is2[i]], [U_is1[i], U_is2[i]] ):
+   startTime = datetime.now()
+   ag6.calculate_potential_energy(np.array(x))
+   pot_energy = ag6.potential_energy
+   t = (datetime.now() - startTime).total_seconds()
+
+   print("%.2f \t %.3f \t %.3f \t %.3f"%(t, pot_energy, u, pot_energy-u))
 
 print("Done\n")
 

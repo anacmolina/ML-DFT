@@ -1,24 +1,29 @@
-import numpy as np
-
-import gpaw.mpi as mpi
-import torch
 import pickle
+
+import torch
+import numpy as np
 import pandas as pd
 
+import gpaw.mpi as mpi
+from ase.parallel import parprint as print
+
 from flonacomldft.dft_utils import (
-    Angles_transformation,
     Structure
 )
 
-from flonacomldft.sampling import run_metropolis
-
-from flonacomldft.files_utils import (
+from flonacomldft.data_utils import (
     get_path,
+    load_zmat_csv,
     load_from_pickle,
-    load_csv, 
-    shuffle_arr
+    save_pickle_file
 )
 
+from flonacomldft.internal_coordinates import (
+    shuffle_arr,
+    get_mix_data
+)
+
+from flonacomldft.sampling import run_metropolis
 from flonacomldft.mixture import Mixture
 
 ranks = np.arange(0, mpi.world.size)
@@ -40,17 +45,10 @@ mpi.world.barrier()
 
 ceph_home = get_path()
 
-xi_is1, ui_is1, ci_is1 = load_csv('is1')
-xi_is2, ui_is2, ci_is2 = load_csv('is2')
+is1 = load_zmat_csv('is1')
+is2 = load_zmat_csv('is2')
 
-n_points = xi_is1.shape[0] + xi_is2.shape[0]
-
-
-indexes = torch.randperm(n_points)
-
-xis = shuffle_arr([xi_is1, xi_is2], indexes)
-uis = shuffle_arr([ui_is1, ui_is2], indexes)
-cis = shuffle_arr([ci_is1, ci_is2], indexes)
+xis, uis, cis = get_mix_data(is1, is2)
 
 train_is1 = load_from_pickle(ceph_home + 'training_is1')
 train_is2 = load_from_pickle(ceph_home + 'training_is2') 
@@ -60,25 +58,14 @@ models = np.array([train_is1['models'][-1],
 
 mixture = Mixture(models, torch.tensor([0.5, 0.5]).detach())
 
-xi_is1 = Angles_transformation(xi_is1)
-xi_is2 = Angles_transformation(xi_is2)
-xis = Angles_transformation(xis)
+n_sts = 5
+n_chains = 3
 
-#xi_is1.inv_transf()
-#xi_is2.inv_transf()
-xis.inv_transf()
-
-n_sts = 2
-n_chains = 2
-
-#_ = run_metropolis(model=models[0], u_init=ui_is1, x_init=xi_is1, count_init=ci_is1, n_sample=100, n_steps=10, mixture=False)
-
-#_ = run_metropolis(model=models[1], u_init=ui_is2, x_init=xi_is2, count_init=ci_is2, n_sample=100, n_steps=10, mixture=False)
-
+#_ = run_metropolis(model=models[0], u_init=ui_is1, x_init=xi_is1, count_init=ci_is1, n_sample=n_chains, n_steps=n_sts, mixture=False)
+#_ = run_metropolis(model=models[1], u_init=ui_is2, x_init=xi_is2, count_init=ci_is2, n_sample=n_chains, n_steps=n_sts, mixture=False)
 _ = run_metropolis(model=mixture, u_init=uis, x_init=xis, count_init=cis, n_sample=n_chains, n_steps=n_sts, mixture=True)
 
-filename = 'metropolis_mix_'+str(n_chains)+'_'+str(n_sts)+''
-outfile = open(filename, 'wb')
-pickle.dump(_, outfile)
-outfile.close()
+#filename = 'metropolis_mix_'+str(n_chains)+'_'+str(n_sts)+''
+#save_pickle_file(_, filename)
 
+print(_)

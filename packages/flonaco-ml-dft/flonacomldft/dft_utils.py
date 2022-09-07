@@ -20,6 +20,8 @@ from ase.md.velocitydistribution import (MaxwellBoltzmannDistribution,
                                          Stationary, ZeroRotation)
 from ase.io import Trajectory
 
+from flonacomldft.internal_coordinates import get_construction_table
+
 #import gpaw.mpi as mpi
 #rank = mpi.world.rank
 
@@ -75,7 +77,7 @@ n: Element to start mapping or inv_mapping
 y --> inv_mapping(y) --> y_M
 y_M --> mapping(y) --> y
 """
-class Angles_mapping:
+""" class Angles_mapping:
     
     def __init__(self, n=5):
         self.n = n
@@ -97,7 +99,7 @@ class Angles_mapping:
         
     def inv_mapping(self, tensor):
         self.tensor_checking(tensor)
-        tensor[:, self.n:] = tensor[:, self.n:].arctan()
+        tensor[:, self.n:] = tensor[:, self.n:].arctan() """
 
 """
 ---------------------------
@@ -108,7 +110,7 @@ Internal coordinates (ZMAT)
 
 """
 # Construction table for both isomers, pandas dataframe (convention we chose)
-def get_construction_table():
+""" def get_construction_table():
 
    index = np.append(0, np.append(np.arange(2,6), 1))
    construction_table = pd.DataFrame(index=index)
@@ -117,7 +119,7 @@ def get_construction_table():
    construction_table['a'] = ['e_z', 'e_z', 0, 3, 2, 2]
    construction_table['d'] = ['e_x', 'e_x', 'e_x', 0, 3, 3]
       
-   return construction_table        
+   return construction_table   """      
          
 """
 ---------------------------
@@ -227,7 +229,7 @@ class Structure:
       # Calculating the potential energy
       self.potential_energy = self.molecule.get_potential_energy()
    
-# Getting the collective variables from internal coordinates
+""" # Getting the collective variables from internal coordinates
 def get_CVs(data):
    #symbols = np.full(6, 'Ag')
    C_vals = []
@@ -259,10 +261,10 @@ def C(atoms):
 def R(atoms):
    r_rcm = atoms.get_positions() - atoms.get_center_of_mass()
    result = np.sqrt(np.array([np.linalg.norm(ri)**2 for ri in r_rcm]).sum()/atoms.get_global_number_of_atoms())
-   return result         
+   return result  """        
 
 # Plotting FES and database
-def plotting_fes_db(train_data=None):
+""" def plotting_fes_db(train_data=None):
    from flonacomldft.FES.plotter2 import Plotter
    from flonacomldft.md_utils import get_path
 
@@ -300,9 +302,9 @@ def plot_sample(x):
    symbols = np.full(6, 'Ag')
    ag6 = Structure()
    ag6.build_zmat_matrix(x)
-   plot_atoms(ag6.molecule, ax)
+   plot_atoms(ag6.molecule, ax) """
 
-def shuffle_arr(vs, indexes):
+""" def shuffle_arr(vs, indexes):
     concat = lambda vs: torch.cat(vs)
     v = concat(vs)
     return v[indexes]
@@ -355,11 +357,11 @@ def get_internal_coordinates(traj):
 
     new_zmat = new_zmat.to_numpy(dtype=np.float32)
 
-    return torch.from_numpy(new_zmat).float()
+    return torch.from_numpy(new_zmat).float() """
 
 # Molecular structures, minimums
 
-def get_is1():
+""" def get_is1():
     pos = np.array([[7.9804600, 5.464791, 8.0],
                     [7.9611420, 10.16485, 8.0],
                     [6.5837500, 7.868667, 8.0],
@@ -377,7 +379,7 @@ def get_is2():
                     [10.284243, 8.272920, 7.161092],
                     [8.0000000, 9.919833, 7.129457]])
     isomer = Atoms('Ag6', positions=pos)
-    return isomer
+    return isomer """
 
 # Running MD
 def run_molecular_dynamics(molecule, iters, name, starting=True):

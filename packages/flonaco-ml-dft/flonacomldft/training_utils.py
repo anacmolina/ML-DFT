@@ -1,18 +1,26 @@
-import torch
-from flonacomldft.real_nvp_mlp import RealNVP_MLP
 import copy
+
+import torch
+
+from flonacomldft.real_nvp_mlp import RealNVP_MLP
 from flonacomldft.train_from_data import train
+from flonacomldft.dft_utils import run_molecular_dynamics
 
-from flonacomldft.md_utils import (
-    get_is1,
-    get_is2,
-    get_internal_coordinates,
-    run_molecular_dynamics
+from flonacomldft.internal_coordinates import (
+    Angles_mapping,
+    get_internal_coordinates
 )
 
-from flonacomldft.dft_utils import (
-    Angles_mapping
-)
+#from flonacomldft.md_utils import (
+    #get_is1,
+    #get_is2,
+    #get_internal_coordinates,
+    #run_molecular_dynamics
+#)
+
+#from flonacomldft.dft_utils import (
+#    Angles_mapping
+#)
 
 def init_model(mean, cov, device):
     args_rnvp = {

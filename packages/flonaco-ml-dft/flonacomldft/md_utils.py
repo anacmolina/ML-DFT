@@ -1,6 +1,6 @@
 #from ase.parallel import parprint as print
 
-import os
+""" import os
 import pickle
 
 import numpy as np
@@ -166,4 +166,4 @@ def run_molecular_dynamics(molecule, iters, name):
     mpi.world.barrier()
     traj = Trajectory(file)
 
-    return traj
+    return traj """
