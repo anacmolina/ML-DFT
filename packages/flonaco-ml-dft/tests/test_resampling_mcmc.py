@@ -1,4 +1,5 @@
 import pickle
+import time
 
 import torch
 import numpy as np
@@ -123,14 +124,18 @@ for i in range(n_runs):
    
     mpi.world.barrier()
     if ((i+1)%2==0):
-        md_data = run_md_get_zmat(ag6.molecule, md_iters, name+'_'+str(i+1), starting=False)
+
+        print("Molecular dynamics run")
+        time.sleep(3)
+        print("Done")
+        """ md_data = run_md_get_zmat(ag6.molecule, md_iters, name+'_'+str(i+1), starting=False)
     
         if c_==0:
             data_is1 = torch.cat((data_is1, md_data))
         elif c_==1:
             data_is2 = torch.cat((data_is2, md_data))                             
         else:
-            pass
+            pass """
     
 
     nf_is1 = run_nf(data_is1, models[i][0])
