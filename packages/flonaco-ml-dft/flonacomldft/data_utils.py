@@ -19,6 +19,8 @@ def get_path():
       ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'
    elif os.path.isdir('/home/ana/ml_dft_project/database/'):
       ceph_home = '/home/ana/ml_dft_project/database/'
+   elif os.path.isdir('/home/ana/assisting_sampling/database/'):
+      ceph_home = '/home/ana/assisting_sampling/database/'
    elif os.path.isdir('/home/amolina/ml_dft_project/database/'):
       ceph_home = '/home/amolina/ml_dft_project/database/'
    else:
