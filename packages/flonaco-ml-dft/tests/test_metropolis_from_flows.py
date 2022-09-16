@@ -65,7 +65,7 @@ n_chains = 3
 #_ = run_metropolis(model=models[1], u_init=ui_is2, x_init=xi_is2, count_init=ci_is2, n_sample=n_chains, n_steps=n_sts, mixture=False)
 _ = run_metropolis(model=mixture, u_init=uis, x_init=xis, count_init=cis, n_sample=n_chains, n_steps=n_sts, mixture=True)
 
-#filename = 'metropolis_mix_'+str(n_chains)+'_'+str(n_sts)+''
+filename = 'metropolis_mix_'+str(n_chains)+'_'+str(n_sts)+''
 save_pickle_file(_, filename)
 
 #print(_)
