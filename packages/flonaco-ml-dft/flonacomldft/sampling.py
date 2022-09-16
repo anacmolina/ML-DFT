@@ -145,7 +145,7 @@ def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture
         for i in range(n_sample):
             try:
                 #print('# Energy sample calculation: ', i)
-                ag6.calculate_potential_energy(x[i], txt='ag6_'+str(i)+'_'+str(n_steps)+'.out')
+                ag6.calculate_potential_energy(x[i], txt='ag6_'+str(i)+'_'+str(dt)+'.out')
                 U_.append(ag6.potential_energy)
                 #U_.append(-6.3*(1+np.random.rand()*0.1))
             except:
