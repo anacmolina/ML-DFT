@@ -62,10 +62,12 @@ def get_internal_coordinates(traj):
 
     traj = traj
     construction_table = get_construction_table()
-    #try:
-    energies = [traj_.get_potential_energy() for traj_ in traj]
-    #except:
-    #    raise RuntimeWarning("No calculator")
+    
+    try:
+        energies = [traj_.get_potential_energy() for traj_ in traj]
+    except:
+        energies = [0]*len(traj)
+        #raise RuntimeWarning("No calculator")
 
     xyz = []
     for traj_ in traj:

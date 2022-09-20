@@ -204,8 +204,8 @@ def run_metropolis(model, u_init, x_init, count_init, n_sample, n_steps, mixture
 
     return to_return
 
-# MCMC we are running Metropolis-Hastings
-def run_metropolis_MLP(model, u_init, x_init, count_init, n_sample, n_steps, MLPs, mixture=False):
+# MCMC we are running Metropolis-Hastings and using MLPS energies
+def run_metropolis_MLP(model, u_init, x_init, count_init, mlps, n_sample, n_steps, mixture=False):
     
     import gpaw.mpi as mpi
     rank = mpi.world.rank
@@ -213,6 +213,7 @@ def run_metropolis_MLP(model, u_init, x_init, count_init, n_sample, n_steps, MLP
     xs = []
     accs = []
     us = []
+    us_p = []
     nlls = []
     counts = []
     
@@ -223,6 +224,8 @@ def run_metropolis_MLP(model, u_init, x_init, count_init, n_sample, n_steps, MLP
     T=300
     kb = 8.617333262e-5
     beta = 1/(kb*T)
+
+    mlp_is1, mlp_is2 = mlps
 
     M = Angles_mapping()
 
@@ -239,37 +242,26 @@ def run_metropolis_MLP(model, u_init, x_init, count_init, n_sample, n_steps, MLP
         x = torch.tensor(x).detach().float()
         count = torch.tensor(count).detach().float()
     
-        #x = Angles_transformation(x)
-        #x_init = Angles_transformation(x_init)
-    
         nll_x = model.nll(x)
         nll_x_init = model.nll(x_init)
     
         M.mapping(x)
         M.mapping(x_init)
-        #x.transf()
-        #x_init.transf()
-    
+       
+        ag6 = Structure()
         
-        U = 0
-        U_ = 0
-    
-        indexes_nc = torch.tensor(indexes_nc)
-        U = torch.tensor(U_).float()
+        U_ = np.zeros(x.shape)
+        U_[~(count.bool())] = mlp_is1(x[~(count.bool())])
+        U_[count.bool()] = mlp_is2(x[count.bool()])
+        
+        #U_ = torch.tensor(U_).float()
+        U = U_.clone()
         ratio =  - beta * (U) + nll_x
         ratio += beta * u_init - nll_x_init
         ratio = torch.exp(ratio)
         u = torch.rand_like(ratio)
         acc = u < torch.min(ratio, torch.ones_like(ratio))
     
-        if(indexes_nc.shape[0] != 0):
-            acc[indexes_nc] = torch.full((1, len(indexes_nc)), False)
-    
-
-        mpi.world.barrier()
-
-        print(u, ratio, U, u_init, acc, count)
-
         mpi.world.barrier()
 
         x[~acc] = x_init[~acc]
@@ -286,6 +278,7 @@ def run_metropolis_MLP(model, u_init, x_init, count_init, n_sample, n_steps, MLP
         xs.append(x.float().clone())
         accs.append(acc.float().clone())
         us.append(U.float().clone())
+        us_p.append(U_.float().clone())
         nlls.append(nll_x.float().clone())
         counts.append(count.float().clone())
     
@@ -295,19 +288,18 @@ def run_metropolis_MLP(model, u_init, x_init, count_init, n_sample, n_steps, MLP
         count_init = count.clone().detach()
         
         mpi.world.barrier()
-        
-        #x_init = Angles_transformation(x_init)
-        #x_init.inv_transf()
-    
-        #M.inv_mapping(x_init)
-
-        mpi.world.barrier()
-        
+            
         print("Acceptance porcentage: %.1f%%"%(np.array(acc).sum()*100/len(acc)))
 
-    #return torch.stack(xs), torch.stack(accs), torch.stack(us), torch.stack(nlls), torch.stack(counts)
-    return torch.stack(xs), torch.stack(accs), torch.stack(us), torch.stack(counts)
+    to_return = {
+        'xs': torch.stack(xs),
+        'accs': torch.stack(accs),
+        'us': torch.stack(us),
+        'us_p': torch.stack(us_p),
+        'counts': torch.stack(counts)
+    }
 
+    return to_return
 
 def run_metrolangevin(model, target, x_lang, n_steps, dt, lag=1):
     '''
