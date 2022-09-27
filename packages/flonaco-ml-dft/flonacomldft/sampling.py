@@ -7,6 +7,7 @@ following definition from:
 ref Gelman, Andrew, J. B. Carlin, Hal S. Stern, David B. Dunson, Aki Vehtari, and Donald B. Rubin. 2013. Bayesian Data Analysis. Third Edition. London: Chapman & Hall / CRC Press.
 '''
 
+from operator import xor
 from flonacomldft.mlp_utils import Uncentered_MLP
 import numpy as np
 import torch
@@ -252,14 +253,19 @@ def run_metropolis_MLP(model, u_init, x_init, count_init, mlps, n_sample, n_step
         model_mlp_is1 = Uncentered_MLP(mlp_is1)
         model_mlp_is2 = Uncentered_MLP(mlp_is2)
 
-        U_ = np.zeros(x.shape)
-        U_[~(count.bool())] = model_mlp_is1(x[~(count.bool())])
-        U_[count.bool()] = model_mlp_is2(x[count.bool()])
+        U_ = torch.zeros((x.shape[0], 1))
 
+        if(count.sum().int()==count.shape[0]):
+            U_[count.bool()] = model_mlp_is2(x[count.bool()])
+        if(count.sum().int()==0):
+            U_[~(count.bool())] = model_mlp_is1(x[~(count.bool())])
+        else:
+            U_[~(count.bool())] = model_mlp_is1(x[~(count.bool())])
+            U_[count.bool()] = model_mlp_is2(x[count.bool()])
         
-        
-        #U_ = torch.tensor(U_).float()
         U = U_.clone()
+        U = U.reshape(U_.shape[0])
+
         ratio =  - beta * (U) + nll_x
         ratio += beta * u_init - nll_x_init
         ratio = torch.exp(ratio)

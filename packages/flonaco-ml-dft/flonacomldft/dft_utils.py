@@ -131,6 +131,9 @@ get_potential_energy()
 """
 
 # Structure: Class that uses construction table and symbols to build a molecules
+
+#add option to save .gpw file
+#reuse the calculator for the next energy calculation
 class Structure:
    def __init__(self, construction_table_=get_construction_table(), symbols_=np.full(6, 'Ag')):
       super().__init__()
