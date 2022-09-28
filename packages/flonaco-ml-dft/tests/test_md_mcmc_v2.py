@@ -25,7 +25,7 @@ from flonacomldft.md_mcmc import (
     get_models,
     get_mix_data,
     get_pos_energy,
-    run_nf,
+    train_nf,
     run_md_get_zmat
 )
 
@@ -66,8 +66,8 @@ data_is1 = load_zmat_csv('is1')
 data_is2 = load_zmat_csv('is2')
 
 # Train initial NFs
-#init_nf_is1 = run_nf(data_is1, init_model(data_is1))
-#init_nf_is2 = run_nf(data_is2, init_model(data_is2))
+#init_nf_is1 = train_nf(data_is1, init_model(data_is1))
+#init_nf_is2 = train_nf(data_is2, init_model(data_is2))
 """ 
 List to save info:
 
@@ -165,8 +165,8 @@ for i in range(n_runs):
             pass
     
 
-    nf_is1 = run_nf(data_is1, models[i][0])
-    nf_is2 = run_nf(data_is2, models[i][1])
+    nf_is1 = train_nf(data_is1, models[i][0])
+    nf_is2 = train_nf(data_is2, models[i][1])
 
     nf.append([nf_is1, nf_is2])
                              

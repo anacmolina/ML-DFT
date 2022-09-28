@@ -24,7 +24,7 @@ from flonacomldft.data_utils import (
     )
 
 from flonacomldft.md_mcmc import (
-    run_nf,
+    train_nf,
     run_md_get_zmat
 )
 
@@ -138,8 +138,8 @@ for i in range(n_runs):
             pass """
     
 
-    nf_is1 = run_nf(data_is1, models[i][0])
-    nf_is2 = run_nf(data_is2, models[i][1])
+    nf_is1 = train_nf(data_is1, models[i][0])
+    nf_is2 = train_nf(data_is2, models[i][1])
 
     nf.append([nf_is1, nf_is2])
                              

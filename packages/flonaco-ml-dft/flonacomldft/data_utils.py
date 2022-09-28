@@ -1,3 +1,7 @@
+"""
+Utils function to locate depending on host the files of previously saved
+trajectories and trained models.
+"""
 import os
 import pickle
 
@@ -45,20 +49,5 @@ def load_zmat_csv(isomer):
     zmat = torch.tensor(pd.read_csv(path).to_numpy()).float()
     return zmat
     
-"""
-def load_is_csv(isomer):
-    ceph_home = get_path()
-    file = '_lcao_zmat.csv'
-    u_init = torch.tensor(pd.read_csv(ceph_home + isomer + file)['energies'].to_numpy()).float()
-    x_init = torch.tensor(pd.read_csv(ceph_home + isomer + file).drop('energies', axis=1).to_numpy()).float()
-    if isomer=='is1':
-        count_init = torch.zeros(x_init.shape[0])
-    elif isomer=='is2':
-        count_init = torch.ones(x_init.shape[0])
-    else:
-        raise RuntimeError('Can not find isomer!')
-    return x_init, u_init, count_init
-"""
-
 # save_zmat_csv()
-
+# TODO: write a function that saves the zmat 

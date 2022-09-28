@@ -92,7 +92,7 @@ def init_model(zmat):
 def get_models(nf_):
     return [nf_[0]['models'][-1], nf_[1]['models'][-1]]
 
-def run_nf(zmat, model):
+def train_nf(zmat, model):
 
     #do clone to copy and not touch the memory space
     x_tensor, u_tensor = get_pos_energy(zmat)
@@ -142,8 +142,8 @@ data_is1 = run_md_get_zmat(get_is1(), md_iters, 'is1_0')
 data_is2 = run_md_get_zmat(get_is2(), md_iters, 'is2_0')
 
 # Train initial NFs 
-init_nf_is1 = run_nf(data_is1, init_model(data_is1))
-init_nf_is2 = run_nf(data_is2, init_model(data_is2))
+init_nf_is1 = train_nf(data_is1, init_model(data_is1))
+init_nf_is2 = train_nf(data_is2, init_model(data_is2))
 
 nf = [[init_nf_is1, init_nf_is2], ]
 
@@ -220,8 +220,8 @@ for i in range(2):
     else:
         pass
                              
-    nf_is1 = run_nf(data_is1, models[i][0])
-    nf_is2 = run_nf(data_is2, models[i][1])
+    nf_is1 = train_nf(data_is1, models[i][0])
+    nf_is2 = train_nf(data_is2, models[i][1])
 
     nf.append([nf_is1, nf_is2])
                              

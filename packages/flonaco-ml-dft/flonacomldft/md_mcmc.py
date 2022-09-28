@@ -62,7 +62,7 @@ def init_model(zmat):
 
     return model
 
-def run_nf(zmat, model):
+def train_nf(zmat, model):
 
     #do clone to copy and not touch the memory space
     x_tensor, u_tensor = get_pos_energy(zmat)
