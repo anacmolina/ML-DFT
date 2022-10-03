@@ -17,14 +17,12 @@ def X_i(i, r):
    
    return value
 
-# Coordination number  
 def C(atoms):
    
    r = atoms.get_all_distances()
    
    return np.array([X_i(i, r) for i in range(atoms.get_global_number_of_atoms())]).sum()
 
-# Radius of gyration
 def R(atoms):
    
    r_rcm = atoms.get_positions() - atoms.get_center_of_mass()
@@ -32,7 +30,6 @@ def R(atoms):
    
    return result 
 
-# Getting the collective variables from internal coordinates
 def get_CVs(data):
    
    C_vals = []

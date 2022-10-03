@@ -13,7 +13,7 @@ from flonacomldft.md_utils import (
 )
 
 from flonacomldft.dft_utils import Angles_mapping, Structure
-from flonacomldft.train_from_data import train
+from flonacomldft.train_flow_from_data import train
 
 from flonacomldft.mixture import Mixture
 

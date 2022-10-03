@@ -18,7 +18,7 @@ from flonacomldft.internal_coordinates import (
 )
 
 from flonacomldft.dft_utils import Structure
-from flonacomldft.train_from_data import train
+from flonacomldft.train_flow_from_data import train
 from flonacomldft.mixture import Mixture
 from flonacomldft.real_nvp_mlp import RealNVP_MLP
 from flonacomldft.sampling import run_metropolis

@@ -49,5 +49,12 @@ def load_zmat_csv(isomer):
     zmat = torch.tensor(pd.read_csv(path).to_numpy()).float()
     return zmat
     
+def load_csv_file(isomer):
+    path = get_path()+isomer+'_lcao_zmat.csv'
+    df = pd.read_csv(path)
+    U = torch.Tensor(df.energies.to_numpy()).float()
+    X = torch.Tensor(df.drop(['energies'], axis=1).to_numpy()).float()
+    return X, U 
+
 # save_zmat_csv()
 # TODO: write a function that saves the zmat 
