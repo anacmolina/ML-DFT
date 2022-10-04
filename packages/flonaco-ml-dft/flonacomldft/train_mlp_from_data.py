@@ -1,0 +1,115 @@
+import copy
+from pickletools import optimize
+
+import torch
+import numpy as np
+
+import matplotlib.pyplot as plt
+
+from torch.nn.utils import clip_grad_norm_
+
+from flonacomldft.data_utils import (
+    get_path
+)
+
+from flonacomldft.models import MLP, center_values
+
+import sklearn.model_selection
+import torch.optim as optim
+import tqdm
+
+def train(model, 
+    input, 
+    output, 
+    n_iter, 
+    lr,
+    bs,
+    use_scheduler=False,
+    step_schedule=10000,
+    return_all_xs=True,
+    save_splits=10,
+    grad_clip=1e4,
+):
+
+    #mse
+    def loss_func(x,y):
+        return ((model(x) - y[:,None]) ** 2).mean()
+
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    if use_scheduler:
+        scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer, step_size=step_schedule, gamma=0.5
+        )
+
+    xs = []
+    losses = []
+    losses_val = []
+    models = [copy.deepcopy(model)]
+    grad_norms = []
+
+    sk_seed = 42
+    train_size = 0.8
+
+    x = input.detach().requires_grad()
+    y = output.detach().requires_grad()
+
+    x_centered, x_mean, x_centered_std = center_values(x)
+    y_centered, y_mean, y_centered_std = center_values(y)
+
+    arrays = [x_centered, y_centered]
+
+    data_split = sklearn.model_selection.train_test_split(*arrays, test_size=None,
+                                                      train_size=train_size,
+                                                      random_state=sk_seed,
+                                                      shuffle=True,
+                                                      stratify=None)
+
+    x_train, x_test, y_train, y_test = data_split
+
+    pbar =  tqdm.tqdm(range(n_iter))
+
+    for t in pbar:
+        optimizer.zero_grad()
+
+        loss = loss_func(x_train, y_train)
+
+        # In case we are running out of memory
+        # if return_all_xs or t % (n_iter / 10) == 0:
+        #    xs.append(x_)
+
+        if torch.isinf(loss).any():
+            print("Stopped because loss became inf!")
+            return model, losses, xs
+        
+        loss.backward()
+        clip_grad_norm_(model.parameters(), max_norm=grad_clip)
+        optimizer.step()
+
+        losses.append(loss.item())
+        losses_val.append(loss_func(x_test, y_test).item())
+        pbar.set_description(f'Loss: {losses[-1]:.4f}')
+
+        if t % (n_iter / 100) == 0:
+            total_norm = 0
+            for p in model.parameters():
+                param_norm = p.grad.detach().data.norm(2)
+                total_norm += param_norm.item() ** 2
+            total_norm = total_norm**0.5
+            grad_norms.append(total_norm)
+
+        if use_scheduler:
+            scheduler.step()
+
+        if t % (n_iter / save_splits) == 0 or n_iter <= save_splits:
+            models.append(copy.deepcopy(model))
+
+    to_return = {
+        "model": model,
+        "losses": losses,
+        "losses_val": losses_val,
+        "xs": xs,
+        "models": models,
+        "grad_norms": grad_norms,
+    }
+
+    return to_return

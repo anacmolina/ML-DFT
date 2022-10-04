@@ -48,7 +48,13 @@ def run_metropolis(model, u_init, x_init, count_init, n_chains, n_steps, energy_
     assert(count_init.shape[0]==n_chains)
 
     #print(u_init.shape, x_init.shape, count_init.shape)
-    print('assert pass')
+    #print('assert pass')
+
+    if energy_type=='mlp-dft':
+        mlp_dft = True
+        energy_type = 'mlp'
+    else:
+        mlp_dft = False
 
     xs = []
     accs = []
@@ -95,9 +101,9 @@ def run_metropolis(model, u_init, x_init, count_init, n_chains, n_steps, energy_
 
             for i in range(n_chains):
                 try:
-                    #ag6.calculate_potential_energy(x[i], txt='ag6_'+str(i)+'_'+str(dt)+'.out')
-                    #U_.append(ag6.potential_energy)
-                    U_.append(-6.3*(1+np.random.rand()*0.1))
+                    ag6.calculate_potential_energy(x[i], txt='ag6_'+str(i)+'_'+str(dt)+'.out')
+                    U_.append(ag6.potential_energy)
+                    #U_.append(-6.3*(1+np.random.rand()*0.1))
                 except:
                     U_.append(0)
                     indexes_nc.append(i)
@@ -144,68 +150,35 @@ def run_metropolis(model, u_init, x_init, count_init, n_chains, n_steps, energy_
                 U_[count.bool()] = model_mlp_is2(x[count.bool()])
         
             U_ = U_.reshape(U_.shape[0]).float()
-            U = U_.clone().float()
 
-        elif energy_type == 'mlp-dft':
+            if mlp_dft:
         
-            #print('mlp-dft')
-        
-            U_ = torch.zeros((x.shape[0], 1))
+                #print('mlp-dft')
+                n_dft = int(U_.shape[0]*0.2)
 
-            if(count.sum().int()==count.shape[0]):
+                if n_dft>0:
 
-                #print('mlp_is2')
-                
-                mlp_is2 = load_from_pickle(get_path()+"mlp_is2")
-                model_mlp_is2 = Uncentered_MLP(mlp_is2)
-
-                U_[count.bool()] = model_mlp_is2(x[count.bool()])
-
-            if(count.sum().int()==0):
-
-                #print('mlp_is1')
-
-                mlp_is1 = load_from_pickle(get_path()+"mlp_is1")
-                model_mlp_is1 = Uncentered_MLP(mlp_is1)
+                    U_sort, ind_U_sort = U_.sort()
     
-                U_[~(count.bool())] = model_mlp_is1(x[~(count.bool())])
-            
-            else:
+                    U_dft = []
+                    indexes_nc = []
 
-                #print('mlp_is1_is2')
+                    ag6 = Structure()
 
-                mlp_is1 = load_from_pickle(get_path()+"mlp_is1")
-                mlp_is2 = load_from_pickle(get_path()+"mlp_is2")
+                    for i, x_ in enumerate(x[ind_U_sort[:n_dft]]):
+                        try:
+                            ag6.calculate_potential_energy(x_)
+                            U_dft.append(ag6.potential_energy)
+                            #U_dft.append(-6.3*(1+np.random.rand()*0.1))
+                        except:
+                            U_dft.append(0)
+                            indexes_nc.append(ind_U_sort[:n_dft][i])
 
-                model_mlp_is1 = Uncentered_MLP(mlp_is1)
-                model_mlp_is2 = Uncentered_MLP(mlp_is2)
-
-                U_[~(count.bool())] = model_mlp_is1(x[~(count.bool())])
-                U_[count.bool()] = model_mlp_is2(x[count.bool()])
-        
-            U_ = U_.reshape(U_.shape[0]).float()
-
-            n_dft = int(U_.shape[0]*0.2)
-
-            if n_dft>0:
-
-                U_sort, ind_U_sort = U_.sort()
-    
-                U_dft = []
-                indexes_nc = []
-
-                for x_ in x[ind_U_sort[:n_dft]]:
-                    try:
-                        #ag6.calculate_potential_energy(x_)
-                        #U_dft.append(ag6.potential_energy)
-                        U_dft.append(-6.3*(1+np.random.rand()*0.1))
-                    except:
-                        U_dft.append(0)
-                        indexes_nc.append(i)
-            
-                U_[ind_U_sort[:n_dft]] = torch.tensor(U_dft).detach()
-
-            U_ = U_.reshape(U_.shape[0]).float()
+                    indexes_nc = torch.tensor(indexes_nc)
+                    U_dft = torch.tensor(U_dft).float()
+                    
+                    U_[ind_U_sort[:n_dft]] = U_dft
+                         
             U = U_.clone().float()
 
         else:
@@ -217,8 +190,6 @@ def run_metropolis(model, u_init, x_init, count_init, n_chains, n_steps, energy_
         ratio = torch.exp(ratio)
         u = torch.rand_like(ratio)
         acc = u < torch.min(ratio, torch.ones_like(ratio))
-
-        indexes_nc = torch.tensor(indexes_nc)
 
         if(indexes_nc is not None and indexes_nc.shape[0] != 0):
             acc[indexes_nc] = torch.full((1, len(indexes_nc)), False)

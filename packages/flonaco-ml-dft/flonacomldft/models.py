@@ -25,6 +25,16 @@ class MLP(nn.Module):
         y = layers[-1][1](x)
         return y
 
+def center_values(x):
+
+    x_mean = x.mean(0)
+    x_centered = x - x.mean(0)
+    
+    x_centered_std = x_centered.std(0)
+    x_centered = x_centered / x_centered.std(0)
+    
+    return x_centered, x_mean, x_centered_std
+
 class Uncentered_MLP:
     def __init__(self, model_info):
         self.model = model_info['mlp_model']

@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from flonacomldft.data_utils import (
     get_path
 )
+
 from flonacomldft.models import MLP
 from flonacomldft.data_utils import save_pickle_file
 
