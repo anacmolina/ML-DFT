@@ -103,13 +103,23 @@ def train(model,
         if t % (n_iter / save_splits) == 0 or n_iter <= save_splits:
             models.append(copy.deepcopy(model))
 
-    to_return = {
-        "model": model,
+    mlp_model = {
+        'mlp_model': model,
+        'x_mean': x_mean,
+        'x_centered_std': x_centered_std,
+        'y_mean': y_mean,
+        'y_centered_std': y_centered_std
+    }
+
+    mlp_info = {
+        "dataset_split": data_split,
         "losses": losses,
-        "losses_val": losses_val,
+        "losses_test": losses_val,
         "xs": xs,
         "models": models,
         "grad_norms": grad_norms,
     }
+
+    to_return = {"mlp_model": mlp_model, "mlp_info": mlp_info}
 
     return to_return
