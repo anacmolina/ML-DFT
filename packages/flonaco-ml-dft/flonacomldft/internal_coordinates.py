@@ -40,11 +40,6 @@ def get_construction_table():
       
    return construction_table
 
-def shuffle_arr(vs, indexes):
-    concat = lambda vs: torch.cat(vs)
-    v = concat(vs)
-    return v[indexes]
-
 def rephase(zmat, angle=0, columns=['dihedral13']):
     for column in columns:
         phase = np.zeros(zmat[column].shape)
@@ -102,6 +97,11 @@ def get_pos_energy(zmat):
     u_tensor = zmat[:, -1]
     x_tensor = zmat[:, :-1]
     return x_tensor, u_tensor
+
+def shuffle_arr(vs, indexes):
+    concat = lambda vs: torch.cat(vs)
+    v = concat(vs)
+    return v[indexes]
 
 def get_mix_data(data_1, data_2):
     xi_is1, ui_is1 = get_pos_energy(data_1)

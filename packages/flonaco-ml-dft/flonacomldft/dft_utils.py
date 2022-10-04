@@ -59,9 +59,8 @@ class Angles_transformation(torch.Tensor):
 
        
 """
----------------------------
-| Structure (Object)      |
----------------------------
+
+Structure (Object)
 
 zmat ---> xyz
 xyz <--- zmat
