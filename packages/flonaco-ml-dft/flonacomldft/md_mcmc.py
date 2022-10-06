@@ -18,7 +18,8 @@ from flonacomldft.internal_coordinates import (
 )
 
 from flonacomldft.dft_utils import Structure
-from flonacomldft.train_flow_from_data import train
+from flonacomldft.train_flow_from_data import train_flow
+from flonacomldft.train_mlp_from_data import train_mlp
 from flonacomldft.mixture import Mixture
 from flonacomldft.real_nvp_mlp import RealNVP_MLP
 from flonacomldft.sampling import run_metropolis
@@ -62,7 +63,8 @@ def init_model(zmat):
 
     return model
 
-def train_nf(zmat, model):
+#TODO: add more option for the training process
+def retrain_flow(model, zmat):
 
     #do clone to copy and not touch the memory space
     x_tensor, u_tensor = get_pos_energy(zmat)
@@ -72,7 +74,7 @@ def train_nf(zmat, model):
 
     model_init = copy.deepcopy(model) # Do I need this?
 
-    _ = train(model, 
+    _ = train_flow(model, 
            x_tensor,
            n_iter=500,
            lr=5e-2,
@@ -80,7 +82,6 @@ def train_nf(zmat, model):
            use_scheduler=False,
            step_schedule=100,
            args_loss={'type': 'fwd', 'samp': 'direct'},
-           estimate_tau=False,
            return_all_xs=True,
            save_splits=10,
            grad_clip=1e4)
@@ -89,6 +90,11 @@ def train_nf(zmat, model):
 
     return _
 
+# TODO: Prefuntion to retrain MLPs
+def retrain_mlp(model, zmat):
 
+    _ = train_mlp(model, x, y, n_iter=5000, lr=1e-3)
+    return 0
 
-
+def get_models(nf_):
+    return [nf_[0]['models'][-1], nf_[1]['models'][-1]]

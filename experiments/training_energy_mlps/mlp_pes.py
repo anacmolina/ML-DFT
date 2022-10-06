@@ -12,7 +12,7 @@ from flonacomldft.models import MLP, Uncentered_MLP
 from flonacomldft.data_utils import save_pickle_file
 import sklearn.model_selection
 
-from flonacomldft.train_mlp_from_data import train
+from flonacomldft.train_mlp_from_data import train_mlp
 
 isomer = 'is2'
 
@@ -36,7 +36,7 @@ n_hidden = 50
 n_layers = 50
 model = MLP([x.shape[1], n_hidden, n_layers, 1])
 
-_ = train(model, x, y, n_iter=5000, lr=1e-3)
+_ = train_mlp(model, x, y, n_iter=5000, lr=1e-3)
 
 losses = _['mlp_info']['losses']
 losses_val = _['mlp_info']['losses_test']

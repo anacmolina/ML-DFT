@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from flonacomldft.real_nvp_mlp import RealNVP_MLP
-from flonacomldft.train_flow_from_data import train
+from flonacomldft.train_flow_from_data import train_flow
 
 from flonacomldft.data_utils import get_path, save_pickle_file
 from flonacomldft.internal_coordinates import Angles_mapping
@@ -69,7 +69,7 @@ model = RealNVP_MLP(
 
 model_init = copy.deepcopy(model)
 
-_ = train(
+_ = train_flow(
     model,
     x_tensor,
     n_iter=100,

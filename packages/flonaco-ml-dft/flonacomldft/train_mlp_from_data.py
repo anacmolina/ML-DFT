@@ -18,7 +18,7 @@ import sklearn.model_selection
 import torch.optim as optim
 import tqdm
 
-def train(model, 
+def train_mlp(model, 
     input, 
     output, 
     n_iter, 

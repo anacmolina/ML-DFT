@@ -5,12 +5,20 @@ import torch
 import numpy as np
 import gpaw.mpi as mpi
 
-from flonacomldft.data_utils import get_path, load_zmat_csv, load_from_pickle
+from flonacomldft.data_utils import (
+    get_path, 
+    load_zmat_csv, 
+    load_from_pickle
+    )
 
 from flonacomldft.mixture import Mixture
 from flonacomldft.sampling import run_metropolis
 from flonacomldft.internal_coordinates import get_mix_data
-from flonacomldft.md_mcmc import get_models
+from flonacomldft.md_mcmc import (
+    get_models, 
+    retrain_flow, 
+    retrain_mlp
+    )
 
 # Seed initialization for random generations
 ranks = np.arange(0, mpi.world.size)
@@ -62,8 +70,7 @@ mixture = Mixture(flow[0], weights)
 n_runs = 1
 n_chains = 5
 n_sts = 3
-md_iters = 100
-energy_type = "dft"#"mlp-dft"
+energy_type = "mlp-dft" #"dft"  
 
 # init sampling
 _ = run_metropolis(
@@ -105,7 +112,7 @@ if energy_type == "dft" or energy_type == "mlp-dft":
 
 
 # retrain flows
-i=0
+i = 0
 
 data_for_flows = T(
     torch.cat(
@@ -117,21 +124,26 @@ data_for_flows = T(
     )
 )
 
+#TODO: rewrite in one funtion the data for retrain flows and mlps
+#TODO: remove last column of the df you build when you have separate the mcmc chains
+
 data_for_flows = data_for_flows.reshape(n_sts * n_chains, data_for_flows.shape[-1])
 data_for_flows = data_for_flows.unique(dim=0)
 
-sel = data_for_flows[:, -1]==1
-is1_prop = data_for_flows[~sel]
-is2_prop = data_for_flows[sel]
+mask_flow = data_for_flows[:, -1] == 1
+is1_prop = data_for_flows[~mask_flow]
+is2_prop = data_for_flows[mask_flow]
 
-#print(data_for_flows)
-#del data_for_flows
+# print(data_for_flows)
+# del data_for_flows
+# print(is1_prop)
+# print(is2_prop)
 
-print(is1_prop)
-print(is2_prop)
+""" new_flow_is1 = retrain_flow(is1_prop, flow[i][0])
+new_flow_is2 = retrain_flow(is2_prop, flow[i][1])
 
-
-
+flow.append([new_flow_is1, new_flow_is2])
+ """
 # retrain MLPs
 if USE_DFT_ENERGIES:
 
@@ -146,12 +158,21 @@ if USE_DFT_ENERGIES:
         )
     )
 
-    #print(data_for_mlp)
+    print(data_for_mlp, _['ind_dft'])
+    data_for_mlp = data_for_mlp[_['ind_dft'].bool()]
+    mask_mlp = data_for_mlp[:, -1] == 1
+
+    is1_prop_dft = data_for_mlp[~mask_mlp]
+    is2_prop_dft = data_for_mlp[mask_mlp]
+
+    print(data_for_mlp)
+    print(is1_prop_dft)
+    print(is2_prop_dft)
 
     if energy_type == "dft":
-        # use all
+        # use all # all index must be  ind_dft == 1
         data_ex = data_for_mlp.reshape(n_sts * n_chains, data_for_mlp.shape[-1])
 
     elif energy_type == "mlp-dft":
         # use only ind_dft
-        print('hi :(, T_T')#_["ind_dft"])
+        print("hi :(, T_T")  # _["ind_dft"])

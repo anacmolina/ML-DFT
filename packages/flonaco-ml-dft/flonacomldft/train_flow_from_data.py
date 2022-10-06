@@ -5,7 +5,7 @@ from torch.nn.utils import clip_grad_norm_
 from ase.parallel import parprint as print
 
 
-def train(
+def train_flow(
     model,
     x_train,
     n_iter=10,
