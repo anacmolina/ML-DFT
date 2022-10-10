@@ -41,7 +41,7 @@ def run_metropolis(model, target, x_init, n_steps):
 """
 
 #TODO: Remove this later
-torch.manual_seed(36)
+#torch.manual_seed(36)
 
 def run_metropolis(
     model,

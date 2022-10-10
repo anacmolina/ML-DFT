@@ -139,11 +139,11 @@ is2_prop = data_for_flows[mask_flow]
 # print(is1_prop)
 # print(is2_prop)
 
-""" new_flow_is1 = retrain_flow(is1_prop, flow[i][0])
+new_flow_is1 = retrain_flow(is1_prop, flow[i][0])
 new_flow_is2 = retrain_flow(is2_prop, flow[i][1])
 
 flow.append([new_flow_is1, new_flow_is2])
- """
+
 # retrain MLPs
 if USE_DFT_ENERGIES:
 
