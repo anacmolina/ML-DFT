@@ -1,10 +1,6 @@
 """
 Script with all sampling methods. 
 
-Computation of effective sampling size from:
-https://github.com/jwalton3141/jwalton3141.github.io
-following definition from:
-ref Gelman, Andrew, J. B. Carlin, Hal S. Stern, David B. Dunson, Aki Vehtari, and Donald B. Rubin. 2013. Bayesian Data Analysis. Third Edition. London: Chapman & Hall / CRC Press.
 """
 
 from typing_extensions import runtime
