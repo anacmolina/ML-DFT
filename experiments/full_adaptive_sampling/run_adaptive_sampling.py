@@ -20,6 +20,15 @@ from flonacomldft.md_mcmc import (
     retrain_mlp
     )
 
+'''''
+Parameters we should be able to play with:
+number of steps of retraining flows/mlps
+- lr of retraining
+- number of MCMC steps in between retraining
+- portion of the chains that will go through DFT 
+''''' 
+
+
 # Seed initialization for random generations
 ranks = np.arange(0, mpi.world.size)
 rank = mpi.world.rank

@@ -17,6 +17,7 @@ def train_flow(
     return_all_xs=True,
     save_splits=10,
     grad_clip=1e4,
+    retrain=False,
 ):
     """ "
     Args:

@@ -64,37 +64,37 @@ def init_model(zmat):
     return model
 
 #TODO: add more option for the training process
-def retrain_flow(model, zmat):
+# def retrain_flow(model, zmat):
 
-    #do clone to copy and not touch the memory space
-    x_tensor, u_tensor = get_pos_energy(zmat)
+#     #do clone to copy and not touch the memory space
+#     x_tensor, u_tensor = get_pos_energy(zmat)
 
-    M = Angles_mapping()
-    M.inv_mapping(x_tensor)
+#     M = Angles_mapping()
+#     M.inv_mapping(x_tensor)
 
-    model_init = copy.deepcopy(model) # Do I need this?
+#     model_init = copy.deepcopy(model) # Do I need this?
 
-    _ = train_flow(model, 
-           x_tensor,
-           n_iter=500,
-           lr=5e-2,
-           bs=100,
-           use_scheduler=False,
-           step_schedule=100,
-           args_loss={'type': 'fwd', 'samp': 'direct'},
-           return_all_xs=True,
-           save_splits=10,
-           grad_clip=1e4)
+#     _ = train_flow(model, 
+#            x_tensor,
+#            n_iter=500,
+#            lr=5e-2,
+#            bs=100,
+#            use_scheduler=False,
+#            step_schedule=100,
+#            args_loss={'type': 'fwd', 'samp': 'direct'},
+#            return_all_xs=True,
+#            save_splits=10,
+#            grad_clip=1e4)
     
-    M.mapping(x_tensor)
+#     M.mapping(x_tensor)
 
-    return _
+#     return _
 
 # TODO: Prefuntion to retrain MLPs
-def retrain_mlp(model, zmat):
+# def retrain_mlp(model, zmat):
 
-    _ = train_mlp(model, x, y, n_iter=5000, lr=1e-3)
-    return 0
+#     _ = train_mlp(model, x, y, n_iter=5000, lr=1e-3)
+#     return 0
 
 def get_models(nf_):
     return [nf_[0]['models'][-1], nf_[1]['models'][-1]]

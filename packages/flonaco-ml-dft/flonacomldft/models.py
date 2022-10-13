@@ -18,6 +18,11 @@ class MLP(nn.Module):
 
         self.linears = nn.ModuleList(linears)
 
+        self.x_mean = None
+        self.y_mean = None
+        self.x_centered_std = None
+        self.y_centered_std = None
+
     def forward(self, x):
         layers = list(enumerate(self.linears))
         for _, l in layers[:-1]:
@@ -26,7 +31,6 @@ class MLP(nn.Module):
         return y
 
 def center_values(x):
-
     x_mean = x.mean(0)
     x_centered = x - x.mean(0)
     

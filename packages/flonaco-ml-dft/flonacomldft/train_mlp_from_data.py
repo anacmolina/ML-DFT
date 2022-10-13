@@ -29,6 +29,7 @@ def train_mlp(model,
     return_all_xs=True,
     save_splits=10,
     grad_clip=1e4,
+    retraining=False
 ):
 
     #mse
@@ -53,8 +54,9 @@ def train_mlp(model,
     x = input.detach().requires_grad()
     y = output.detach().requires_grad()
 
-    x_centered, x_mean, x_centered_std = center_values(x)
-    y_centered, y_mean, y_centered_std = center_values(y)
+    if retraining:
+        x_centered, model.x_mean, model.x_centered_std = center_values(x)
+        y_centered, model.y_mean, model.y_centered_std = center_values(y)
 
     arrays = [x_centered, y_centered]
 
@@ -105,10 +107,10 @@ def train_mlp(model,
 
     mlp_model = {
         'mlp_model': model,
-        'x_mean': x_mean,
-        'x_centered_std': x_centered_std,
-        'y_mean': y_mean,
-        'y_centered_std': y_centered_std
+        'x_mean': model.x_mean,
+        'x_centered_std': model.x_centered_std,
+        'y_mean': model.y_mean,
+        'y_centered_std': model.y_centered_std
     }
 
     mlp_info = {
