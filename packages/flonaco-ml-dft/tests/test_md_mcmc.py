@@ -15,7 +15,7 @@ from flonacomldft.md_utils import (
 from flonacomldft.dft_utils import Angles_mapping, Structure
 from flonacomldft.train_flow_from_data import train
 
-from flonacomldft.mixture import Mixture
+from flonacomldft.mixture import Mixture, get_models
 
 from flonacomldft.real_nvp_mlp import RealNVP_MLP
 import copy
@@ -88,9 +88,6 @@ def init_model(zmat):
                     device=device)
 
     return model
-
-def get_models(nf_):
-    return [nf_[0]['models'][-1], nf_[1]['models'][-1]]
 
 def train_nf(zmat, model):
 

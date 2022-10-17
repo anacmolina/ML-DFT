@@ -56,3 +56,6 @@ class Mixture(nn.Module):
 
     def U(self, x):
         return self.nll(x)
+
+def get_models(nf_):
+    return [nf_[0]['models'][-1], nf_[1]['models'][-1]]

@@ -7,7 +7,7 @@ import numpy as np
 from ase.io.trajectory import Trajectory
 import gpaw.mpi as mpi
 
-from flonacomldft.mixture import Mixture
+from flonacomldft.mixture import Mixture, get_models
 from flonacomldft.sampling import run_metropolis
 from flonacomldft.dft_utils import Structure
 
@@ -28,8 +28,6 @@ from flonacomldft.md_mcmc import (
     run_md_get_zmat
 )
 
-def get_models(nf_):
-    return [nf_[0]['models'][-1], nf_[1]['models'][-1]]
 
 # Seed initialization for random generations
 ranks = np.arange(0, mpi.world.size)

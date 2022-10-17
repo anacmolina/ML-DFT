@@ -19,8 +19,8 @@ def trajectories_folder(name='trajectories', path=os.getcwd()):
 def get_path():
    if os.path.isdir('/mnt/home/amolina/ceph/database/'):
       ceph_home = '/mnt/home/amolina/ceph/database/'
-   elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'):
-      ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'
+   elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/database/'):
+      ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/database/'
    elif os.path.isdir('/home/ana/ml_dft_project/database/'):
       ceph_home = '/home/ana/ml_dft_project/database/'
    elif os.path.isdir('/home/ana/assisting_sampling/database/'):

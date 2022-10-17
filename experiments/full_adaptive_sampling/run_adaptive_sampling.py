@@ -11,11 +11,11 @@ from flonacomldft.data_utils import (
     load_from_pickle
     )
 
-from flonacomldft.mixture import Mixture
+from flonacomldft.mixture import Mixture, get_models
 from flonacomldft.sampling import run_metropolis
 from flonacomldft.internal_coordinates import get_mix_data
 from flonacomldft.md_mcmc import (
-    get_models, 
+    
     retrain_flow, 
     retrain_mlp
     )
