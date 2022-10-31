@@ -55,8 +55,16 @@ def train_mlp(model,
     y = output.detach().requires_grad()
 
     if retraining:
-        x_centered, model.x_mean, model.x_centered_std = center_values(x)
-        y_centered, model.y_mean, model.y_centered_std = center_values(y)
+        x_centered = center_values(x, model.x_mean, model.x_centered_std)
+        y_centered = center_values(y, model.y_mean, model.y_centered_std)
+    else:
+        x_centered, x_mean, x_centered_std = center_values(x)
+        y_centered, y_mean, y_centered_std = center_values(y)
+
+        means = [x_mean, y_mean]
+        stds = [x_centered_std, y_centered_std]
+
+        model.set_center_values(means, stds)
 
     arrays = [x_centered, y_centered]
 
@@ -105,15 +113,8 @@ def train_mlp(model,
         if t % (n_iter / save_splits) == 0 or n_iter <= save_splits:
             models.append(copy.deepcopy(model))
 
-    mlp_model = {
+    to_return = {
         'mlp_model': model,
-        'x_mean': model.x_mean,
-        'x_centered_std': model.x_centered_std,
-        'y_mean': model.y_mean,
-        'y_centered_std': model.y_centered_std
-    }
-
-    mlp_info = {
         "dataset_split": data_split,
         "losses": losses,
         "losses_test": losses_val,
@@ -121,7 +122,5 @@ def train_mlp(model,
         "models": models,
         "grad_norms": grad_norms,
     }
-
-    to_return = {"mlp_model": mlp_model, "mlp_info": mlp_info}
 
     return to_return

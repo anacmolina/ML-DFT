@@ -5,7 +5,7 @@ Script with all sampling methods.
 
 from typing_extensions import runtime
 from flonacomldft.data_utils import get_path, load_from_pickle
-from flonacomldft.models import Uncentered_MLP
+#from flonacomldft.models import Uncentered_MLP
 import numpy as np
 import torch
 
@@ -145,16 +145,16 @@ def run_metropolis(
             if count.sum().int() == count.shape[0]:
 
                 #print('mlp_is2')
-                model_mlp_is2 = Uncentered_MLP(mlp_is2)
+                model_mlp_is2 = mlp_is2
 
-                U_[count.bool()] = model_mlp_is2(x[count.bool()])
+                U_[count.bool()] = model_mlp_is2.predict(x[count.bool()])
 
             if count.sum().int() == 0:
 
                 #print('mlp_is1')
-                model_mlp_is1 = Uncentered_MLP(mlp_is1)
+                model_mlp_is1 = mlp_is1
 
-                U_[~(count.bool())] = model_mlp_is1(x[~(count.bool())])
+                U_[~(count.bool())] = model_mlp_is1.predict(x[~(count.bool())])
 
             else:
 
@@ -162,11 +162,11 @@ def run_metropolis(
 
                 mlp_is1, mlp_is2 = mlps
 
-                model_mlp_is1 = Uncentered_MLP(mlp_is1)
-                model_mlp_is2 = Uncentered_MLP(mlp_is2)
+                model_mlp_is1 = mlp_is1
+                model_mlp_is2 = mlp_is2
 
-                U_[~(count.bool())] = model_mlp_is1(x[~(count.bool())])
-                U_[count.bool()] = model_mlp_is2(x[count.bool()])
+                U_[~(count.bool())] = model_mlp_is1.predict(x[~(count.bool())])
+                U_[count.bool()] = model_mlp_is2.predict(x[count.bool()])
 
             U_ = U_.reshape(U_.shape[0]).float()
 

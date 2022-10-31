@@ -219,3 +219,8 @@ def run_molecular_dynamics(molecule, iters, name, starting=True):
 
     return traj
 
+def compute_energy(zmat, txt):
+   ag6 =  Structure()
+   ag6.calculate_potential_energy(zmat, txt)
+   U = ag6.potential_energy
+   return U

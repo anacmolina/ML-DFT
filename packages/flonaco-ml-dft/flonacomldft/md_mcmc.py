@@ -90,11 +90,6 @@ def init_model(zmat):
 
 #     return _
 
-# TODO: Prefuntion to retrain MLPs
-# def retrain_mlp(model, zmat):
-
-#     _ = train_mlp(model, x, y, n_iter=5000, lr=1e-3)
-#     return 0
 
 def get_models(nf_):
     return [nf_[0]['models'][-1], nf_[1]['models'][-1]]

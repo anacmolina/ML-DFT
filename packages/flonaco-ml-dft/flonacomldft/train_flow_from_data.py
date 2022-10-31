@@ -55,7 +55,6 @@ def train_flow(
     xs = []
     losses = []
     models = [copy.deepcopy(model)]
-    # acc_rates = []
     grad_norms = []
 
     x = x_train.detach().requires_grad_()
