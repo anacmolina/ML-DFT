@@ -7,6 +7,7 @@ class MLP(nn.Module):
     def __init__(self, layerdims, activation=torch.relu, init_scale=None, center_data=False):
         super(MLP, self).__init__()
 
+        self.LOCK = False
         self.center_data = center_data
         
         self.layerdims = layerdims
@@ -21,8 +22,19 @@ class MLP(nn.Module):
 
         self.linears = nn.ModuleList(linears)
 
+    def forward(self, x):
+
+        layers = list(enumerate(self.linears))
+        for _, l in layers[:-1]:
+            x = self.activation(l(x))
+        y = layers[-1][1](x)
+
+        return y
+
+    def set_center_data(self, value):
+        self.center_data(value)
+
     def set_center_values(self, means, stds):
-        self.LOCK = False
 
         if self.center_data:
 
@@ -35,28 +47,19 @@ class MLP(nn.Module):
                 
                 self.LOCK = True
 
-    def forward(self, x):
-
-        #if self.LOCK:
-        #    x = x - self.x_mean
-        #    x = x/self.x_centered_std
-
-        layers = list(enumerate(self.linears))
-        for _, l in layers[:-1]:
-            x = self.activation(l(x))
-        y = layers[-1][1](x)
-
-        return y
-
     def predict(self, x):
-        
-        y = self.forward(x)
 
         if self.LOCK:
+            x = x - self.x_mean
+            x = x/self.x_centered_std
+            
+            y = self.forward(x)
+
+        
             y = y * self.y_centered_std
             y = y + self.y_mean
 
-        return y
+            return y
 
 def center_values(x, x_mean=None, x_centered_std=None):
     
@@ -76,7 +79,8 @@ def center_values(x, x_mean=None, x_centered_std=None):
         return x_centered
 
 
-"""
+
+""" 
 class MLP(nn.Module):
      def __init__(self, layerdims, activation=torch.relu, init_scale=None):
         super(MLP, self).__init__()
@@ -92,12 +96,13 @@ class MLP(nn.Module):
 
         self.linears = nn.ModuleList(linears)
 
-    def forward(self, x):
+     def forward(self, x):
         layers = list(enumerate(self.linears))
         for _, l in layers[:-1]:
             x = self.activation(l(x))
         y = layers[-1][1](x)
-        return y """
+        return y 
+"""
 
 
 """ class Uncentered_MLP:

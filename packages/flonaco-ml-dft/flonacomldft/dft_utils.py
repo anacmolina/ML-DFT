@@ -1,5 +1,6 @@
 import os
 import pickle
+from tkinter import NONE
 from flonacomldft.data_utils import trajectories_folder
 
 import numpy as np
@@ -219,8 +220,8 @@ def run_molecular_dynamics(molecule, iters, name, starting=True):
 
     return traj
 
-def compute_energy(zmat, txt):
+def compute_energy(zmat, txt=None):
    ag6 =  Structure()
-   ag6.calculate_potential_energy(zmat, txt)
+   ag6.calculate_potential_energy(zmat, txt=txt)
    U = ag6.potential_energy
    return U

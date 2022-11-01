@@ -19,13 +19,13 @@ import torch.optim as optim
 import tqdm
 
 def train_mlp(model, 
-    input, 
-    output, 
-    n_iter, 
-    lr,
-    bs,
+    input_val, 
+    output_val, 
+    n_iter=100, 
+    lr=1e-4,
+    bs=100,
     use_scheduler=False,
-    step_schedule=10000,
+    step_schedule=100,
     return_all_xs=True,
     save_splits=10,
     grad_clip=1e4,
@@ -51,8 +51,8 @@ def train_mlp(model,
     sk_seed = 42
     train_size = 0.8
 
-    x = input.detach().requires_grad()
-    y = output.detach().requires_grad()
+    x = input_val.detach().requires_grad_().float()
+    y = output_val.detach().requires_grad_().float()
 
     if retraining:
         x_centered = center_values(x, model.x_mean, model.x_centered_std)
@@ -91,7 +91,7 @@ def train_mlp(model,
             print("Stopped because loss became inf!")
             return model, losses, xs
         
-        loss.backward()
+        loss.backward(retain_graph=True)
         clip_grad_norm_(model.parameters(), max_norm=grad_clip)
         optimizer.step()
 

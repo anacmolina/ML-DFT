@@ -8,16 +8,15 @@ from ase.parallel import parprint as print
 def train_flow(
     model,
     x_train,
-    n_iter=10,
-    lr=1e-1,
+    n_iter=1000,
+    lr=5e-3,
     bs=100,
     use_scheduler=False,
-    step_schedule=10000,
+    step_schedule=100,
     args_loss={"type": "fwd", "samp": "direct"},
     return_all_xs=True,
     save_splits=10,
     grad_clip=1e4,
-    retrain=False,
 ):
     """ "
     Args:
@@ -63,6 +62,8 @@ def train_flow(
         optimizer.zero_grad()
 
         loss = loss_func(x)
+
+        #print(loss)
 
         # In case we are running out of memory
         # if return_all_xs or t % (n_iter / 10) == 0:
