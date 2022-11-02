@@ -4,12 +4,8 @@ import numpy as np
 
 class MLP(nn.Module):
 
-    def __init__(self, layerdims, activation=torch.relu, init_scale=None, center_data=False):
-        super(MLP, self).__init__()
-
-        self.LOCK = False
-        self.center_data = center_data
-        
+    def __init__(self, layerdims, activation=torch.relu, init_scale=None):
+        super(MLP, self).__init__() 
         self.layerdims = layerdims
         self.activation = activation
         linears = [nn.Linear(layerdims[i], layerdims[i + 1]) for i in range(len(layerdims) - 1)]
@@ -23,43 +19,30 @@ class MLP(nn.Module):
         self.linears = nn.ModuleList(linears)
 
     def forward(self, x):
-
         layers = list(enumerate(self.linears))
         for _, l in layers[:-1]:
             x = self.activation(l(x))
         y = layers[-1][1](x)
-
         return y
 
-    def set_center_data(self, value):
-        self.center_data(value)
-
     def set_center_values(self, means, stds):
-
-        if self.center_data:
-
-            if (not self.LOCK) and (means is not None) and (stds is not None):
                 
-                self.x_mean = means[0]
-                self.y_mean = means[1]
-                self.x_centered_std = stds[0]
-                self.y_centered_std = stds[1]
+        self.x_mean = means[0]
+        self.y_mean = means[1]
+        self.x_centered_std = stds[0]
+        self.y_centered_std = stds[1]
                 
-                self.LOCK = True
-
     def predict(self, x):
 
-        if self.LOCK:
-            x = x - self.x_mean
-            x = x/self.x_centered_std
-            
-            y = self.forward(x)
-
+        x = x - self.x_mean
+        x = x/self.x_centered_std
         
-            y = y * self.y_centered_std
-            y = y + self.y_mean
+        y = self.forward(x)
+   
+        y = y * self.y_centered_std
+        y = y + self.y_mean
 
-            return y
+        return y
 
 def center_values(x, x_mean=None, x_centered_std=None):
     

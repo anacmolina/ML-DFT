@@ -14,7 +14,6 @@ def train_flow(
     use_scheduler=False,
     step_schedule=100,
     args_loss={"type": "fwd", "samp": "direct"},
-    return_all_xs=True,
     save_splits=10,
     grad_clip=1e4,
 ):
@@ -51,7 +50,6 @@ def train_flow(
         )
 
     # logs
-    xs = []
     losses = []
     models = [copy.deepcopy(model)]
     grad_norms = []
@@ -63,15 +61,9 @@ def train_flow(
 
         loss = loss_func(x)
 
-        #print(loss)
-
-        # In case we are running out of memory
-        # if return_all_xs or t % (n_iter / 10) == 0:
-        #    xs.append(x_)
-
         if torch.isinf(loss).any():
             print("Stopped because loss became inf!")
-            return model, losses, xs
+            return model, losses
 
         loss.backward()
         clip_grad_norm_(model.parameters(), max_norm=grad_clip)
@@ -108,7 +100,6 @@ def train_flow(
     to_return = {
         "model": model,
         "losses": losses,
-        "xs": xs,
         "models": models,
         "grad_norms": grad_norms,
     }
