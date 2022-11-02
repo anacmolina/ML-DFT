@@ -60,9 +60,9 @@ def get_internal_coordinates(traj):
     
     try:
         energies = [traj_.get_potential_energy() for traj_ in traj]
+        ENERGY = True
     except:
-        energies = [0]*len(traj)
-        #raise RuntimeWarning("No calculator")
+        ENERGY = False
 
     xyz = []
     for traj_ in traj:
@@ -79,12 +79,18 @@ def get_internal_coordinates(traj):
     label_a = ['angle'+str(i)+str(j) for i, j in zip(ind, a)]
     label_d = ['dihedral'+str(i)+str(j) for i, j in zip(ind, d)]
 
-    cols = label_b + label_a + label_d + ['energies']
+    if ENERGY: cols = label_b + label_a + label_d + ['energies']
+    else: cols = label_b + label_a + label_d
+
     new_zmat = pd.DataFrame(columns = cols, index=np.arange(0, len(zmat), 1))
     
-    for i in range(len(zmat)):
-        new_zmat.iloc[i] = zmat[i].iloc[:, 2].tolist()+zmat[i].iloc[:, 4].tolist()+zmat[i].iloc[:, 6].tolist()+[energies[i]]
-    
+    if ENERGY:
+        for i in range(len(zmat)):
+            new_zmat.iloc[i] = zmat[i].iloc[:, 2].tolist()+zmat[i].iloc[:, 4].tolist()+zmat[i].iloc[:, 6].tolist()+[energies[i]]
+    else:
+        for i in range(len(zmat)):
+            new_zmat.iloc[i] = zmat[i].iloc[:, 2].tolist()+zmat[i].iloc[:, 4].tolist()+zmat[i].iloc[:, 6].tolist()
+
     new_zmat = deg_to_rad(new_zmat)
     new_zmat = rephase(new_zmat)
 

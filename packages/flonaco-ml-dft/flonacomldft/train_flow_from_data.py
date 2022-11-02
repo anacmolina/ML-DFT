@@ -17,7 +17,7 @@ def train_flow(
     save_splits=10,
     grad_clip=1e4,
 ):
-    """ "
+    """ 
     Args:
         model (Realnvp_MLP)
         x_train (tensor of float)
