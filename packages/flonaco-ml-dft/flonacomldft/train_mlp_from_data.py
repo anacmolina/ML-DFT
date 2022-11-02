@@ -26,7 +26,6 @@ def train_mlp(model,
     bs=100,
     use_scheduler=False,
     step_schedule=100,
-    return_all_xs=True,
     save_splits=10,
     grad_clip=1e4,
     retraining=False
@@ -42,7 +41,6 @@ def train_mlp(model,
             optimizer, step_size=step_schedule, gamma=0.5
         )
 
-    xs = []
     losses = []
     losses_val = []
     models = [copy.deepcopy(model)]
@@ -89,7 +87,7 @@ def train_mlp(model,
 
         if torch.isinf(loss).any():
             print("Stopped because loss became inf!")
-            return model, losses, xs
+            return model, losses
         
         loss.backward(retain_graph=True)
         clip_grad_norm_(model.parameters(), max_norm=grad_clip)
@@ -118,7 +116,6 @@ def train_mlp(model,
         "dataset_split": data_split,
         "losses": losses,
         "losses_test": losses_val,
-        "xs": xs,
         "models": models,
         "grad_norms": grad_norms,
     }
