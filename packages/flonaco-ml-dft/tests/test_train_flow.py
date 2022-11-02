@@ -2,29 +2,32 @@ from ase.parallel import parprint as print
 
 import time
 import copy
+import json
 
 import torch
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 
 from flonacomldft.real_nvp_mlp import RealNVP_MLP
 from flonacomldft.train_flow_from_data import train_flow
+from flonacomldft.internal_coordinates import Angles_mapping
 
 from flonacomldft.data_utils import get_path, save_pickle_file
-from flonacomldft.internal_coordinates import Angles_mapping
-from flonacomldft.collective_variables import get_CVs
-
-from flonacomldft.visualize import plotting_fes_db
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 dtype = torch.float32
 
+f = open('flow_specs.out', 'a')
+
 date = time.strftime("%d-%m-%Y")
 random_id = np.random.randint(100)
 
-print("Date: {}".format(date))
-print("Random_id: {}".format(str(random_id)))
+f.write("FLONACO ML-DFT\n\n")
+f.write("Flow training\n\n")
+f.write("Date: {}\n".format(date))
+f.write("Random_seed: {}\n\n".format(str(random_id)))
+
+f.write("Ag6 isomer: planar\n")
 
 torch.manual_seed(random_id)
 
@@ -37,13 +40,14 @@ n = -1
 x_tensor = torch.from_numpy(X[:n].to_numpy()).float()
 U_tensor = torch.from_numpy(U[:n].to_numpy()).float()
 
-print("Labels: {}, Samples: {}\n".format(x_tensor.shape[1], x_tensor.shape[0]))
+f.write("Samples: {}, Labels: {}\n\n".format(x_tensor.shape[0], x_tensor.shape[1]))
 
 M = Angles_mapping()
 M.inv_mapping(x_tensor)
 
 cov = torch.cov(x_tensor.T)
 mean = x_tensor.mean(0)
+
 
 args_rnvp = {
     "dim": x_tensor.shape[1],
@@ -67,41 +71,40 @@ model = RealNVP_MLP(
     device=device,
 )
 
+f.write("flow NN architecture: \n")
+f.write("\t n_realnvp_block: {}\n".format(args_rnvp['n_realnvp_block']))
+f.write("\t block_depth: {}\n".format(args_rnvp['block_depth']))
+
+f.write("\n")
+
+n_iter_ = 1000
+lr_ = 5e-3
+
+f.write("flow training hyperparameters: \n")
+f.write("\t n_iter: {}\n".format(n_iter_))
+f.write("\t lr: {}\n".format(lr_))
+
+f.write("\n")
+
 model_init = copy.deepcopy(model)
+
+#TODO: writing training values in the output file
+#TODO: add way to add isomer
 
 _ = train_flow(
     model,
     x_tensor,
-    n_iter=1000,
-    lr=5e-3,
+    n_iter=n_iter_,
+    lr=lr_,
     bs=100,
     use_scheduler=False,
     step_schedule=100,
     args_loss={"type": "fwd", "samp": "direct"},
-    # estimate_tau=False,
-    #return_all_xs=True,
     save_splits=10,
     grad_clip=1e4,
 )
 
+f.write("DONE!")
+
+f.close()
 save_pickle_file(_, "flow_trained")
-
-losses = _["losses"]
-plt.figure(figsize=(7, 5))
-plt.plot(list(range(0, len(losses))), np.abs(np.array(losses)))
-plt.yscale("log")
-plt.ylabel("Losses")
-plt.show()
-
-models = _["models"]
-N_samples = 250
-
-x = models[-1].sample(N_samples)
-M.mapping(x)
-x = x.clone().data.cpu().numpy()
-c_, r_ = get_CVs(x)
-
-ax = plotting_fes_db()
-ax.plot(c_, r_, "mo", label="NF proposals")
-ax.legend(loc="lower left", fontsize=20)
-plt.show()

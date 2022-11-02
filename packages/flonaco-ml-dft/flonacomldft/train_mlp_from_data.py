@@ -33,6 +33,7 @@ def train_mlp(model,
 
     #mse
     def loss_func(x,y):
+        # x and y centered
         return ((model(x) - y[:,None]) ** 2).mean()
 
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -108,8 +109,8 @@ def train_mlp(model,
         if use_scheduler:
             scheduler.step()
 
-        if t % (n_iter / save_splits) == 0 or n_iter <= save_splits:
-            models.append(copy.deepcopy(model))
+        #if t % (n_iter / save_splits) == 0 or n_iter <= save_splits:
+        #    models.append(copy.deepcopy(model))
 
     to_return = {
         'mlp_model': model,
