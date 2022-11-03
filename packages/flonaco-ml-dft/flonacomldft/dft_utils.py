@@ -23,6 +23,7 @@ from ase.io import Trajectory
 
 from flonacomldft.internal_coordinates import get_construction_table
 
+import gpaw.mpi as mpi
 
 class Angles_transformation(torch.Tensor):
    def __init__(self, x_):
@@ -108,10 +109,10 @@ class Structure:
       
       if len(self.zmat_values)==12:
          
-         b[0] = 1.27#12.551959 #12.649508829797915 #
-         a[0:2] = np.array([2.21657, 2.21657])#np.array([0.88610283, 1.64261783])
-         d[0:3] = np.array([2.21657, 2.21657, 2.21657])#np.array([0.61541089, -1.94064131, -0.73241593])
-         
+         b[0] = 1.27
+         a[0:2] = np.array([2.21657, 2.21657])
+         d[0:3] = np.array([2.21657, 2.21657, 2.21657])
+
          b[1:] = self.zmat_values[:5]
          a[2:] = self.zmat_values[5:9]
          d[3:] = self.zmat_values[9:]
@@ -149,14 +150,11 @@ class Structure:
          raise RuntimeError('No data')
       
       # Setting the cell parameters
-      from ase.visualize import view
 
       cell = [16, 16, 16]
       self.molecule.set_cell(cell)
       self.molecule.center()
       self.molecule.set_pbc(True)
-
-      view(self.molecule)
       
       # DFT calculator low level precision but faster (takes 1 minute in serial)                                \
          
@@ -175,11 +173,11 @@ class Structure:
 # Running MD
 def run_molecular_dynamics(molecule, iters, name, starting=True):
     #from flonacomldft.data_utils import trajectories_folder
-    import gpaw.mpi as mpi
+    #import gpaw.mpi as mpi
     rank = mpi.world.rank
 
     path = os.path.join(os.getcwd(), 'trajectories')
-    mpi.world.barrier()
+    #mpi.world.barrier()
    
     if rank==0 and os.path.isdir(path)==False:
        print('Folder created: %s Rank: %d '%(path, rank))

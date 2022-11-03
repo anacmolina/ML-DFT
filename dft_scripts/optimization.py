@@ -4,13 +4,13 @@ from gpaw import GPAW
 from ase.optimize import BFGS
 from ase.io import write
 
-from flonacomldft.molecule import Ag6Isomers
+from flonacomldft.silver_isomers import molecule
 
 
 isomer = "ag6_planar"
 mode = "lcao"
 
-mol = Ag6Isomers(isomer)
+mol = molecule(isomer)
 
 mol.set_cell([16, 16, 16])
 mol.set_pbc(True)

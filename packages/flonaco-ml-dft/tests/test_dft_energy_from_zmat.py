@@ -1,13 +1,15 @@
 import numpy as np
 from flonacomldft.dft_utils import compute_energy
-from flonacomldft.molecule import Ag6Isomers
+from flonacomldft.silver_isomers import molecule
 from flonacomldft.internal_coordinates import (
     get_internal_coordinates,
 )
 
+#TODO: pytest, add values like version, pbe, etc
 
-molecule = Ag6Isomers('ag6_planar')
-zmat = get_internal_coordinates([molecule])[0]
+ag6 = molecule('ag6_planar')
+zmat = get_internal_coordinates([ag6])[0]
 U = compute_energy(zmat)
 
-print('Planar isomer U: {:.4}'.format(U))
+#TODO: assert etc
+#assert (U)

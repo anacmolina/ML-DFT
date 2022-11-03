@@ -234,7 +234,7 @@ def run_metropolis(
         u_init = U.clone().detach()
         count_init = count.clone().detach()
 
-        print("acc: {:0.2f}".format(acc.float().mean()))
+        #print("acc: {:0.2f}".format(acc.float().mean()))
 
     to_return = {
         "xs": torch.stack(xs),
