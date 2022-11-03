@@ -108,9 +108,9 @@ class Structure:
       
       if len(self.zmat_values)==12:
          
-         b[0] = 12.649508829797915 #12.551959 #
-         a[0:2] = np.array([0.88610283, 1.64261783])
-         d[0:3] = np.array([0.61541089, -1.94064131, -0.73241593])
+         b[0] = 1.27#12.551959 #12.649508829797915 #
+         a[0:2] = np.array([2.21657, 2.21657])#np.array([0.88610283, 1.64261783])
+         d[0:3] = np.array([2.21657, 2.21657, 2.21657])#np.array([0.61541089, -1.94064131, -0.73241593])
          
          b[1:] = self.zmat_values[:5]
          a[2:] = self.zmat_values[5:9]
@@ -149,7 +149,6 @@ class Structure:
          raise RuntimeError('No data')
       
       # Setting the cell parameters
-
       from ase.visualize import view
 
       cell = [16, 16, 16]
@@ -226,7 +225,6 @@ def run_molecular_dynamics(molecule, iters, name, starting=True):
 
 def compute_energy(zmat, txt='ag6.out'):
    ag6 =  Structure()
-   print('here')
    ag6.calculate_potential_energy(zmat, txt=txt)
    U = ag6.potential_energy
    return U

@@ -47,9 +47,10 @@ def rephase(zmat, angle=0, columns=['dihedral13']):
         zmat[column] = zmat[column] + phase
     return zmat
 
-def deg_to_rad(zmat):
-    labels = zmat.columns.to_list()
-    for label in labels[6:-1]:
+def deg_to_rad(zmat, labels):
+    #labels = zmat.columns.to_list()
+    #for label in labels[6:-1]:
+    for label in labels:
         zmat[label] = np.deg2rad(zmat[label].tolist())
     return zmat
 
@@ -83,15 +84,19 @@ def get_internal_coordinates(traj):
     else: cols = label_b + label_a + label_d
 
     new_zmat = pd.DataFrame(columns = cols, index=np.arange(0, len(zmat), 1))
-    
+
     if ENERGY:
         for i in range(len(zmat)):
             new_zmat.iloc[i] = zmat[i].iloc[:, 2].tolist()+zmat[i].iloc[:, 4].tolist()+zmat[i].iloc[:, 6].tolist()+[energies[i]]
+        
+        set_labels = new_zmat.columns.to_list()[6:-1]
     else:
         for i in range(len(zmat)):
             new_zmat.iloc[i] = zmat[i].iloc[:, 2].tolist()+zmat[i].iloc[:, 4].tolist()+zmat[i].iloc[:, 6].tolist()
+        
+        set_labels = new_zmat.columns.to_list()[6:]
 
-    new_zmat = deg_to_rad(new_zmat)
+    new_zmat = deg_to_rad(new_zmat, set_labels)
     new_zmat = rephase(new_zmat)
 
     new_zmat = new_zmat.drop(["bond0origin", "angle0e_z", "angle2e_z", "dihedral0e_x", "dihedral2e_x", "dihedral3e_x"], axis=1)

@@ -15,7 +15,7 @@ dtype = torch.float32
 cores = mpi.world.size
 
 isomer = "is1"
-i = 1500
+i = 0
 
 filename = get_path() + isomer + "_lcao_zmat.csv"
 df = pd.read_csv(filename)
