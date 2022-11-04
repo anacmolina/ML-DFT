@@ -76,10 +76,12 @@ mlps = [[init_mlp_is1, init_mlp_is2]]
 weights = torch.tensor([0.5, 0.5]).detach()
 mixture = Mixture(flow[0], weights)
 
-n_runs = 3
-n_chains = 100
-n_sts = 5
+n_runs = 5
+n_chains = 25
+n_sts = 20
 energy_type = "mlp-dft" #"dft"  
+
+#print(xis[:n_chains].shape)
 
 # init sampling
 _ = run_metropolis(
@@ -125,6 +127,7 @@ if energy_type == "dft" or energy_type == "mlp-dft":
 # retrain flows
 i = 0
 for i in range(n_runs):
+    print(i)
     data_for_flows = T(
         torch.cat(
             (
@@ -155,7 +158,7 @@ for i in range(n_runs):
     M.inv_mapping(is2_prop)
 
     new_flow_is1 = train_flow(
-        init_nf_is1['model'],
+        flow[i][0],
         is1_prop,
         n_iter=100,
         lr=5e-3,
@@ -166,9 +169,8 @@ for i in range(n_runs):
         save_splits=10,
         grad_clip=1e4,)
 
-
     new_flow_is2 = train_flow(
-        init_nf_is2['model'],
+        flow[i][1],
         is2_prop,
         n_iter=100,
         lr=5e-3,
@@ -179,7 +181,8 @@ for i in range(n_runs):
         save_splits=10,
         grad_clip=1e4,)
 
-    #flow.append([new_flow_is1, new_flow_is2])
+    M.mapping(is1_prop)
+    M.mapping(is2_prop)
 
     # retrain MLPs
     if USE_DFT_ENERGIES:
@@ -214,21 +217,28 @@ for i in range(n_runs):
             # use only ind_dft
             print("hi :(, T_T")  # _["ind_dft"])
 
+    flow_train.append([new_flow_is1, new_flow_is2])
+    flow.append(get_models(flow_train[i+1]))
 
     weights = torch.tensor([0.5, 0.5]).detach()
-    mixture = Mixture([new_flow_is1['model'], new_flow_is2['model']], weights)
+    mixture = Mixture(flow[i+1], weights)
 
     _ = run_metropolis(
         model=mixture,
-        u_init=uis[:n_chains],
-        x_init=xis[:n_chains, :],
-        count_init=cis[:n_chains],
+        u_init=us_acc[i][-1, :],
+        x_init=xs_acc[i][-1, :],
+        count_init=cs_acc[i][-1, :],
         n_chains=n_chains,
         n_steps=n_sts,
         energy_type=energy_type,
         mlps=mlps[0],
         mixture=True,
     )
+
+    xs_acc.append(_["xs"])
+    us_acc.append(_["us"])
+    accs_s.append(_["accs"])
+    cs_acc.append(_["counts"])
 
     import matplotlib.pyplot as plt
     plt.plot(_['accs'].mean(1))
