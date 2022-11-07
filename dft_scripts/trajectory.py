@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-from flonacomldft.molecule import Ag6Isomers
+from flonacomldft.silver_isomers_utils import get_molecule_isomer_minima
 
 from ase.parallel import parprint
 from gpaw import GPAW
@@ -29,11 +29,11 @@ isomer = "ag6_planar"
 mode = "lcao"
 name = isomer + "_" + mode
 
-mol = Ag6Isomers(isomer)
+molecule = get_moleculeecule_isomer_minima(isomer)
 
-mol.set_cell([16, 16, 16])
-mol.set_pbc(True)
-mol.center()
+molecule.set_cell([16, 16, 16])
+molecule.set_pbc(True)
+molecule.center()
 
 calc = GPAW(
     mode=mode,
@@ -46,13 +46,13 @@ calc = GPAW(
     txt=name + ".out",
 )
 
-mol.set_calculator(calc)
+molecule.set_calculator(calc)
 
-MaxwellBoltzmannDistribution(mol, temperature_K=300)
-Stationary(mol)
-ZeroRotation(mol)
+MaxwellBoltzmannDistribution(molecule, temperature_K=300)
+Stationary(molecule)
+ZeroRotation(molecule)
 
 dyn = NVTBerendsen(
-    mol, 5 * units.fs, taut=50, temperature_K=300, trajectory=name + "_md.traj"
+    molecule, 5 * units.fs, taut=50, temperature_K=300, trajectory=name + "_md.traj"
 )
 dyn.run(5000)

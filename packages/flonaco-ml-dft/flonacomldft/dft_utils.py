@@ -59,47 +59,52 @@ class Angles_transformation(torch.Tensor):
          self.x[:,self.n:] = torch.arctan(self.x[:,self.n:])
          #self.x = self.x.reshape(self.Nsample, self.dims)
 
-       
-"""
-
-Structure (Object)
-
-zmat ---> xyz
-xyz <--- zmat
-
-get_potential_energy()
-"""
-
 # Structure: Class that uses construction table and symbols to build a molecules
-
 #add option to save .gpw file
 #reuse the calculator for the next energy calculation
 class Structure:
-   def __init__(self, construction_table_=get_construction_table(), symbols_=np.full(6, 'Ag')):
+   """
+   Structure (Object)
+
+   zmat ---> xyz
+   xyz <--- zmat
+
+   get_potential_energy()
+   """
+
+   def __init__(self, construction_table_=get_construction_table(), 
+                symbols_=np.full(6, 'Ag'), txt='ag6.out'):
       super().__init__()
       
       self.construction_table = construction_table_.copy()
       self.symbols = symbols_
       self.Natoms = len(self.symbols)
       
-      self.zmat_values = None
-      self.zmat_matrix = None
-      self.molecule = None
-      self.potential_energy = None
-      self.calculator = None
-      
-   def build_zmat_matrix(self, zmat_values_):
+      # DFT calculator low level precision but faster (takes 1 minute in serial)                                \
+      self.calculator = GPAW(mode = 'lcao', basis='pvalence.dz', h =0.2, xc = 'PBE',
+                             spinpol = True, nbands = -4, txt=txt)
 
-      if(zmat_values_ is None):
+      #DFT calculator with higher precision but takes longer (about 30 minutes in serial).                      \
          
-         if(self.zmat_values is None):
-            raise RuntimeError('No data')
+      #calc = GPAW(mode = 'fd', h =0.18, xc = 'PBE', eigensolver = 'rmm-diis', spinpol = True, nbands=-4) 
+      
+   def build_zmat_matrix_and_molecule(self, zmat_values):  
+      """"
+      Build the zmat matrix and the molecule from the zmat values
+      
+      In:
+         zmat_values: array with the values of the internal coordinates
+      Out:  
+         zmat_matrix: df-zmat of coordinates in the basis of the IC
+         molecule: Ase Atoms object 
+               - storing cartesian coordinates, forces, energies, etc.
+      
+      """
+
+      if torch.is_tensor(zmat_values):
+         self.zmat_values = zmat_values.clone().detach().numpy()
       else:
-         if torch.is_tensor(zmat_values_):
-            self.zmat_values = zmat_values_.clone()
-            self.zmat_values = self.zmat_values.detach().numpy()
-         else:
-            self.zmat_values = zmat_values_.copy()
+         self.zmat_values = zmat_values.copy()
                
       zmat_matrix = self.construction_table.copy()
       
@@ -109,6 +114,7 @@ class Structure:
       
       if len(self.zmat_values)==12:
          
+         # reference frame shift - values taken from chemcoord
          b[0] = 1.27
          a[0:2] = np.array([2.21657, 2.21657])
          d[0:3] = np.array([2.21657, 2.21657, 2.21657])
@@ -129,46 +135,28 @@ class Structure:
          zmat_matrix.insert(4, "angle", a, True)
          zmat_matrix.insert(6, "dihedral", d, True)
 
-         self.zmat_matrix = cc.Zmat(zmat_matrix)
-         self.molecule = self.zmat_matrix.get_cartesian().get_ase_atoms()
+         zmat_matrix = cc.Zmat(zmat_matrix)
+         molecule = self.zmat_matrix.get_cartesian().get_ase_atoms()
 
       else:
          raise RuntimeError('Data not valid')
       
-   def calculate_potential_energy(self, zmat_values_=None, txt='ag6.out'):
+      return zmat_matrix, molecule 
       
-      if (zmat_values_ is None and self.zmat_values is not None):
-         dim = self.zmat_values.shape[0]
-         self.build_zmat_matrix(self.zmat_values)
-         
-      elif (zmat_values_ is not None):
-         self.zmat_values = zmat_values_
-         dim = self.zmat_values.shape[0]
-         self.build_zmat_matrix(zmat_values_)
-         
-      elif (zmat_values_ is None and self.zmat_values is None):
-         raise RuntimeError('No data')
+   def calculate_potential_energy(self, zmat_values):
       
+      dim = zmat_values.shape[0]
+      zmat_matrix, molecule = self.build_zmat_matrix_and_molecule(zmat_values)
+
       # Setting the cell parameters
-
       cell = [16, 16, 16]
-      self.molecule.set_cell(cell)
-      self.molecule.center()
-      self.molecule.set_pbc(True)
-      
-      # DFT calculator low level precision but faster (takes 1 minute in serial)                                \
-         
-      self.calculator = GPAW(mode = 'lcao', basis='pvalence.dz', h =0.2, xc = 'PBE', spinpol = True, nbands = -4\
-                             , txt=txt)
-
-      #DFT calculator with higher precision but takes longer (about 30 minutes in serial).                      \
-         
-      #calc = GPAW(mode = 'fd', h =0.18, xc = 'PBE', eigensolver = 'rmm-diis', spinpol = True, nbands=-4)       \
-         
-      self.molecule.set_calculator(self.calculator)
+      molecule.set_cell(cell)
+      molecule.center()
+      molecule.set_pbc(True)
+      molecule.set_calculator(self.calculator)
       
       # Calculating the potential energy
-      self.potential_energy = self.molecule.get_potential_energy()
+      self.potential_energy = molecule.get_potential_energy()
 
 # Running MD
 def run_molecular_dynamics(molecule, iters, name, starting=True):
@@ -176,6 +164,7 @@ def run_molecular_dynamics(molecule, iters, name, starting=True):
     #import gpaw.mpi as mpi
     rank = mpi.world.rank
 
+    # Setting a folder to save the trajectories
     path = os.path.join(os.getcwd(), 'trajectories')
     #mpi.world.barrier()
    
@@ -186,33 +175,32 @@ def run_molecular_dynamics(molecule, iters, name, starting=True):
        pass
     
     mpi.world.barrier()
-    mol = molecule
 
     #Setting the cell
-
-    mol.set_cell([16, 16, 16])
-    mol.set_pbc(True)
-    mol.center()
+    molecule.set_cell([16, 16, 16])
+    molecule.set_pbc(True)
+    molecule.center()
 
     file = path+'/ag6_'+name
 
     # Building calculator
     calc = GPAW(mode="lcao", h=0.2, basis="pvalence.dz", spinpol=True, xc="PBE", symmetry="off", nbands = -4, txt=file+'.out')
 
-    mol.set_calculator(calc)
+    molecule.set_calculator(calc)
    
     if starting==True:
        # Adding conditions to the MD simulation
-       MaxwellBoltzmannDistribution(mol, temperature_K=300)
-       Stationary(mol)
-       ZeroRotation(mol)
+       MaxwellBoltzmannDistribution(molecule, temperature_K=300)
+       Stationary(molecule)
+       ZeroRotation(molecule)
     else:
        pass
 
     mpi.world.barrier()
 
     # Running the MD
-    dyn = NVTBerendsen(mol, 5 * units.fs, taut = 50, temperature_K=300, trajectory=file+'.traj')
+    dyn = NVTBerendsen(molecule, 5 * units.fs, taut = 50, temperature_K=300,
+                       trajectory=file+'.traj')
     dyn.run(iters)
     
     # Getting the MD trajectory
@@ -221,8 +209,3 @@ def run_molecular_dynamics(molecule, iters, name, starting=True):
 
     return traj
 
-def compute_energy(zmat, txt='ag6.out'):
-   ag6 =  Structure()
-   ag6.calculate_potential_energy(zmat, txt=txt)
-   U = ag6.potential_energy
-   return U

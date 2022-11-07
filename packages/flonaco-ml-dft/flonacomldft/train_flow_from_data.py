@@ -13,7 +13,6 @@ def train_flow(
     bs=100,
     use_scheduler=False,
     step_schedule=100,
-    args_loss={"type": "fwd", "samp": "direct"},
     save_splits=10,
     grad_clip=1e4,
 ):
@@ -26,15 +25,6 @@ def train_flow(
         bs (int): batchsize
         use_scheduler (bool): if learning rate schedule should be used
         step_schedule (int): iteration frequency of schedule
-        args_loss (dict):
-                    'type' - loss type 'fwd', 'bwd', 'js'
-                    'samp' - sampling method 'langevin', 'direct', 'mhlangevin'
-                    + kwargs for sampling method
-                    Note that not all combinations are possible
-                    depending on target etc.
-        args_stop (dict): {'acc': x} with x in [0,1] Metropolis acceptance
-                    threshold to stop train
-        return_all_xs: will return samples produced on the fly
         save_splits: number of snapshots saved during training
     """
 

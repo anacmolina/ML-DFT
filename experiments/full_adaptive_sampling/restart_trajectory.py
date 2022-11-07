@@ -179,7 +179,7 @@ for i in range(n_runs):
     else:
         raise RuntimeError("Unknown value")
 
-    # ag6.build_zmat_matrix(x_)
+    # ag6.build_zmat_matrix_and_molecule(x_)
 
     mpi.world.barrier()
     if (i + 1) % 2 == 0:

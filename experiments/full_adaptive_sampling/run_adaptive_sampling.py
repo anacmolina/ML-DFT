@@ -176,7 +176,6 @@ for i in range(n_runs):
             bs=100,
             use_scheduler=False,
             step_schedule=100,
-            args_loss={"type": "fwd", "samp": "direct"},
             save_splits=10,
             grad_clip=1e4,)
     else:
@@ -191,7 +190,6 @@ for i in range(n_runs):
             bs=100,
             use_scheduler=False,
             step_schedule=100,
-            args_loss={"type": "fwd", "samp": "direct"},
             save_splits=10,
             grad_clip=1e4,)
     else:

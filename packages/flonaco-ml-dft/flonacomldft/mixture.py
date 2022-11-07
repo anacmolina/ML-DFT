@@ -2,10 +2,6 @@ from torch._C import device
 import numpy as np
 import torch
 import torch.nn as nn
-# import torch.nn.functional as F
-from flonacomldft.real_nvp_mlp import RealNVP_MLP
-# from  torch.distributions.uniform import Uniform
-
 
 class Mixture(nn.Module):
     def __init__(self, models, init_weights=None, device='cpu'):

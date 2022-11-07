@@ -12,7 +12,7 @@ from flonacomldft.data_utils import (
     get_path
 )
 
-from flonacomldft.models import MLP, center_values
+from flonacomldft.mlp_models import MLP, center_values
 
 import sklearn.model_selection
 import torch.optim as optim
@@ -28,7 +28,9 @@ def train_mlp(model,
     step_schedule=100,
     save_splits=10,
     grad_clip=1e4,
-    retraining=False
+    retraining=False,
+    train_size = 0.8,
+    sk_seed = 42
 ):
 
     #mse
@@ -44,11 +46,8 @@ def train_mlp(model,
 
     losses = []
     losses_val = []
-    models = [copy.deepcopy(model)]
+    model_init = copy.deepcopy(model)
     grad_norms = []
-
-    sk_seed = 42
-    train_size = 0.8
 
     x = input_val.detach().requires_grad_().float()
     y = output_val.detach().requires_grad_().float()
@@ -117,7 +116,7 @@ def train_mlp(model,
         "dataset_split": data_split,
         "losses": losses,
         "losses_test": losses_val,
-        "models": models,
+        "model_init": model_init,
         "grad_norms": grad_norms,
     }
 

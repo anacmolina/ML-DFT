@@ -21,7 +21,7 @@ isomers = {
                         [8.0000000, 9.919833, 7.129457]])}
             }
 
-def molecule(name, vacuum=None, **kwargs):
+def get_molecule_isomer_minima(name, vacuum=None, **kwargs):
     
     if name in isomers:
         

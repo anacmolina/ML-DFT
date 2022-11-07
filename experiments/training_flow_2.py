@@ -8,7 +8,7 @@ import torch
 import numpy as np
 import pandas as pd
 
-from flonacomldft.real_nvp_mlp import RealNVP_MLP
+from flonacomldft.real_nvp import RealNVP_MLP
 from flonacomldft.train_flow_from_data import train_flow
 from flonacomldft.internal_coordinates import Angles_mapping
 
@@ -99,7 +99,6 @@ _ = train_flow(
     bs=100,
     use_scheduler=False,
     step_schedule=100,
-    args_loss={"type": "fwd", "samp": "direct"},
     save_splits=10,
     grad_clip=1e4,
 )
