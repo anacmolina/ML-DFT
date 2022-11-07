@@ -17,7 +17,7 @@ from flonacomldft.data_utils import get_path, save_pickle_file
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 dtype = torch.float32
 
-f = open('flow_specs.out', 'a')
+f = open("flow_specs.out", "a")
 
 date = time.strftime("%d-%m-%Y")
 random_id = np.random.randint(100)
@@ -72,13 +72,13 @@ model = RealNVP_MLP(
 )
 
 f.write("flow NN architecture: \n")
-f.write("\t n_realnvp_block: {}\n".format(args_rnvp['n_realnvp_block']))
-f.write("\t block_depth: {}\n".format(args_rnvp['block_depth']))
+f.write("\t n_realnvp_block: {}\n".format(args_rnvp["n_realnvp_block"]))
+f.write("\t block_depth: {}\n".format(args_rnvp["block_depth"]))
 
 f.write("\n")
 
-n_iter_ = 1000
-lr_ = 5e-3
+n_iter_ = 100
+lr_ = 1e-3
 
 f.write("flow training hyperparameters: \n")
 f.write("\t n_iter: {}\n".format(n_iter_))
@@ -88,10 +88,10 @@ f.write("\n")
 
 model_init = copy.deepcopy(model)
 
-#TODO: writing training values in the output file
-#TODO: add way to add isomer
+# TODO: writing training values in the output file
+# TODO: add way to add isomer
 
-_ = train_flow(
+out = train_flow(
     model,
     x_tensor,
     n_iter=n_iter_,
@@ -107,4 +107,4 @@ _ = train_flow(
 f.write("DONE!")
 
 f.close()
-save_pickle_file(_, "flow_trained")
+# save_pickle_file(_, "flow_trained")
