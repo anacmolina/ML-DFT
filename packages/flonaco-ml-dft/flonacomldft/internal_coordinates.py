@@ -40,11 +40,6 @@ def get_construction_table():
       
    return construction_table
 
-def shuffle_arr(vs, indexes):
-    concat = lambda vs: torch.cat(vs)
-    v = concat(vs)
-    return v[indexes]
-
 def rephase(zmat, angle=0, columns=['dihedral13']):
     for column in columns:
         phase = np.zeros(zmat[column].shape)
@@ -52,9 +47,10 @@ def rephase(zmat, angle=0, columns=['dihedral13']):
         zmat[column] = zmat[column] + phase
     return zmat
 
-def deg_to_rad(zmat):
-    labels = zmat.columns.to_list()
-    for label in labels[6:-1]:
+def deg_to_rad(zmat, labels):
+    #labels = zmat.columns.to_list()
+    #for label in labels[6:-1]:
+    for label in labels:
         zmat[label] = np.deg2rad(zmat[label].tolist())
     return zmat
 
@@ -65,9 +61,9 @@ def get_internal_coordinates(traj):
     
     try:
         energies = [traj_.get_potential_energy() for traj_ in traj]
+        ENERGY = True
     except:
-        energies = [0]*len(traj)
-        #raise RuntimeWarning("No calculator")
+        ENERGY = False
 
     xyz = []
     for traj_ in traj:
@@ -84,13 +80,23 @@ def get_internal_coordinates(traj):
     label_a = ['angle'+str(i)+str(j) for i, j in zip(ind, a)]
     label_d = ['dihedral'+str(i)+str(j) for i, j in zip(ind, d)]
 
-    cols = label_b + label_a + label_d + ['energies']
+    if ENERGY: cols = label_b + label_a + label_d + ['energies']
+    else: cols = label_b + label_a + label_d
+
     new_zmat = pd.DataFrame(columns = cols, index=np.arange(0, len(zmat), 1))
-    
-    for i in range(len(zmat)):
-        new_zmat.iloc[i] = zmat[i].iloc[:, 2].tolist()+zmat[i].iloc[:, 4].tolist()+zmat[i].iloc[:, 6].tolist()+[energies[i]]
-    
-    new_zmat = deg_to_rad(new_zmat)
+
+    if ENERGY:
+        for i in range(len(zmat)):
+            new_zmat.iloc[i] = zmat[i].iloc[:, 2].tolist()+zmat[i].iloc[:, 4].tolist()+zmat[i].iloc[:, 6].tolist()+[energies[i]]
+        
+        set_labels = new_zmat.columns.to_list()[6:-1]
+    else:
+        for i in range(len(zmat)):
+            new_zmat.iloc[i] = zmat[i].iloc[:, 2].tolist()+zmat[i].iloc[:, 4].tolist()+zmat[i].iloc[:, 6].tolist()
+        
+        set_labels = new_zmat.columns.to_list()[6:]
+
+    new_zmat = deg_to_rad(new_zmat, set_labels)
     new_zmat = rephase(new_zmat)
 
     new_zmat = new_zmat.drop(["bond0origin", "angle0e_z", "angle2e_z", "dihedral0e_x", "dihedral2e_x", "dihedral3e_x"], axis=1)
@@ -102,6 +108,11 @@ def get_pos_energy(zmat):
     u_tensor = zmat[:, -1]
     x_tensor = zmat[:, :-1]
     return x_tensor, u_tensor
+
+def shuffle_arr(vs, indexes):
+    concat = lambda vs: torch.cat(vs)
+    v = concat(vs)
+    return v[indexes]
 
 def get_mix_data(data_1, data_2):
     xi_is1, ui_is1 = get_pos_energy(data_1)

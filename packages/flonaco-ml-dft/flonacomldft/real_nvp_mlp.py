@@ -1,7 +1,6 @@
 '''
 Simplified implementation of Real-NVPs borrowing from
 https://github.com/chrischute/real-nvp.
-
 Original paper:
 Density estimation using Real NVP
 Laurent Dinh, Jascha Sohl-Dickstein, Samy Bengio
@@ -63,7 +62,6 @@ class ResidualAffineCoupling(nn.Module):
 
 class RealNVP_MLP(nn.Module):
     """ Minimal Real NVP architecture
-
     Args:
         dims (int,): input dimension
         n_realnvp_blocks (int): number of pairs of coupling layers
@@ -80,7 +78,7 @@ class RealNVP_MLP(nn.Module):
                  prior_arg={'type': 'standn'},
                  mask_type='half',  
                  hidden_dim=100,
-                 hidden_depth=10,
+                 hidden_depth=3,
                  hidden_bias=True,
                  hidden_activation=torch.relu,
                  device='cpu'):

@@ -19,7 +19,8 @@ class Mixture(nn.Module):
         if init_weights is None:
             self.weights = torch.ones((len(models),), device=device) / len(models)
         else:
-            self.weights = torch.tensor(init_weights).to(device)
+            #self.weights = torch.tensor(init_weights).to(device)
+            self.weights = init_weights.clone().detach().requires_grad_(True).to(device=device)
 
         self.weights.requires_grad_()
 
@@ -55,3 +56,6 @@ class Mixture(nn.Module):
 
     def U(self, x):
         return self.nll(x)
+
+def get_models(nf_):
+    return [nf_[0]['models'][-1], nf_[1]['models'][-1]]
