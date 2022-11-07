@@ -76,9 +76,9 @@ mlps = [[init_mlp_is1, init_mlp_is2]]
 weights = torch.tensor([0.5, 0.5]).detach()
 mixture = Mixture(flow[0], weights)
 
-n_runs = 5
-n_chains = 25
-n_sts = 20
+n_runs = 10
+n_chains = 100
+n_sts = 50
 energy_type = "mlp-dft" #"dft"  
 
 #print(xis[:n_chains].shape)
@@ -126,13 +126,23 @@ if energy_type == "dft" or energy_type == "mlp-dft":
 #TODO: falta actualizar los modelos in each run
 # retrain flows
 i = 0
+
+#print("results")
+#print(_["xs"])
+
 for i in range(n_runs):
+    xs = xs_acc[i].clone()
+    us = us_acc[i].clone()
+    cs = cs_acc[i].clone()
+
     print(i)
     data_for_flows = T(
         torch.cat(
             (
-                T(xs_acc[i]),
-                T(cs_acc[i].reshape(n_sts, n_chains, 1)),
+                #T(xs_acc[i]),
+                #T(cs_acc[i].reshape(n_sts, n_chains, 1)),
+                T(xs),
+                T(cs.reshape(n_sts, n_chains, 1)),
             ),
             dim=0,
         )
@@ -157,29 +167,35 @@ for i in range(n_runs):
     M.inv_mapping(is1_prop)
     M.inv_mapping(is2_prop)
 
-    new_flow_is1 = train_flow(
-        flow[i][0],
-        is1_prop,
-        n_iter=100,
-        lr=5e-3,
-        bs=100,
-        use_scheduler=False,
-        step_schedule=100,
-        args_loss={"type": "fwd", "samp": "direct"},
-        save_splits=10,
-        grad_clip=1e4,)
+    if is1_prop.nelement() != 0:
+        new_flow_is1 = train_flow(
+            flow[i][0],
+            is1_prop,
+            n_iter=100,
+            lr=5e-3,
+            bs=100,
+            use_scheduler=False,
+            step_schedule=100,
+            args_loss={"type": "fwd", "samp": "direct"},
+            save_splits=10,
+            grad_clip=1e4,)
+    else:
+        new_flow_is1 = flow_train[i][0]
 
-    new_flow_is2 = train_flow(
-        flow[i][1],
-        is2_prop,
-        n_iter=100,
-        lr=5e-3,
-        bs=100,
-        use_scheduler=False,
-        step_schedule=100,
-        args_loss={"type": "fwd", "samp": "direct"},
-        save_splits=10,
-        grad_clip=1e4,)
+    if is2_prop.nelement() != 0:
+        new_flow_is2 = train_flow(
+            flow[i][1],
+            is2_prop,
+            n_iter=100,
+            lr=5e-3,
+            bs=100,
+            use_scheduler=False,
+            step_schedule=100,
+            args_loss={"type": "fwd", "samp": "direct"},
+            save_splits=10,
+            grad_clip=1e4,)
+    else:
+        new_flow_is2 = flow_train[i][1]
 
     M.mapping(is1_prop)
     M.mapping(is2_prop)
@@ -190,9 +206,9 @@ for i in range(n_runs):
         data_for_mlp = T(
             torch.cat(
                 (
-                    T(xs_acc[i]),
-                    T(us_acc[i].reshape(n_sts, n_chains, 1)),
-                    T(cs_acc[i].reshape(n_sts, n_chains, 1)),
+                    T(xs),
+                    T(us.reshape(n_sts, n_chains, 1)),
+                    T(cs.reshape(n_sts, n_chains, 1)),
                 ),
                 dim=0,
             )
@@ -225,9 +241,9 @@ for i in range(n_runs):
 
     _ = run_metropolis(
         model=mixture,
-        u_init=us_acc[i][-1, :],
-        x_init=xs_acc[i][-1, :],
-        count_init=cs_acc[i][-1, :],
+        u_init=us_acc[i][-1],
+        x_init=xs_acc[i][-1],
+        count_init=cs_acc[i][-1],
         n_chains=n_chains,
         n_steps=n_sts,
         energy_type=energy_type,
@@ -235,11 +251,24 @@ for i in range(n_runs):
         mixture=True,
     )
 
+    print("results")
+    print(_["xs"])
+
     xs_acc.append(_["xs"])
     us_acc.append(_["us"])
     accs_s.append(_["accs"])
     cs_acc.append(_["counts"])
 
-    import matplotlib.pyplot as plt
-    plt.plot(_['accs'].mean(1))
-    plt.show()
+    #import matplotlib.pyplot as plt
+    #plt.plot(_['accs'].mean(1))
+    #plt.show()
+
+results = {
+    'xs': xs_acc,
+    'us': us_acc,
+    'acc': accs_s,
+    'counts': cs_acc,
+}
+
+from flonacomldft.data_utils import save_pickle_file
+save_pickle_file(results, 'runs_'+str(n_runs)+'_chains_'+str(n_chains)+'_steps_'+str(n_sts))

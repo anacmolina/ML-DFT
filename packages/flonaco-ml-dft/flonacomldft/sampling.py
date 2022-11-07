@@ -75,6 +75,8 @@ def run_metropolis(
             else:
                 mlp_is2 = mlps
 
+    #print('init\n',x_init)
+
     xs = []
     accs = []
     us = []
@@ -221,7 +223,7 @@ def run_metropolis(
             count[~acc] = count_init[~acc]
         else:
             count = count_init
-
+        
         xs.append(x.float().clone())
         accs.append(acc.float().clone())
         us.append(U.float().clone())
