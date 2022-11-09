@@ -174,4 +174,4 @@ def adaptative_sampling(x_init, u_init, count_init, n_runs, n_chains, n_steps, e
         'counts': cs_acc,
     }
 
-    return 0
+    return results
