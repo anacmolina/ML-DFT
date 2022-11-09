@@ -73,6 +73,8 @@ def train_mlp(model,
                                                       shuffle=True,
                                                       stratify=None)
 
+    #hyperparameters sklearn.model_selection.RandomizedSearchCV
+
     x_train, x_test, y_train, y_test = data_split
 
     pbar =  tqdm.tqdm(range(n_iter))
