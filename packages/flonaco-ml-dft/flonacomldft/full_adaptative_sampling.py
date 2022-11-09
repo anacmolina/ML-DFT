@@ -165,6 +165,7 @@ def adaptative_sampling(x_init, u_init, count_init, n_runs, n_chains, n_steps, e
         flow_train.append([new_flow_is1, new_flow_is2])
         flow.append(get_models(flow_train[i]))
         
+    #TODO: free space, delete variable
 
     results = {
         'xs': xs_acc,
