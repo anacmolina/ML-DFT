@@ -1,4 +1,3 @@
-from itertools import count
 from ase.parallel import parprint as print
 
 import torch
