@@ -109,7 +109,7 @@ def adaptative_sampling(x_init, u_init, count_init, n_runs, n_chains, n_steps, e
                 save_splits=10,
                 grad_clip=1e4,)
         else:
-            new_flow_is1 = flow_train[i][0]
+            new_flow_is1 = flow_train[i-1][0]
 
         if is2_prop.nelement() != 0:
             new_flow_is2 = train_flow(
@@ -124,7 +124,7 @@ def adaptative_sampling(x_init, u_init, count_init, n_runs, n_chains, n_steps, e
                 save_splits=10,
                 grad_clip=1e4,)
         else:
-            new_flow_is2 = flow_train[i][1]
+            new_flow_is2 = flow_train[i-1][1]
 
         M.mapping(is1_prop)
         M.mapping(is2_prop)

@@ -1,16 +1,17 @@
 import torch
 import numpy as np
+import gpaw.mpi as mpi
 
 from flonacomldft.data_utils import (
     get_path,
     load_zmat_csv,
-    load_from_pickle
+    load_from_pickle,
+    save_pickle_file,
 )
 
-from flonacomldft.internal_coordinates import (
-    Angles_mapping,
-    get_mix_data
-)
+from flonacomldft.internal_coordinates import Angles_mapping, get_mix_data
+
+from flonacomldft.full_adaptative_sampling import adaptative_sampling
 
 # Seed initialization for random generations
 ranks = np.arange(0, mpi.world.size)
@@ -45,3 +46,27 @@ init_mlp_is2 = load_from_pickle(get_path() + "mlp_is2")
 # loading pretrain flows models
 init_nf_is1 = load_from_pickle(get_path() + "training_is1")
 init_nf_is2 = load_from_pickle(get_path() + "training_is2")
+
+init_flow = [init_nf_is1["model"], init_nf_is2["model"]]
+init_mlps = [init_mlp_is1, init_mlp_is2]
+
+n_runs = 5
+n_chains = 10
+n_steps = 5
+
+results = adaptative_sampling(
+    xis[:n_chains],
+    uis[:n_chains],
+    cis[:n_chains],
+    n_runs,
+    n_chains,
+    n_steps,
+    "mlp",
+    init_flow,
+    init_mlps,
+)
+
+save_pickle_file(
+    results,
+    "runs_" + str(n_runs) + "_chains_" + str(n_chains) + "_steps_" + str(n_steps),
+)
