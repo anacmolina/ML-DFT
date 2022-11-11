@@ -26,8 +26,8 @@ if rank == 0:
 comm.broadcast(num_seed, 0)
 
 print("Rank: %d \t Seed: %d" % (rank, num_seed[0]))
-# torch.manual_seed(num_seed[0])
-torch.manual_seed(36)
+torch.manual_seed(num_seed[0])
+#torch.manual_seed(36)
 
 # Run MD for both isomers
 
@@ -51,8 +51,8 @@ init_flow = [init_nf_is1["model"], init_nf_is2["model"]]
 init_mlps = [init_mlp_is1, init_mlp_is2]
 
 n_runs = 5
-n_chains = 10
-n_steps = 5
+n_chains = 50
+n_steps = 200
 
 results = adaptative_sampling(
     xis[:n_chains],

@@ -124,11 +124,11 @@ def run_metropolis(
 
             for i in range(n_chains):
                 try:
-                    #ag6.calculate_potential_energy(
-                    #    x[i], txt="ag6_" + str(i) + "_" + str(dt) + ".out"
-                    #)
-                    #U_.append(ag6.potential_energy)
-                    U_.append(-6.3*(1+np.random.rand()*0.1))
+                    ag6.calculate_potential_energy(
+                        x[i], txt="ag6_" + str(i) + "_" + str(dt) + ".out"
+                    )
+                    U_.append(ag6.potential_energy)
+                    #U_.append(-6.3*(1+np.random.rand()*0.1))
                 except:
                     U_.append(0)
                     indexes_nc.append(i)
@@ -188,9 +188,9 @@ def run_metropolis(
 
                     for i, x_ in enumerate(x[ind_U_sort[:n_dft]]):
                         try:
-                            #ag6.calculate_potential_energy(x_)
-                            #U_dft.append(ag6.potential_energy)
-                            U_dft.append(-6.3*(1+np.random.rand()*0.1))
+                            ag6.calculate_potential_energy(x_)
+                            U_dft.append(ag6.potential_energy)
+                            #U_dft.append(-6.3*(1+np.random.rand()*0.1))
                             ind_dft_[ind_U_sort[:n_dft][i]] = 1
                         except:
                             U_dft.append(0)
