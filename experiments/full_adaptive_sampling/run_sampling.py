@@ -47,7 +47,7 @@ init_mlp_is2 = load_from_pickle(get_path() + "mlp_is2")
 init_nf_is1 = load_from_pickle(get_path() + "training_is1")
 init_nf_is2 = load_from_pickle(get_path() + "training_is2")
 
-init_flow = [init_nf_is1["model"], init_nf_is2["model"]]
+init_flow_train = [init_nf_is1, init_nf_is2]
 init_mlps = [init_mlp_is1, init_mlp_is2]
 
 n_runs = 5
@@ -62,7 +62,7 @@ results = adaptative_sampling(
     n_chains,
     n_steps,
     "mlp",
-    init_flow,
+    init_flow_train,
     init_mlps,
 )
 
