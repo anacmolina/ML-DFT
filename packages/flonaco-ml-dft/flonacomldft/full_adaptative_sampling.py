@@ -17,7 +17,7 @@ def adaptative_sampling(x_init, u_init, count_init, n_runs, n_chains, n_steps, e
     ]
 
     flow = [
-        get_models(flow_trains[0]),
+        get_models(flow_train[0]),
     ]
     
     mlps = [
