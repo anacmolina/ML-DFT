@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-
 class MLP(nn.Module):
     def __init__(self, layerdims, activation=torch.relu, init_scale=None):
         super(MLP, self).__init__()

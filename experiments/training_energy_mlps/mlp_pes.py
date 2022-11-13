@@ -8,7 +8,7 @@ from flonacomldft.utils.data_utils import (
     get_path
 )
 
-from flonacomldft.models.mlp_models import MLP, Uncentered_MLP
+from flonacomldft.models import MLP, Uncentered_MLP
 from flonacomldft.utils.data_utils import save_pickle_file
 import sklearn.model_selection
 

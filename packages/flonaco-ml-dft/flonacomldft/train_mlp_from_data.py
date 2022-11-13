@@ -12,7 +12,7 @@ from flonacomldft.utils.data_utils import (
     get_path
 )
 
-from flonacomldft.models.mlp_models import MLP, center_values
+from flonacomldft.models import MLP, center_values
 
 import sklearn.model_selection
 import torch.optim as optim
