@@ -24,7 +24,7 @@ from flonacomldft.internal_coordinates import (
 )
 
 from flonacomldft.sampling import run_metropolis
-from flonacomldft.models.mixture import Mixture
+from flonacomldft.mixture import Mixture
 
 num_seed = np.array([0])
 torch.manual_seed(42)
@@ -54,7 +54,7 @@ models_mlps = [mlp_is1, mlp_is2]
 
 
 out = run_metropolis(model=mixture, u_init=uis[:n_chains], x_init=xis[:n_chains, :],
-                   count_init=cis[:n_chains], n_sample=n_chains, n_steps=n_sts,
+                   count_init=cis[:n_chains], n_chains=n_chains, n_steps=n_sts,
                    mixture=True, energy_type='mlp-dft', mlps=models_mlps,
                    with_tqdm=True)
 

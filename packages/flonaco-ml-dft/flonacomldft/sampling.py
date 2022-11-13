@@ -13,29 +13,9 @@ import tqdm
 from ase.parallel import parprint as print
 
 # from datetime import datetime
-from flonacomldft.dft_utils import Structure
+# from flonacomldft.dft_utils import Structure
 from flonacomldft.internal_coordinates import Angles_mapping
 
-
-"""
-def run_metropolis(model, target, x_init, n_steps):
-    xs = []
-    accs = []
-
-    for dt in range(n_steps):
-        x = model.sample(x_init.shape[0])
-        ratio = - target.beta * target.U(x) + model.nll(x)
-        ratio += target.beta * target.U(x_init) - model.nll(x_init)
-        ratio = torch.exp(ratio)
-        u = torch.rand_like(ratio)
-        acc = u < torch.min(ratio, torch.ones_like(ratio))
-        x[~acc] = x_init[~acc]
-        xs.append(x.clone())
-        accs.append(acc)
-        x_init = x.clone()
-
-    return torch.stack(xs), torch.stack(accs)
-"""
 
 kb = 8.617333262e-5
 
@@ -92,7 +72,12 @@ def run_metropolis(
     counts = []
     ind_dft = []
 
-    for dt in tqdm.tqdm(range(n_steps)):
+    if with_tqdm:
+        pbar = tqdm.tqdm(range(n_steps))
+    else:
+        pbar = range(n_steps)
+    
+    for dt in pbar:
 
         Angles_mapping().inv_mapping(x_init)
 
@@ -125,7 +110,7 @@ def run_metropolis(
 
             for i in range(n_chains):
                 try:
-                    #ag6.calculate_potential_energy(
+                    #potential_energy = ag6.calculate_potential_energy(
                     #    x[i], txt="ag6_" + str(i) + "_" + str(dt) + ".out"
                     #)
                     #U_.append(ag6.potential_energy)
@@ -191,6 +176,7 @@ def run_metropolis(
                         try:
                             #ag6.calculate_potential_energy(x_)
                             #U_dft.append(ag6.potential_energy)
+                            # TODO realign with new division of operations
                             U_dft.append(-6.3*(1+np.random.rand()*0.1))
                             ind_dft_[ind_U_sort[:n_dft][i]] = 1
                         except:

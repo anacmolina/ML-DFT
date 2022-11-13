@@ -43,8 +43,9 @@ def deg_to_rad(zmat, labels):
     return zmat
 
 def get_internal_coordinates(traj):
-
-    traj = traj
+    """"
+    traj - What type of objects can traj be? Ase-atoms?
+    """
     construction_table = get_construction_table()
     
     try:
@@ -117,3 +118,80 @@ def get_mix_data(data_1, data_2):
     uis = shuffle_arr([ui_is1, ui_is2], indexes)
     cis = shuffle_arr([ci_is1, ci_is2], indexes)
     return xis, uis, cis
+
+class Structure:
+    """
+    Structure (Object)
+    Class storing:
+        - the construction table
+        - the ase symbols string
+        - possibly the calculator? 
+
+    the method to go from internal coordinates to cartesian+molecule:
+        - build zmat_matrix and molecule: zmat ---> xyz
+          this method uses chemcoord to prepare the data for Ase
+    """
+
+    def __init__(self, construction_table=get_construction_table(), 
+                symbols=np.full(6, 'Ag')):
+        super().__init__()
+        
+        self.construction_table = construction_table.copy()
+        self.symbols = symbols
+        self.Natoms = len(self.symbols)                              
+        self.calculator = None
+
+      
+    def build_zmat_matrix_and_molecule(self, zmat_values):  
+        """"
+        Build the zmat matrix and the molecule from the zmat values
+        
+        In:
+            zmat_values: array with the values of the internal coordinates
+        Out:  
+            zmat_matrix: df-zmat of coordinates in the basis of the IC
+            molecule: Ase Atoms object 
+                - storing cartesian coordinates, forces, energies, etc.
+        """
+
+        if torch.is_tensor(zmat_values):
+            zmat_values = zmat_values.clone().detach().numpy()
+        else:
+            zmat_values = zmat_values.copy()
+                
+        zmat_matrix = self.construction_table.copy()
+        
+        b = np.zeros(6)
+        a = np.zeros(6)
+        d = np.zeros(6)
+        
+        if len(zmat_values)==12:
+         
+         # reference frame shift - values taken from chemcoord
+            b[0] = 1.27
+            a[0:2] = np.array([2.21657, 2.21657])
+            d[0:3] = np.array([2.21657, 2.21657, 2.21657])
+
+            b[1:] = zmat_values[:5]
+            a[2:] = zmat_values[5:9]
+            d[3:] = zmat_values[9:]
+            
+            a = np.rad2deg(a)
+            d = np.rad2deg(d)
+            
+            b = np.double(b)
+            a = np.double(a)
+            d = np.double(d)
+            
+            zmat_matrix.insert(0, "atom", self.symbols, True)
+            zmat_matrix.insert(2, "bond", b, True)
+            zmat_matrix.insert(4, "angle", a, True)
+            zmat_matrix.insert(6, "dihedral", d, True)
+
+            zmat_matrix = cc.Zmat(zmat_matrix)
+            molecule = zmat_matrix.get_cartesian().get_ase_atoms()
+
+        else:
+            raise RuntimeError('Data not valid')
+      
+        return zmat_matrix, molecule 
