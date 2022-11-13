@@ -8,6 +8,7 @@ from flonacomldft.utils.data_utils import get_path, load_from_pickle
 #from flonacomldft.models import Uncentered_MLP
 import numpy as np
 import torch
+import tqdm
 
 from ase.parallel import parprint as print
 
@@ -51,7 +52,8 @@ def run_metropolis(
     energy_type=None,
     mlps=None,
     mixture=False,
-    T=300
+    T=300,
+    with_tqdm=False,
 ):
 
     assert u_init.shape[0] == n_chains
@@ -90,7 +92,7 @@ def run_metropolis(
     counts = []
     ind_dft = []
 
-    for dt in range(n_steps):
+    for dt in tqdm.tqdm(range(n_steps)):
 
         Angles_mapping().inv_mapping(x_init)
 
