@@ -100,10 +100,9 @@ def run_metropolis(
         ind_dft_ = torch.zeros(x.shape[0])
 
         if energy_type == "dft":
-
-            # print('dft')
-
-            ag6 = Structure()
+            # TODO -> this part needs to be properly tested
+            from flonacomldft.dft_utils import DFTCalculator
+            ag6 = DFTCalculator()
 
             U_ = []
             indexes_nc = []
