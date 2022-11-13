@@ -1,18 +1,12 @@
 import os
-import pickle
 from tkinter import NONE
 from flonacomldft.data_utils import trajectories_folder
 
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
 import torch
 
-#from ase.parallel import parprint as print
-
-import ase
 import chemcoord as cc
-from gpaw import GPAW
+import ase
 from ase import Atoms
 from ase.optimize import BFGS
 from ase.md.nvtberendsen import NVTBerendsen
@@ -20,9 +14,14 @@ from ase import units
 from ase.md.velocitydistribution import (MaxwellBoltzmannDistribution,
                                          Stationary, ZeroRotation)
 from ase.io import Trajectory
+#from ase.parallel import parprint as print
 
-from flonacomldft.internal_coordinates import get_construction_table
+from flonacomldft.internal_coordinates import (
+    get_construction_table, 
+    get_internal_coordinates
+)
 
+from gpaw import GPAW
 import gpaw.mpi as mpi
 
 class Angles_transformation(torch.Tensor):
@@ -160,8 +159,6 @@ class Structure:
 
 # Running MD
 def run_molecular_dynamics(molecule, iters, name, starting=True):
-    #from flonacomldft.data_utils import trajectories_folder
-    #import gpaw.mpi as mpi
     rank = mpi.world.rank
 
     # Setting a folder to save the trajectories
@@ -209,3 +206,7 @@ def run_molecular_dynamics(molecule, iters, name, starting=True):
 
     return traj
 
+def run_md_get_zmat(molecule, iterations, file_name, starting=True):
+    traj = run_molecular_dynamics(molecule, iterations, file_name, starting)
+    zmat = get_internal_coordinates(traj).detach()
+    return zmat

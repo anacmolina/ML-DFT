@@ -1,7 +1,6 @@
 import pickle
 from datetime import datetime
 
-
 import torch
 import numpy as np
 
@@ -9,7 +8,9 @@ from ase.io.trajectory import Trajectory
 
 from flonacomldft.mixture import Mixture, get_models
 from flonacomldft.sampling import run_metropolis
-
+from flonacomldft.real_nvp import init_model
+from flonacomldft.dft_utils import  run_md_get_zmat
+from flonacomldft.internal_coordinates import get_mix_data #, get_internal_coordinates
 from flonacomldft.data_utils import (
     get_path,
     load_zmat_csv,
@@ -17,15 +18,12 @@ from flonacomldft.data_utils import (
     load_from_pickle,
 )
 
-from flonacomldft.dft_utils import get_internal_coordinates, Structure
 
-from flonacomldft.md_mcmc import (
-    init_model,
-    get_mix_data,
-    get_pos_energy,
-    run_nf,
-    run_md_get_zmat,
-)
+
+# TODO  -  find what/where is run_nf
+# from flonacomldft.md_mcmc import run_nf,
+
+
 
 import gpaw.mpi as mpi
 

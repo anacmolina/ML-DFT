@@ -64,7 +64,7 @@ class RealNVP_MLP(nn.Module):
     """ Minimal Real NVP architecture
     Args:
         dims (int,): input dimension
-        n_realnvp_blocks (int): number of pairs of coupling layers
+        n_blocks (int): number of pairs of coupling layers
         block_depth (int): repetition of blocks with shared param
         init_weight_scale (float): scaling factor for weights in s and t layers
         prior_arg (dict): specifies the base distribution
@@ -72,7 +72,7 @@ class RealNVP_MLP(nn.Module):
         hidden_dim (int): # of hidden neurones per layer (coupling MLPs)
     """
 
-    def __init__(self, dim, n_realnvp_blocks, 
+    def __init__(self, dim, n_blocks, 
                  block_depth,
                  init_weight_scale=None,
                  prior_arg={'type': 'standn'},
@@ -86,7 +86,7 @@ class RealNVP_MLP(nn.Module):
 
         self.device = device
         self.dim = dim
-        self.n_blocks = n_realnvp_blocks
+        self.n_blocks = n_blocks
         self.block_depth = block_depth
         self.couplings_per_block = 2  # one update of entire layer per block 
         self.n_layers_in_coupling = hidden_depth  # depth of MLPs in coupling layers 
@@ -254,3 +254,30 @@ class RealNVP_MLP(nn.Module):
                    value=bc_value)
 
         return ((z_[:, 1:] - z_[:, :-1]) ** 2 / 2) * self.coef * self.beta_prior
+
+def init_model(zmat, n_blocks=15, block_depth=1, init_weight_scale=1e-6, device='cpu'):
+
+    # Set this as a default for all the files
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    x_tensor = zmat[:, :-1]
+
+    cov = torch.cov(x_tensor.T)
+    cov = torch.eye(12) * cov.mean()
+    mean = x_tensor.mean(0)
+    prior_arg =  {
+        "type": "white",
+        "cov": cov,
+        "mean": mean
+        }  # Gaussian with non-trival mean and covariance for base
+
+    model = RealNVP_MLP(
+        x_tensor.shape[-1],
+        n_blocks,
+        block_depth,
+        init_weight_scale=init_weight_scale,
+        prior_arg=prior_arg,
+        device=device,
+    )
+
+    return model
