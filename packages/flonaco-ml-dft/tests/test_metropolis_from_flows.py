@@ -24,7 +24,7 @@ from flonacomldft.internal_coordinates import (
 )
 
 from flonacomldft.sampling import run_metropolis
-from flonacomldft.mixture import Mixture
+from flonacomldft.models.mixture import Mixture
 
 ranks = np.arange(0, mpi.world.size)
 rank = mpi.world.rank

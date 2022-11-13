@@ -13,7 +13,7 @@ from flonacomldft.data_utils import (
 
 from flonacomldft.internal_coordinates import Angles_mapping
 
-from flonacomldft.mixture import Mixture, get_models
+from flonacomldft.models.mixture import Mixture, get_models
 from flonacomldft.sampling import run_metropolis
 from flonacomldft.internal_coordinates import get_mix_data
 from flonacomldft.train_flow_from_data import (

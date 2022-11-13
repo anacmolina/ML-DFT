@@ -5,7 +5,7 @@ import numpy as np
 
 from ase.io.trajectory import Trajectory
 
-from flonacomldft.mixture import Mixture, get_models
+from flonacomldft.models.mixture import Mixture, get_models
 from flonacomldft.sampling import run_metropolis
 
 from flonacomldft.data_utils import (

@@ -8,7 +8,7 @@ import torch
 import numpy as np
 import pandas as pd
 
-from flonacomldft.real_nvp import RealNVP_MLP
+from flonacomldft.models.real_nvp import RealNVP_MLP
 from flonacomldft.train_flow_from_data import train_flow
 from flonacomldft.internal_coordinates import Angles_mapping
 
@@ -107,3 +107,23 @@ f.write("DONE!")
 
 f.close()
 # save_pickle_file(_, "flow_trained")
+
+# losses = _["losses"]
+# plt.figure(figsize=(7, 5))
+# plt.plot(list(range(0, len(losses))), np.abs(np.array(losses)))
+# plt.yscale("log")
+# plt.ylabel("Losses")
+# plt.show()
+
+# models = _["models"]
+# N_samples = 250
+
+# x = models[-1].sample(N_samples)
+# M.mapping(x)
+# x = x.clone().data.cpu().numpy()
+# c_, r_ = get_CVs(x)
+
+# ax = plotting_fes_db()
+# ax.plot(c_, r_, "mo", label="NF proposals")
+# ax.legend(loc="lower left", fontsize=20)
+# plt.show()
