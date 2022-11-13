@@ -36,6 +36,8 @@ def run_metropolis(model, target, x_init, n_steps):
     return torch.stack(xs), torch.stack(accs)
 """
 
+kb = 8.617333262e-5
+
 #TODO: Remove this later
 #torch.manual_seed(36)
 
@@ -49,6 +51,7 @@ def run_metropolis(
     energy_type=None,
     mlps=None,
     mixture=False,
+    T=300
 ):
 
     assert u_init.shape[0] == n_chains
@@ -57,6 +60,8 @@ def run_metropolis(
 
     # print(u_init.shape, x_init.shape, count_init.shape)
     # print('assert pass')
+
+    beta = 1 / (kb * T)
 
     if energy_type == "mlp-dft":
         mlp_dft = True
@@ -85,15 +90,9 @@ def run_metropolis(
     counts = []
     ind_dft = []
 
-    T = 300
-    kb = 8.617333262e-5
-    beta = 1 / (kb * T)
-
-    angles_mapping = Angles_mapping()
-
     for dt in range(n_steps):
 
-        angles_mapping.inv_mapping(x_init)
+        Angles_mapping().inv_mapping(x_init)
 
         if mixture:
             x, count = model.sample(n_chains, return_mus=True)
@@ -107,8 +106,8 @@ def run_metropolis(
         nll_x = model.nll(x)
         nll_x_init = model.nll(x_init)
 
-        angles_mapping.mapping(x)
-        angles_mapping.mapping(x_init)
+        Angles_mapping().mapping(x)
+        Angles_mapping().mapping(x_init)
 
         indexes_nc = None
         ind_dft_ = torch.zeros(x.shape[0])

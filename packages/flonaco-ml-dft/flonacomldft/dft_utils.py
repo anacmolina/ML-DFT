@@ -6,9 +6,6 @@ import numpy as np
 import torch
 
 import chemcoord as cc
-import ase
-from ase import Atoms
-from ase.optimize import BFGS
 from ase.md.nvtberendsen import NVTBerendsen
 from ase import units
 from ase.md.velocitydistribution import (MaxwellBoltzmannDistribution,
@@ -30,7 +27,6 @@ class Structure:
    Structure (Object)
 
    zmat ---> xyz
-   xyz <--- zmat
 
    get_potential_energy()
    """
