@@ -16,47 +16,11 @@ from ase.md.velocitydistribution import (MaxwellBoltzmannDistribution,
 from ase.io import Trajectory
 #from ase.parallel import parprint as print
 
-from flonacomldft.internal_coordinates import (
-    get_construction_table, 
-    get_internal_coordinates
-)
+from flonacomldft.internal_coordinates import get_internal_coordinates
+from flonacomldft.utils.silver_isomers_utils import get_construction_table
 
 from gpaw import GPAW
 import gpaw.mpi as mpi
-
-class Angles_transformation(torch.Tensor):
-   def __init__(self, x_):
-      super().__init__()
-
-      if torch.is_tensor(x_):
-         pass
-      else:
-         raise RuntimeError("It must be a tensor")
-
-      self.x = x_
-
-      print(self.x, self.x.shape)
-      if(len(self.x.shape)==1):
-         self.x = self.x.reshape(1, 12)
-
-      print(self.x, self.x.shape)
-
-      self.dims = self.x.shape[1]
-      self.Nsample = self.x.shape[0]
-
-      print(self.dims, self.Nsample)   
-      if self.dims==12:
-         self.n = 5
-      else:
-         raise RuntimeError('Can not define transformation')
-
-   def transf(self):
-         self.x[:,self.n:] = torch.tan(self.x[:,self.n:])
-         #self.x = self.x.reshape(self.Nsample, self.dims)
-
-   def inv_transf(self):
-         self.x[:,self.n:] = torch.arctan(self.x[:,self.n:])
-         #self.x = self.x.reshape(self.Nsample, self.dims)
 
 # Structure: Class that uses construction table and symbols to build a molecules
 #add option to save .gpw file

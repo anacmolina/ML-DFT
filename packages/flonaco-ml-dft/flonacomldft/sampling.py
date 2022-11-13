@@ -89,11 +89,11 @@ def run_metropolis(
     kb = 8.617333262e-5
     beta = 1 / (kb * T)
 
-    M = Angles_mapping()
+    angles_mapping = Angles_mapping()
 
     for dt in range(n_steps):
 
-        M.inv_mapping(x_init)
+        angles_mapping.inv_mapping(x_init)
 
         if mixture:
             x, count = model.sample(n_chains, return_mus=True)
@@ -107,8 +107,8 @@ def run_metropolis(
         nll_x = model.nll(x)
         nll_x_init = model.nll(x_init)
 
-        M.mapping(x)
-        M.mapping(x_init)
+        angles_mapping.mapping(x)
+        angles_mapping.mapping(x_init)
 
         indexes_nc = None
         ind_dft_ = torch.zeros(x.shape[0])

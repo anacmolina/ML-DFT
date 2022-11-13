@@ -42,8 +42,8 @@ U_tensor = torch.from_numpy(U[:n].to_numpy()).float()
 
 f.write("Samples: {}, Labels: {}\n\n".format(x_tensor.shape[0], x_tensor.shape[1]))
 
-M = Angles_mapping()
-M.inv_mapping(x_tensor)
+angles_mapping = Angles_mapping()
+angles_mapping.inv_mapping(x_tensor)
 
 cov = torch.cov(x_tensor.T)
 mean = x_tensor.mean(0)
@@ -119,7 +119,7 @@ f.close()
 # N_samples = 250
 
 # x = models[-1].sample(N_samples)
-# M.mapping(x)
+# angles_mapping.mapping(x)
 # x = x.clone().data.cpu().numpy()
 # c_, r_ = get_CVs(x)
 

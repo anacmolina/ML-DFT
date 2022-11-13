@@ -163,9 +163,9 @@ for i in range(n_runs):
     #print(is1_prop)
     #print(is2_prop)
 
-    M = Angles_mapping()
-    M.inv_mapping(is1_prop)
-    M.inv_mapping(is2_prop)
+    angles_mapping = Angles_mapping()
+    angles_mapping.inv_mapping(is1_prop)
+    angles_mapping.inv_mapping(is2_prop)
 
     if is1_prop.nelement() != 0:
         new_flow_is1 = train_flow(
@@ -195,8 +195,8 @@ for i in range(n_runs):
     else:
         new_flow_is2 = flow_train[i][1]
 
-    M.mapping(is1_prop)
-    M.mapping(is2_prop)
+    angles_mapping.mapping(is1_prop)
+    angles_mapping.mapping(is2_prop)
 
     # retrain MLPs
     if USE_DFT_ENERGIES:

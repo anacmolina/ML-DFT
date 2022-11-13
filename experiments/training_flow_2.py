@@ -42,12 +42,10 @@ U_tensor = torch.from_numpy(U[:n].to_numpy()).float()
 
 f.write("Samples: {}, Labels: {}\n\n".format(x_tensor.shape[0], x_tensor.shape[1]))
 
-M = Angles_mapping()
-M.inv_mapping(x_tensor)
+Angles_mapping().inv_mapping(x_tensor)
 
 cov = torch.cov(x_tensor.T)
 mean = x_tensor.mean(0)
-
 
 args_rnvp = {
     "dim": x_tensor.shape[1],

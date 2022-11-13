@@ -3,10 +3,11 @@ import numpy as np
 import pandas as pd
 import chemcoord as cc
 
+from flonacomldft.utils.silver_isomers_utils import get_construction_table
+
 class Angles_mapping:
-    
-    def __init__(self, n=5):
-        self.n = n
+    def __init__(self, idx_first_angle=5):
+        self.idx_first_angle = idx_first_angle
     
     def tensor_checking(self, tensor):
         if torch.is_tensor(tensor):
@@ -21,29 +22,16 @@ class Angles_mapping:
 
     def mapping(self, tensor):
         self.tensor_checking(tensor)
-        tensor[:, self.n:] = tensor[:, self.n:].tan()
+        tensor[:, self.idx_first_angle:] = tensor[:, self.idx_first_angle:].tan()
         
     def inv_mapping(self, tensor):
         self.tensor_checking(tensor)
-        tensor[:, self.n:] = tensor[:, self.n:].arctan()
-
-
-# Construction table for both isomers, pandas dataframe (convention we chose)
-def get_construction_table():
-
-   index = np.append(0, np.append(np.arange(2,6), 1))
-   construction_table = pd.DataFrame(index=index)
-      
-   construction_table['b'] = ['origin', 0, 2, 2, 4, 4]
-   construction_table['a'] = ['e_z', 'e_z', 0, 3, 2, 2]
-   construction_table['d'] = ['e_x', 'e_x', 'e_x', 0, 3, 3]
-      
-   return construction_table
+        tensor[:, self.idx_first_angle:] = tensor[:, self.idx_first_angle:].arctan()
 
 def rephase(zmat, angle=0, columns=['dihedral13']):
     for column in columns:
         phase = np.zeros(zmat[column].shape)
-        phase[zmat[column]>angle] = -2*np.pi
+        phase[zmat[column]>angle] = -2 * np.pi
         zmat[column] = zmat[column] + phase
     return zmat
 
@@ -83,7 +71,7 @@ def get_internal_coordinates(traj):
     if ENERGY: cols = label_b + label_a + label_d + ['energies']
     else: cols = label_b + label_a + label_d
 
-    new_zmat = pd.DataFrame(columns = cols, index=np.arange(0, len(zmat), 1))
+    new_zmat = pd.DataFrame(columns=cols, index=np.arange(0, len(zmat), 1))
 
     if ENERGY:
         for i in range(len(zmat)):
@@ -99,7 +87,8 @@ def get_internal_coordinates(traj):
     new_zmat = deg_to_rad(new_zmat, set_labels)
     new_zmat = rephase(new_zmat)
 
-    new_zmat = new_zmat.drop(["bond0origin", "angle0e_z", "angle2e_z", "dihedral0e_x", "dihedral2e_x", "dihedral3e_x"], axis=1)
+    new_zmat = new_zmat.drop(["bond0origin", "angle0e_z", "angle2e_z", "dihedral0e_x",
+                              "dihedral2e_x", "dihedral3e_x"], axis=1)
     new_zmat = new_zmat.to_numpy(dtype=np.float32)
 
     return torch.from_numpy(new_zmat).float() 
