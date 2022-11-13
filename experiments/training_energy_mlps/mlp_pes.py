@@ -4,12 +4,12 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from flonacomldft.data_utils import (
+from flonacomldft.utils.data_utils import (
     get_path
 )
 
 from flonacomldft.models.mlp_models import MLP, Uncentered_MLP
-from flonacomldft.data_utils import save_pickle_file
+from flonacomldft.utils.data_utils import save_pickle_file
 import sklearn.model_selection
 
 from flonacomldft.train_mlp_from_data import train_mlp

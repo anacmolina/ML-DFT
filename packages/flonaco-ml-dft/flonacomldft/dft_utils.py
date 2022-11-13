@@ -1,6 +1,6 @@
 import os
 from tkinter import NONE
-from flonacomldft.data_utils import trajectories_folder
+from flonacomldft.utils.data_utils import trajectories_folder
 
 import numpy as np
 import torch

@@ -4,7 +4,7 @@ Script with all sampling methods.
 """
 
 from typing_extensions import runtime
-from flonacomldft.data_utils import get_path, load_from_pickle
+from flonacomldft.utils.data_utils import get_path, load_from_pickle
 #from flonacomldft.models import Uncentered_MLP
 import numpy as np
 import torch

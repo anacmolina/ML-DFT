@@ -1,6 +1,6 @@
 import numpy as np
 # from flonacomldft.dft_utils import compute_energy - deprecated
-from flonacomldft.silver_isomers_utils import molecule
+from flonacomldft.utils.silver_isomers_utils import molecule
 from flonacomldft.internal_coordinates import (
     get_internal_coordinates,
 )

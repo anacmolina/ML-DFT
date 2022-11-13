@@ -6,7 +6,7 @@ from ase.visualize.plot import plot_atoms
 
 from flonacomldft.dft_utils import Structure
 from flonacomldft.FES.plotter2 import Plotter
-from flonacomldft.data_utils import get_path
+from flonacomldft.utils.data_utils import get_path
 from flonacomldft.collective_variables import get_CVs
 
 def plot_sample(x):

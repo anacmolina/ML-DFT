@@ -8,7 +8,7 @@ from ase.io.trajectory import Trajectory
 from flonacomldft.models.mixture import Mixture, get_models
 from flonacomldft.sampling import run_metropolis
 
-from flonacomldft.data_utils import (
+from flonacomldft.utils.data_utils import (
     get_path,
     load_zmat_csv,
     save_pickle_file,

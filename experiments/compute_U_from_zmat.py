@@ -7,7 +7,7 @@ import torch
 import pandas as pd
 
 from flonacomldft.dft_utils import Structure
-from flonacomldft.data_utils import get_path
+from flonacomldft.utils.data_utils import get_path
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 dtype = torch.float32

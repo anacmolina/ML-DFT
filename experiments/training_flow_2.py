@@ -12,7 +12,7 @@ from flonacomldft.models.real_nvp import RealNVP_MLP
 from flonacomldft.train_flow_from_data import train_flow
 from flonacomldft.internal_coordinates import Angles_mapping
 
-from flonacomldft.data_utils import get_path, save_pickle_file
+from flonacomldft.utils.data_utils import get_path, save_pickle_file
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 dtype = torch.float32

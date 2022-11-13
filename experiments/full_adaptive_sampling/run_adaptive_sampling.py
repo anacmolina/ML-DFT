@@ -5,7 +5,7 @@ import torch
 import numpy as np
 import gpaw.mpi as mpi
 
-from flonacomldft.data_utils import (
+from flonacomldft.utils.data_utils import (
     get_path, 
     load_zmat_csv, 
     load_from_pickle
@@ -268,5 +268,5 @@ results = {
     'counts': cs_acc,
 }
 
-from flonacomldft.data_utils import save_pickle_file
+from flonacomldft.utils.data_utils import save_pickle_file
 save_pickle_file(results, 'runs_'+str(n_runs)+'_chains_'+str(n_chains)+'_steps_'+str(n_sts))

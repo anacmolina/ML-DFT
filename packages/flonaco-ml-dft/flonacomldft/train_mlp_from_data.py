@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from torch.nn.utils import clip_grad_norm_
 
-from flonacomldft.data_utils import (
+from flonacomldft.utils.data_utils import (
     get_path
 )
 

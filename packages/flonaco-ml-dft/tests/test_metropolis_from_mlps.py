@@ -11,7 +11,7 @@ from flonacomldft.dft_utils import (
     Structure
 )
 
-from flonacomldft.data_utils import (
+from flonacomldft.utils.data_utils import (
     get_path,
     load_zmat_csv,
     load_from_pickle,

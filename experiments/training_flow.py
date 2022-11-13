@@ -11,11 +11,11 @@ import pandas as pd
 from flonacomldft.models.real_nvp import RealNVP_MLP
 from flonacomldft.train_flow_from_data import train_flow
 
-from flonacomldft.data_utils import get_path, save_pickle_file
+from flonacomldft.utils.data_utils import get_path, save_pickle_file
 from flonacomldft.internal_coordinates import Angles_mapping
 from flonacomldft.collective_variables import get_CVs
 
-from flonacomldft.visualize import plotting_fes_db
+from flonacomldft.utils.visualize import plotting_fes_db
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 dtype = torch.float32

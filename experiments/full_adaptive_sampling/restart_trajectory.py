@@ -11,7 +11,7 @@ from flonacomldft.sampling import run_metropolis
 from flonacomldft.models.real_nvp import init_model
 from flonacomldft.dft_utils import  run_md_get_zmat
 from flonacomldft.internal_coordinates import get_mix_data #, get_internal_coordinates
-from flonacomldft.data_utils import (
+from flonacomldft.utils.data_utils import (
     get_path,
     load_zmat_csv,
     save_pickle_file,
