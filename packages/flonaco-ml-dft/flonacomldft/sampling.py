@@ -45,6 +45,14 @@ def run_metropolis(
 
     beta = 1 / (kb * T)
 
+    if "dft" in energy_type:
+        from flonacomldft.dft_utils import DFTCalculator
+        from flonacomldft.internal_coordinates import Structure
+        
+        ag6 = Structure()
+        calculator = DFTCalculator()
+
+
     if energy_type == "mlp-dft":
         mlp_dft = True
         energy_type = "mlp"
@@ -101,18 +109,12 @@ def run_metropolis(
 
         if energy_type == "dft":
             # TODO -> this part needs to be properly tested
-            from flonacomldft.dft_utils import DFTCalculator
-            from flonacomldft.internal_coordinates import Structure
-            
-            ag6 = Structure()
-            calc = DFTCalculator()
-
             U_ = []
             indexes_nc = []
 
             for i in range(n_chains):
                 try:
-                    u_dft = calc.calculate_potential_energy(ag6.build_molecule(x[i]))
+                    u_dft = calculator.calculate_potential_energy(ag6.build_molecule(x[i]))
                     #potential_energy = ag6.calculate_potential_energy(
                     #    x[i], txt="ag6_" + str(i) + "_" + str(dt) + ".out"
                     #)
@@ -172,12 +174,6 @@ def run_metropolis(
 
                     U_dft = []
                     indexes_nc = []
-
-                    from flonacomldft.dft_utils import DFTCalculator
-                    from flonacomldft.internal_coordinates import Structure
-            
-                    ag6 = Structure()
-                    calc = DFTCalculator()
 
                     for i, x_ in enumerate(x[ind_U_sort[:n_dft]]):
                         try:

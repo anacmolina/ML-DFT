@@ -10,7 +10,7 @@ def train_flow(
     x_train,
     n_iter=1000,
     lr=5e-3,
-    bs=100,
+    # bs=100,
     use_scheduler=False,
     step_schedule=100,
     save_splits=10,
@@ -22,7 +22,7 @@ def train_flow(
         x_train (tensor of float)
         n_iter (int)
         lr (float): learning rate
-        bs (int): batchsize
+        # bs (int): batchsize
         use_scheduler (bool): if learning rate schedule should be used
         step_schedule (int): iteration frequency of schedule
         save_splits: number of snapshots saved during training

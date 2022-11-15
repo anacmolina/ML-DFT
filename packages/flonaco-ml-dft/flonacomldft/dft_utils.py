@@ -58,7 +58,7 @@ class DFTCalculator:
         mpi.world.barrier()
 
         #Setting the cell
-        molecule.set_cell([16, 16, 16])
+        molecule.set_cell(self.cell)
         molecule.set_pbc(True)
         molecule.center()
 

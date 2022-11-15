@@ -74,7 +74,7 @@ _ = train_flow(
     x_tensor,
     n_iter=1000,
     lr=5e-3,
-    bs=100,
+    # bs=100,
     use_scheduler=False,
     step_schedule=100,
     save_splits=10,

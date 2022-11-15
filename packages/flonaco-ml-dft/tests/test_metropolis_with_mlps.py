@@ -55,7 +55,7 @@ models_mlps = [mlp_is1, mlp_is2]
 
 out = run_metropolis(model=mixture, u_init=uis[:n_chains], x_init=xis[:n_chains, :],
                    count_init=cis[:n_chains], n_chains=n_chains, n_steps=n_sts,
-                   mixture=True, energy_type='mlp-dft', mlps=models_mlps,
+                   mixture=True, energy_type='mlp', mlps=models_mlps,
                    with_tqdm=True)
 
 print(out['xs'])

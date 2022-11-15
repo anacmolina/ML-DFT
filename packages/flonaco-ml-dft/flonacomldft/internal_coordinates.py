@@ -6,6 +6,9 @@ import chemcoord as cc
 from flonacomldft.utils.silver_isomers_utils import get_construction_table
 
 class Angles_mapping:
+    """
+    Class to store the index at which the angles start in the internal coordinates
+    """
     def __init__(self, idx_first_angle=5):
         self.idx_first_angle = idx_first_angle
     
@@ -128,7 +131,8 @@ class Structure:
         - possibly the calculator? 
 
     the method to go from internal coordinates to cartesian+molecule:
-        - build zmat_matrix and molecule: zmat ---> xyz
+        - build zmat_matrix : zmat_values (internal coord) ---> zmat_matrix (xyz)
+        - build_molecule : zmat_values (internal coord) ---> molecule
           this method uses chemcoord to prepare the data for Ase
     """
 

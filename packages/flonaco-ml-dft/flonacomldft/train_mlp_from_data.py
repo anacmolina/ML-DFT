@@ -23,10 +23,10 @@ def train_mlp(model,
     output_val, 
     n_iter=100, 
     lr=1e-4,
-    bs=100,
+    # bs=100,
     use_scheduler=False,
     step_schedule=100,
-    save_splits=10,
+    # save_splits=10,
     grad_clip=1e4,
     retraining=False,
     train_size = 0.8,
@@ -46,8 +46,8 @@ def train_mlp(model,
 
     losses = []
     losses_val = []
-    model_init = copy.deepcopy(model)
     grad_norms = []
+    model_init = copy.deepcopy(model)
 
     x = input_val.detach().requires_grad_().float()
     y = output_val.detach().requires_grad_().float()
