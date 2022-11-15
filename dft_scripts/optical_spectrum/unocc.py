@@ -1,7 +1,7 @@
 import sys
 
 from gpaw import GPAW, Mixer
-from flonacomldft.data_utils import load_from_pickle
+from flonacomldft.utils.data_utils import load_from_pickle
 
 i=int(sys.argv[1])
 

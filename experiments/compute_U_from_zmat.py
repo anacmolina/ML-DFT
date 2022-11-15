@@ -6,8 +6,8 @@ import gpaw.mpi as mpi
 import torch
 import pandas as pd
 
-from flonacomldft.dft_utils import Structure
-from flonacomldft.data_utils import get_path
+from flonacomldft.dft_utils import DFTCalculator
+from flonacomldft.utils.data_utils import get_path
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 dtype = torch.float32
@@ -25,11 +25,11 @@ X = torch.Tensor(df.drop(["energies"], axis=1).to_numpy()).float()[i, :]
 filename = "time_energy.out"
 f = open(filename, "a")
 
-ag6 = Structure()
+dft_calculator = DFTCalculator()
 
 startTime = datetime.now().timestamp()
-ag6.calculate_potential_energy(X, txt="ag6_cores_" + str(cores) + ".out")
-pot_energy = ag6.potential_energy
+txt = "ag6_cores_" + str(cores) + ".out"
+pot_energy = dft_calculator.calculate_potential_energy(X, txt=txt)
 time_energy = datetime.now().timestamp() - startTime
 
 diff = pot_energy - U

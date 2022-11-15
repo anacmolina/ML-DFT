@@ -4,14 +4,14 @@ import torch
 import numpy as np
 import pandas as pd
 
-import gpaw.mpi as mpi
+# import gpaw.mpi as mpi
 from ase.parallel import parprint as print
 
-from flonacomldft.dft_utils import (
-    Structure
-)
+# from flonacomldft.dft_utils import (
+#     Structure
+# )
 
-from flonacomldft.data_utils import (
+from flonacomldft.utils.data_utils import (
     get_path,
     load_zmat_csv,
     load_from_pickle,
@@ -23,26 +23,11 @@ from flonacomldft.internal_coordinates import (
     get_mix_data
 )
 
-from flonacomldft.sampling import run_metropolis_MLP
+from flonacomldft.sampling import run_metropolis
 from flonacomldft.mixture import Mixture
 
-ranks = np.arange(0, mpi.world.size)
-rank = mpi.world.rank
-comm = mpi.world.new_communicator(ranks)
-
 num_seed = np.array([0])
-
-if rank == 0:
-    num_seed = np.array([np.random.randint(1e5)])
-    print(rank, num_seed)
-    
-comm.broadcast(num_seed, 0)
-
-print(rank, num_seed)
-#torch.manual_seed(num_seed[0])
 torch.manual_seed(42)
-
-mpi.world.barrier()
 
 ceph_home = get_path()
 
@@ -59,19 +44,23 @@ models = np.array([train_is1['models'][-1],
 
 mixture = Mixture(models, torch.tensor([0.5, 0.5]).detach())
 
-n_sts = 500
-n_chains = 250
+n_sts = 3
+n_chains = 5
 
 mlp_is1 = load_from_pickle(get_path() + 'mlp_is1')
 mlp_is2 = load_from_pickle(get_path() + 'mlp_is2')
 
 models_mlps = [mlp_is1, mlp_is2]
 
-#_ = run_metropolis(model=models[0], u_init=ui_is1, x_init=xi_is1, count_init=ci_is1, n_sample=n_chains, n_steps=n_sts, mixture=False)
-#_ = run_metropolis(model=models[1], u_init=ui_is2, x_init=xi_is2, count_init=ci_is2, n_sample=n_chains, n_steps=n_sts, mixture=False)
-_ = run_metropolis_MLP(model=mixture, u_init=uis, x_init=xis, count_init=cis, mlps=models_mlps ,n_sample=n_chains, n_steps=n_sts, mixture=True)
 
-filename = 'metropolis_mix_mlps_'+str(n_chains)+'_'+str(n_sts)+''
-save_pickle_file(_, filename)
+out = run_metropolis(model=mixture, u_init=uis[:n_chains], x_init=xis[:n_chains, :],
+                   count_init=cis[:n_chains], n_chains=n_chains, n_steps=n_sts,
+                   mixture=True, energy_type='mlp', mlps=models_mlps,
+                   with_tqdm=True)
+
+print(out['xs'])
+
+#filename = 'metropolis_mix_mlps_'+str(n_chains)+'_'+str(n_sts)+''
+#save_pickle_file(out, filename)
 
 #print(_)

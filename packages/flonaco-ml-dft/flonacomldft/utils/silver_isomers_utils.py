@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from ase import Atoms
 
 isomers = {
@@ -21,7 +22,7 @@ isomers = {
                         [8.0000000, 9.919833, 7.129457]])}
             }
 
-def molecule(name, vacuum=None, **kwargs):
+def get_molecule_isomer_minima(name, vacuum=None, **kwargs):
     
     if name in isomers:
         
@@ -37,3 +38,15 @@ def molecule(name, vacuum=None, **kwargs):
         molecule.center(vacuum=vacuum)
     
     return molecule
+
+# Construction table for both isomers, pandas dataframe (convention we chose)
+def get_construction_table():
+
+   index = np.append(0, np.append(np.arange(2,6), 1))
+   construction_table = pd.DataFrame(index=index)
+      
+   construction_table['b'] = ['origin', 0, 2, 2, 4, 4]
+   construction_table['a'] = ['e_z', 'e_z', 0, 3, 2, 2]
+   construction_table['d'] = ['e_x', 'e_x', 'e_x', 0, 3, 3]
+      
+   return construction_table

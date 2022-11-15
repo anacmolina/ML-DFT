@@ -4,37 +4,20 @@ Script with all sampling methods.
 """
 
 from typing_extensions import runtime
-from flonacomldft.data_utils import get_path, load_from_pickle
+from flonacomldft.utils.data_utils import get_path, load_from_pickle
 #from flonacomldft.models import Uncentered_MLP
 import numpy as np
 import torch
+import tqdm
 
 from ase.parallel import parprint as print
 
 # from datetime import datetime
-from flonacomldft.dft_utils import Structure
+# from flonacomldft.dft_utils import Structure
 from flonacomldft.internal_coordinates import Angles_mapping
 
 
-"""
-def run_metropolis(model, target, x_init, n_steps):
-    xs = []
-    accs = []
-
-    for dt in range(n_steps):
-        x = model.sample(x_init.shape[0])
-        ratio = - target.beta * target.U(x) + model.nll(x)
-        ratio += target.beta * target.U(x_init) - model.nll(x_init)
-        ratio = torch.exp(ratio)
-        u = torch.rand_like(ratio)
-        acc = u < torch.min(ratio, torch.ones_like(ratio))
-        x[~acc] = x_init[~acc]
-        xs.append(x.clone())
-        accs.append(acc)
-        x_init = x.clone()
-
-    return torch.stack(xs), torch.stack(accs)
-"""
+kb = 8.617333262e-5
 
 #TODO: Remove this later
 #torch.manual_seed(36)
@@ -49,6 +32,8 @@ def run_metropolis(
     energy_type=None,
     mlps=None,
     mixture=False,
+    T=300,
+    with_tqdm=False,
 ):
 
     assert u_init.shape[0] == n_chains
@@ -57,6 +42,16 @@ def run_metropolis(
 
     # print(u_init.shape, x_init.shape, count_init.shape)
     # print('assert pass')
+
+    beta = 1 / (kb * T)
+
+    if "dft" in energy_type:
+        from flonacomldft.dft_utils import DFTCalculator
+        from flonacomldft.internal_coordinates import Structure
+        
+        ag6 = Structure()
+        calculator = DFTCalculator()
+        calculator.initialize_calculator()
 
     if energy_type == "mlp-dft":
         mlp_dft = True
@@ -85,15 +80,14 @@ def run_metropolis(
     counts = []
     ind_dft = []
 
-    T = 300
-    kb = 8.617333262e-5
-    beta = 1 / (kb * T)
+    if with_tqdm:
+        pbar = tqdm.tqdm(range(n_steps))
+    else:
+        pbar = range(n_steps)
+    
+    for dt in pbar:
 
-    M = Angles_mapping()
-
-    for dt in range(n_steps):
-
-        M.inv_mapping(x_init)
+        Angles_mapping().inv_mapping(x_init)
 
         if mixture:
             x, count = model.sample(n_chains, return_mus=True)
@@ -107,27 +101,24 @@ def run_metropolis(
         nll_x = model.nll(x)
         nll_x_init = model.nll(x_init)
 
-        M.mapping(x)
-        M.mapping(x_init)
+        Angles_mapping().mapping(x)
+        Angles_mapping().mapping(x_init)
 
         indexes_nc = None
         ind_dft_ = torch.zeros(x.shape[0])
 
         if energy_type == "dft":
-
-            # print('dft')
-
-            ag6 = Structure()
-
+            # TODO -> this part needs to be properly tested
             U_ = []
             indexes_nc = []
 
             for i in range(n_chains):
                 try:
-                    ag6.calculate_potential_energy(
-                        x[i], txt="ag6_" + str(i) + "_" + str(dt) + ".out"
-                    )
-                    U_.append(ag6.potential_energy)
+                    u_dft = calculator.calculate_potential_energy(ag6.build_molecule(x[i]))
+                    #potential_energy = ag6.calculate_potential_energy(
+                    #    x[i], txt="ag6_" + str(i) + "_" + str(dt) + ".out"
+                    #)
+                    U_.append(u_dft)
                     #U_.append(-6.3*(1+np.random.rand()*0.1))
                 except:
                     U_.append(0)
@@ -184,14 +175,14 @@ def run_metropolis(
                     U_dft = []
                     indexes_nc = []
 
-                    ag6 = Structure()
-
                     for i, x_ in enumerate(x[ind_U_sort[:n_dft]]):
                         try:
-                            ag6.calculate_potential_energy(x_)
-                            U_dft.append(ag6.potential_energy)
+                            u_dft = calculator.calculate_potential_energy(ag6.build_molecule(x_))
+                            U_dft.append(u_dft)
                             #U_dft.append(-6.3*(1+np.random.rand()*0.1))
+                            
                             ind_dft_[ind_U_sort[:n_dft][i]] = 1
+                            
                         except:
                             U_dft.append(0)
                             indexes_nc.append(ind_U_sort[:n_dft][i])

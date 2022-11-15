@@ -1,6 +1,8 @@
 import torch
 import numpy as np
-from flonacomldft.dft_utils import Structure
+from flonacomldft.internal_coordinates import Structure
+
+# TO DO: For the moment we need the Structure class to build the CVs, which requires GPAW. 
 
 d=2.8
 rij_d = lambda rij: rij/d
@@ -17,13 +19,13 @@ def X_i(i, r):
    
    return value
 
-def C(atoms):
+def compute_C(atoms):
    
    r = atoms.get_all_distances()
    
    return np.array([X_i(i, r) for i in range(atoms.get_global_number_of_atoms())]).sum()
 
-def R(atoms):
+def compute_R(atoms):
    
    r_rcm = atoms.get_positions() - atoms.get_center_of_mass()
    result = np.sqrt(np.array([np.linalg.norm(ri)**2 for ri in r_rcm]).sum()/atoms.get_global_number_of_atoms())
@@ -37,12 +39,10 @@ def get_CVs(data):
    
    for x in data:
    
-      ag6 = Structure()
-      ag6.build_zmat_matrix(x)
-   
-      atoms = ag6.molecule                                                                                  
-   
-      C_vals.append(C(atoms))
-      R_vals.append(R(atoms))
+      structure = Structure()
+      zmat_matrix, molecule = structure.build_zmat_matrix_and_molecule(x)
+                                                                               
+      C_vals.append(compute_C(molecule))
+      R_vals.append(compute_R(molecule))
    
    return C_vals, R_vals

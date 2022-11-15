@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import gpaw.mpi as mpi
 
-from flonacomldft.data_utils import (
+from flonacomldft.utils.data_utils import (
     get_path, 
     load_zmat_csv, 
     load_from_pickle
@@ -162,9 +162,9 @@ for i in range(n_runs):
     #print(is1_prop)
     #print(is2_prop)
 
-    M = Angles_mapping()
-    M.inv_mapping(is1_prop)
-    M.inv_mapping(is2_prop)
+    angles_mapping = Angles_mapping()
+    angles_mapping.inv_mapping(is1_prop)
+    angles_mapping.inv_mapping(is2_prop)
 
     if is1_prop.nelement() != 0:
         new_flow_is1 = train_flow(
@@ -175,7 +175,6 @@ for i in range(n_runs):
             bs=100,
             use_scheduler=False,
             step_schedule=100,
-            args_loss={"type": "fwd", "samp": "direct"},
             save_splits=10,
             grad_clip=1e4,)
     else:
@@ -190,14 +189,13 @@ for i in range(n_runs):
             bs=100,
             use_scheduler=False,
             step_schedule=100,
-            args_loss={"type": "fwd", "samp": "direct"},
             save_splits=10,
             grad_clip=1e4,)
     else:
         new_flow_is2 = flow_train[i][1]
 
-    M.mapping(is1_prop)
-    M.mapping(is2_prop)
+    angles_mapping.mapping(is1_prop)
+    angles_mapping.mapping(is2_prop)
 
     # retrain MLPs
     if USE_DFT_ENERGIES:
@@ -269,5 +267,5 @@ results = {
     'counts': cs_acc,
 }
 
-from flonacomldft.data_utils import save_pickle_file
+from flonacomldft.utils.data_utils import save_pickle_file
 save_pickle_file(results, 'runs_'+str(n_runs)+'_chains_'+str(n_chains)+'_steps_'+str(n_sts))

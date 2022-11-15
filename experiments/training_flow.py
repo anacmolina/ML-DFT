@@ -11,11 +11,11 @@ import pandas as pd
 from flonacomldft.real_nvp_mlp import RealNVP_MLP
 from flonacomldft.train_flow_from_data import train_flow
 
-from flonacomldft.data_utils import get_path, save_pickle_file
+from flonacomldft.utils.data_utils import get_path, save_pickle_file
 from flonacomldft.internal_coordinates import Angles_mapping
 from flonacomldft.collective_variables import get_CVs
 
-from flonacomldft.visualize import plotting_fes_db
+from flonacomldft.utils.visualize import plotting_fes_db
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 dtype = torch.float32
@@ -39,8 +39,8 @@ U_tensor = torch.from_numpy(U[:n].to_numpy()).float()
 
 print("Labels: {}, Samples: {}\n".format(x_tensor.shape[1], x_tensor.shape[0]))
 
-M = Angles_mapping()
-M.inv_mapping(x_tensor)
+angles_mapping = Angles_mapping()
+angles_mapping.inv_mapping(x_tensor)
 
 cov = torch.cov(x_tensor.T)
 mean = x_tensor.mean(0)
@@ -74,12 +74,9 @@ _ = train_flow(
     x_tensor,
     n_iter=1000,
     lr=5e-3,
-    bs=100,
+    # bs=100,
     use_scheduler=False,
     step_schedule=100,
-    args_loss={"type": "fwd", "samp": "direct"},
-    # estimate_tau=False,
-    #return_all_xs=True,
     save_splits=10,
     grad_clip=1e4,
 )
@@ -97,7 +94,7 @@ models = _["models"]
 N_samples = 250
 
 x = models[-1].sample(N_samples)
-M.mapping(x)
+angles_mapping.mapping(x)
 x = x.clone().data.cpu().numpy()
 c_, r_ = get_CVs(x)
 

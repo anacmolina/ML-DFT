@@ -1,7 +1,6 @@
 import pickle
 from datetime import datetime
 
-
 import torch
 import numpy as np
 
@@ -9,23 +8,22 @@ from ase.io.trajectory import Trajectory
 
 from flonacomldft.mixture import Mixture, get_models
 from flonacomldft.sampling import run_metropolis
-
-from flonacomldft.data_utils import (
+from flonacomldft.real_nvp_mlp import init_model
+from flonacomldft.dft_utils import  run_md_get_zmat
+from flonacomldft.internal_coordinates import get_mix_data #, get_internal_coordinates
+from flonacomldft.utils.data_utils import (
     get_path,
     load_zmat_csv,
     save_pickle_file,
     load_from_pickle,
 )
 
-from flonacomldft.dft_utils import get_internal_coordinates, Structure
 
-from flonacomldft.md_mcmc import (
-    init_model,
-    get_mix_data,
-    get_pos_energy,
-    run_nf,
-    run_md_get_zmat,
-)
+
+# TODO  -  find what/where is run_nf
+# from flonacomldft.md_mcmc import run_nf,
+
+
 
 import gpaw.mpi as mpi
 
@@ -179,7 +177,7 @@ for i in range(n_runs):
     else:
         raise RuntimeError("Unknown value")
 
-    # ag6.build_zmat_matrix(x_)
+    # ag6.build_zmat_matrix_and_molecule(x_)
 
     mpi.world.barrier()
     if (i + 1) % 2 == 0:

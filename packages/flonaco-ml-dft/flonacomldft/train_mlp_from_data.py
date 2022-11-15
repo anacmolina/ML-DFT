@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from torch.nn.utils import clip_grad_norm_
 
-from flonacomldft.data_utils import (
+from flonacomldft.utils.data_utils import (
     get_path
 )
 
@@ -23,12 +23,14 @@ def train_mlp(model,
     output_val, 
     n_iter=100, 
     lr=1e-4,
-    bs=100,
+    # bs=100,
     use_scheduler=False,
     step_schedule=100,
-    save_splits=10,
+    # save_splits=10,
     grad_clip=1e4,
-    retraining=False
+    retraining=False,
+    train_size = 0.8,
+    sk_seed = 42
 ):
 
     #mse
@@ -44,11 +46,8 @@ def train_mlp(model,
 
     losses = []
     losses_val = []
-    models = [copy.deepcopy(model)]
     grad_norms = []
-
-    sk_seed = 42
-    train_size = 0.8
+    model_init = copy.deepcopy(model)
 
     x = input_val.detach().requires_grad_().float()
     y = output_val.detach().requires_grad_().float()
@@ -119,7 +118,7 @@ def train_mlp(model,
         "dataset_split": data_split,
         "losses": losses,
         "losses_test": losses_val,
-        "models": models,
+        "model_init": model_init,
         "grad_norms": grad_norms,
     }
 

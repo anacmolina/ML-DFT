@@ -12,7 +12,7 @@ from flonacomldft.real_nvp_mlp import RealNVP_MLP
 from flonacomldft.train_flow_from_data import train_flow
 from flonacomldft.internal_coordinates import Angles_mapping
 
-from flonacomldft.data_utils import get_path, save_pickle_file
+from flonacomldft.utils.data_utils import get_path, save_pickle_file
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 dtype = torch.float32
@@ -42,8 +42,8 @@ U_tensor = torch.from_numpy(U[:n].to_numpy()).float()
 
 f.write("Samples: {}, Labels: {}\n\n".format(x_tensor.shape[0], x_tensor.shape[1]))
 
-M = Angles_mapping()
-M.inv_mapping(x_tensor)
+angles_mapping = Angles_mapping()
+angles_mapping.inv_mapping(x_tensor)
 
 cov = torch.cov(x_tensor.T)
 mean = x_tensor.mean(0)
@@ -99,7 +99,6 @@ out = train_flow(
     bs=100,
     use_scheduler=False,
     step_schedule=100,
-    args_loss={"type": "fwd", "samp": "direct"},
     save_splits=10,
     grad_clip=1e4,
 )
@@ -108,3 +107,23 @@ f.write("DONE!")
 
 f.close()
 # save_pickle_file(_, "flow_trained")
+
+# losses = _["losses"]
+# plt.figure(figsize=(7, 5))
+# plt.plot(list(range(0, len(losses))), np.abs(np.array(losses)))
+# plt.yscale("log")
+# plt.ylabel("Losses")
+# plt.show()
+
+# models = _["models"]
+# N_samples = 250
+
+# x = models[-1].sample(N_samples)
+# angles_mapping.mapping(x)
+# x = x.clone().data.cpu().numpy()
+# c_, r_ = get_CVs(x)
+
+# ax = plotting_fes_db()
+# ax.plot(c_, r_, "mo", label="NF proposals")
+# ax.legend(loc="lower left", fontsize=20)
+# plt.show()

@@ -1,10 +1,9 @@
 from flonacomldft.train_mlp_from_data import train_mlp
 
-from flonacomldft.data_utils import (
+from flonacomldft.utils.data_utils import (
     get_path,
     load_from_pickle,
     save_pickle_file
-    
 )
 
 import torch
