@@ -44,8 +44,8 @@ models = np.array([train_is1['models'][-1],
 
 mixture = Mixture(models, torch.tensor([0.5, 0.5]).detach())
 
-n_sts = 500
-n_chains = 250
+n_sts = 10
+n_chains = 10
 
 mlp_is1 = load_from_pickle(get_path() + 'mlp_is1')
 mlp_is2 = load_from_pickle(get_path() + 'mlp_is2')
@@ -58,7 +58,9 @@ out = run_metropolis(model=mixture, u_init=uis[:n_chains], x_init=xis[:n_chains,
                    mixture=True, energy_type='mlp-dft', mlps=models_mlps,
                    with_tqdm=True)
 
-# filename = 'metropolis_mix_mlps_'+str(n_chains)+'_'+str(n_sts)+''
-# save_pickle_file(_, filename)
+print(out['xs'])
+
+#filename = 'metropolis_mix_mlps_'+str(n_chains)+'_'+str(n_sts)+''
+#save_pickle_file(out, filename)
 
 #print(_)
