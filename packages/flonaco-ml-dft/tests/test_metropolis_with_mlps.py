@@ -44,8 +44,8 @@ models = np.array([train_is1['models'][-1],
 
 mixture = Mixture(models, torch.tensor([0.5, 0.5]).detach())
 
-n_sts = 10
-n_chains = 10
+n_sts = 3
+n_chains = 5
 
 mlp_is1 = load_from_pickle(get_path() + 'mlp_is1')
 mlp_is2 = load_from_pickle(get_path() + 'mlp_is2')
