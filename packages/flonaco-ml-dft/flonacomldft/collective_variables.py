@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from flonacomldft.dft_utils import Structure
+from flonacomldft.internal_coordinates import Structure
 
 # TO DO: For the moment we need the Structure class to build the CVs, which requires GPAW. 
 
