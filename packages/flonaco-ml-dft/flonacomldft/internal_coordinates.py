@@ -142,7 +142,7 @@ class Structure:
         self.calculator = None
 
       
-    def build_zmat_matrix_and_molecule(self, zmat_values):  
+    def build_zmat_matrix(self, zmat_values):  
         """"
         Build the zmat matrix and the molecule from the zmat values
         
@@ -189,9 +189,15 @@ class Structure:
             zmat_matrix.insert(6, "dihedral", d, True)
 
             zmat_matrix = cc.Zmat(zmat_matrix)
-            molecule = zmat_matrix.get_cartesian().get_ase_atoms()
 
         else:
             raise RuntimeError('Data not valid')
       
-        return zmat_matrix, molecule 
+        return zmat_matrix
+
+    def build_molecule(self, zmat_values):
+
+        zmat_matrix = self.build_zmat_matrix(zmat_values)
+        molecule = zmat_matrix.get_cartesian().get_ase_atoms()
+
+        return molecule 

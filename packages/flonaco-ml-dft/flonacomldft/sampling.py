@@ -102,18 +102,22 @@ def run_metropolis(
         if energy_type == "dft":
             # TODO -> this part needs to be properly tested
             from flonacomldft.dft_utils import DFTCalculator
-            ag6 = DFTCalculator()
+            from flonacomldft.internal_coordinates import Structure
+            
+            ag6 = Structure()
+            calc = DFTCalculator()
 
             U_ = []
             indexes_nc = []
 
             for i in range(n_chains):
                 try:
+                    u_dft = calc.calculate_potential_energy(ag6.build_molecule(x[i]))
                     #potential_energy = ag6.calculate_potential_energy(
                     #    x[i], txt="ag6_" + str(i) + "_" + str(dt) + ".out"
                     #)
-                    #U_.append(ag6.potential_energy)
-                    U_.append(-6.3*(1+np.random.rand()*0.1))
+                    U_.append(u_dft)
+                    #U_.append(-6.3*(1+np.random.rand()*0.1))
                 except:
                     U_.append(0)
                     indexes_nc.append(i)
@@ -169,10 +173,16 @@ def run_metropolis(
                     U_dft = []
                     indexes_nc = []
 
+                    from flonacomldft.dft_utils import DFTCalculator
+                    from flonacomldft.internal_coordinates import Structure
+            
                     ag6 = Structure()
+                    calc = DFTCalculator()
 
                     for i, x_ in enumerate(x[ind_U_sort[:n_dft]]):
                         try:
+                            u_dft = calc.calculate_potential_energy(ag6.build_molecule(x_))
+                            U_dft.append(u_dft)
                             #ag6.calculate_potential_energy(x_)
                             #U_dft.append(ag6.potential_energy)
                             # TODO realign with new division of operations
