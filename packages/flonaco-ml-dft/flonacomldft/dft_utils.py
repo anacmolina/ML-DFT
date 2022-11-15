@@ -43,14 +43,16 @@ class DFTCalculator:
 
     def calculate_potential_energy(self, molecule):
       
-      # Setting the cell parameters
-      molecule.set_cell(self.cell)
-      molecule.center()
-      molecule.set_pbc(True)
-      molecule.set_calculator(self.calculator)
+        # Setting the cell parameters
+        molecule.set_cell(self.cell)
+        molecule.center()
+        molecule.set_pbc(True)
+        print(self.calculator)
+        molecule.set_calculator(self.calculator)
       
-      # Calculating the potential energy
-      return molecule.get_potential_energy()
+
+        # Calculating the potential energy
+        return molecule.get_potential_energy()
 
     def run_molecular_dynamics(self, molecule, iters, file_name, starting=True,
                                temp=300):

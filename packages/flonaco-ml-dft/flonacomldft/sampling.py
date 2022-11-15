@@ -106,6 +106,7 @@ def run_metropolis(
             
             ag6 = Structure()
             calc = DFTCalculator()
+            calc.initialize_calculator()
 
             U_ = []
             indexes_nc = []
@@ -178,15 +179,21 @@ def run_metropolis(
             
                     ag6 = Structure()
                     calc = DFTCalculator()
+                    calc.initialize_calculator()
 
                     for i, x_ in enumerate(x[ind_U_sort[:n_dft]]):
                         try:
+                            print("hi_")
+                            mol = ag6.build_molecule(x_)
+                            print(mol)
+                            print(mol.get_calculator())
                             u_dft = calc.calculate_potential_energy(ag6.build_molecule(x_))
+                            print('energy', u_dft)
                             U_dft.append(u_dft)
                             #ag6.calculate_potential_energy(x_)
                             #U_dft.append(ag6.potential_energy)
                             # TODO realign with new division of operations
-                            U_dft.append(-6.3*(1+np.random.rand()*0.1))
+                            #U_dft.append(-6.3*(1+np.random.rand()*0.1))
                             ind_dft_[ind_U_sort[:n_dft][i]] = 1
                         except:
                             U_dft.append(0)
