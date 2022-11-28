@@ -11,10 +11,7 @@ from flonacomldft.sampling import run_metropolis
 def Transpose(x):
     return x.permute(*torch.arange(x.ndim - 1, -1, -1))
 
-def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type, flow_trains, mlp_models):
-    """
-    function for sampling
-    """
+def adaptative_sampling(x_init, u_init, count_init, n_runs, n_chains, n_steps, energy_type, flow_trains, mlp_models):
 
     flow_train = [flow_trains,
     ]
@@ -35,29 +32,6 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type, flo
     USE_DFT_ENERGIES = False
     if energy_type == "dft" or energy_type == "mlp-dft":
         USE_DFT_ENERGIES = True
-
-    x_init = x[:n_chains]
-    u_init = u[:n_chains]
-    count_init = count[:n_chains]
-
-    x_flow_is1 = x[~count.bool()]
-    x_flow_is2 = x[count.bool()]
-
-    x_mlp_is1 = x[~count.bool()]
-    u_mlp_is1 = u[~count.bool()]
-    
-    x_mlp_is2 = x[count.bool()]
-    u_mlp_is2 = u[count.bool()]
-
-    import matplotlib.pyplot as plt
-    from ase.visualize.plot import plot_atoms
-    from flonacomldft.internal_coordinates import Structure
-
-    ag6 = Structure()
-    plot_atoms(ag6.build_molecule(x_flow_is1[0]))
-    plt.show()
-    plot_atoms(ag6.build_molecule(x_flow_is2[0]))
-    plt.show()
 
     for i in range(n_runs):
 
@@ -92,7 +66,7 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type, flo
         us = us_acc[i].clone()
         cs = cs_acc[i].clone()
 
-        print("shape chains: ", xs.shape)
+        print(i)
         data_for_flows = Transpose(
             torch.cat(
                 (
@@ -115,27 +89,23 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type, flo
 
         # print(data_for_flows)
         #del data_for_flows
-        print("x_flow shape: ", x_flow_is1.shape)
-        print("is1_prop: ", is1_prop.shape)
-        x_flow_is1 = torch.cat((x_flow_is1, is1_prop))
-        print("x_flow shape after: ", x_flow_is1.shape)
         #print(is1_prop)
         #print(is2_prop)
 
         M = Angles_mapping()
-        M.inv_mapping(x_flow_is1)
-        M.inv_mapping(x_flow_is2)
+        M.inv_mapping(is1_prop)
+        M.inv_mapping(is2_prop)
 
         if is1_prop.nelement() != 0:
             new_flow_is1 = train_flow(
                 flow[i][0],
-                x_flow_is1,
+                is1_prop,
                 n_iter=100,
                 lr=5e-3,
-                #bs=100,
+                bs=100,
                 use_scheduler=False,
                 step_schedule=100,
-                #args_loss={"type": "fwd", "samp": "direct"},
+                args_loss={"type": "fwd", "samp": "direct"},
                 save_splits=10,
                 grad_clip=1e4,)
         else:
@@ -144,20 +114,20 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type, flo
         if is2_prop.nelement() != 0:
             new_flow_is2 = train_flow(
                 flow[i][1],
-                x_flow_is2,
+                is2_prop,
                 n_iter=100,
                 lr=5e-3,
-                #bs=100,
+                bs=100,
                 use_scheduler=False,
                 step_schedule=100,
-                #args_loss={"type": "fwd", "samp": "direct"},
+                args_loss={"type": "fwd", "samp": "direct"},
                 save_splits=10,
                 grad_clip=1e4,)
         else:
             new_flow_is2 = flow_train[i][1]
 
-        M.mapping(x_flow_is1)
-        M.mapping(x_flow_is2)
+        M.mapping(is1_prop)
+        M.mapping(is2_prop)
 
         # retrain MLPs
         if USE_DFT_ENERGIES:

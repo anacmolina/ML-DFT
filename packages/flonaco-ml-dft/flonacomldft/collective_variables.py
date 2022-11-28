@@ -40,7 +40,7 @@ def get_CVs(data):
    for x in data:
    
       structure = Structure()
-      zmat_matrix, molecule = structure.build_zmat_matrix_and_molecule(x)
+      molecule = structure.build_molecule(x)
                                                                                
       C_vals.append(compute_C(molecule))
       R_vals.append(compute_R(molecule))
