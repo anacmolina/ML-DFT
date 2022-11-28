@@ -11,7 +11,8 @@ from flonacomldft.sampling import run_metropolis
 def Transpose(x):
     return x.permute(*torch.arange(x.ndim - 1, -1, -1))
 
-def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type, flow_trains, mlp_models):
+def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
+                       flow_trains, mlp_models):
     """
     function for sampling
     """
@@ -33,7 +34,7 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type, flo
     cs_acc = []
 
     USE_DFT_ENERGIES = False
-    if energy_type == "dft" or energy_type == "mlp-dft":
+    if "dft" in energy_type:
         USE_DFT_ENERGIES = True
 
     x_init = x[:n_chains]
@@ -122,9 +123,9 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type, flo
         #print(is1_prop)
         #print(is2_prop)
 
-        M = Angles_mapping()
-        M.inv_mapping(x_flow_is1)
-        M.inv_mapping(x_flow_is2)
+        angles_mapping = Angles_mapping()
+        angles_mapping.inv_mapping(x_flow_is1)
+        angles_mapping.inv_mapping(x_flow_is2)
 
         if is1_prop.nelement() != 0:
             new_flow_is1 = train_flow(
@@ -132,10 +133,8 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type, flo
                 x_flow_is1,
                 n_iter=100,
                 lr=5e-3,
-                #bs=100,
                 use_scheduler=False,
                 step_schedule=100,
-                #args_loss={"type": "fwd", "samp": "direct"},
                 save_splits=10,
                 grad_clip=1e4,)
         else:
@@ -147,17 +146,15 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type, flo
                 x_flow_is2,
                 n_iter=100,
                 lr=5e-3,
-                #bs=100,
                 use_scheduler=False,
                 step_schedule=100,
-                #args_loss={"type": "fwd", "samp": "direct"},
                 save_splits=10,
                 grad_clip=1e4,)
         else:
             new_flow_is2 = flow_train[i][1]
 
-        M.mapping(x_flow_is1)
-        M.mapping(x_flow_is2)
+        angles_mapping.mapping(x_flow_is1)
+        angles_mapping.mapping(x_flow_is2)
 
         # retrain MLPs
         if USE_DFT_ENERGIES:
