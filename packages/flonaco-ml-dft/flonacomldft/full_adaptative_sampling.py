@@ -201,4 +201,8 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
         'counts': cs_acc,
     }
 
-    return results
+    all_models = {'flows': flow_train,
+                'mlps': mlps
+    }
+
+    return results, all_models

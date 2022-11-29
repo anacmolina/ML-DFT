@@ -23,31 +23,40 @@ class DFTCalculator:
         self.calculator = None
         self.cell = [16, 16, 16]
 
-    def initialize_calculator(self, file_name='md', rank=0):
-        path = os.path.join(os.getcwd(), 'trajectories')    
-        self.file = path + '/ag6_' + file_name 
+    #def initialize_calculator(self, file_name='md', rank=0):
+    def initialize_calculator(self, file_name='ag6', rank=0):
+        self.path = os.path.join(os.getcwd(), 'flowMC')    
+        self.file = self.path + '/' + file_name + '.out'
 
-        if rank==0 and os.path.isdir(path)==False:
-            print('Folder created: %s Rank: %d '%(path, rank))
-            os.mkdir(path)
+        if rank==0 and os.path.isdir(self.path)==False:
+            #print('Folder created: %s Rank: %d '%(self.path, rank))
+            os.mkdir(self.path)
         else:
             pass
         
         # DFT calculator low level precision but faster (takes 1 minute in serial)                                \
         self.calculator = GPAW(mode = 'lcao', basis='pvalence.dz', h =0.2, xc = 'PBE',
-                            spinpol = True, nbands = -4, txt=self.file + '.out')
+                            spinpol = True, nbands = -4, txt=self.path + "/init_calc.out")
 
         # with higher precision, takes longer (about 30 minutes in serial).                      
         
         #self.calculator = GPAW(mode = 'fd', h =0.18, xc = 'PBE', eigensolver = 'rmm-diis', spinpol = True, nbands=-4) 
 
-    def calculate_potential_energy(self, molecule):
-      
+    def calculate_potential_energy(self, molecule, file_name=None):
+        
+        if self.calculator is None:
+            self.initialize_calculator()
+
+        if file_name is not None:
+            self.file = self.path + '/' + file_name
+
+        self.calculator.set(txt=self.file)
+
         # Setting the cell parameters
         molecule.set_cell(self.cell)
         molecule.center()
         molecule.set_pbc(True)
-        print(self.calculator)
+        # print(self.calculator)
         molecule.set_calculator(self.calculator)
       
 
