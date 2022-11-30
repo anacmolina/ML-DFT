@@ -158,37 +158,37 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
         angles_mapping.mapping(x_flow_is2)
 
         # retrain MLPs
-        if USE_DFT_ENERGIES:
+        #if USE_DFT_ENERGIES:
 
-            data_for_mlp = Transpose(
-                torch.cat(
-                    (
-                        Transpose(xs),
-                        Transpose(us.reshape(n_steps, n_chains, 1)),
-                        Transpose(cs.reshape(n_steps, n_chains, 1)),
-                    ),
-                    dim=0,
-                )
-            )
+            #data_for_mlp = Transpose(
+            #    torch.cat(
+            #        (
+            #            Transpose(xs),
+            #            Transpose(us.reshape(n_steps, n_chains, 1)),
+            #            Transpose(cs.reshape(n_steps, n_chains, 1)),
+            #        ),
+            #        dim=0,
+            #    )
+            #)
 
             #print(data_for_mlp, _['ind_dft'])
-            data_for_mlp = data_for_mlp[_['inds_dft'].bool()]
-            mask_mlp = data_for_mlp[:, -1] == 1
+            #data_for_mlp = data_for_mlp[_['inds_dft'].bool()]
+            #mask_mlp = data_for_mlp[:, -1] == 1
 
-            is1_prop_dft = data_for_mlp[~mask_mlp]
-            is2_prop_dft = data_for_mlp[mask_mlp]
+            #is1_prop_dft = data_for_mlp[~mask_mlp]
+            #is2_prop_dft = data_for_mlp[mask_mlp]
 
             #print(data_for_mlp)
             #print(is1_prop_dft)
             #print(is2_prop_dft)
 
-            if energy_type == "dft":
+            #if energy_type == "dft":
                 # use all # all index must be  ind_dft == 1
-                data_ex = data_for_mlp.reshape(n_steps * n_chains, data_for_mlp.shape[-1])
+            #    data_ex = data_for_mlp.reshape(n_steps * n_chains, data_for_mlp.shape[-1])
 
-            elif energy_type == "mlp-dft":
+            #elif energy_type == "mlp-dft":
                 # use only ind_dft
-                print("hi :(, T_T")  # _["ind_dft"])
+            #    print("hi :(, T_T")  # _["ind_dft"])
 
         dic_flow_trainings.append([dic_new_flow_is1, dic_new_flow_is2])
         flows.append(get_models(dic_flow_trainings[i]))
