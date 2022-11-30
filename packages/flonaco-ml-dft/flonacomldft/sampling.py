@@ -171,9 +171,7 @@ def run_metropolis(
 
             else:
 
-                #print('mlp_is1_is2')
-
-                mlp_is1, mlp_is2 = mlps
+                mlp_is1, mlp_is2 = mlps[0], mlps[1]
 
                 model_mlp_is1 = mlp_is1
                 model_mlp_is2 = mlp_is2
