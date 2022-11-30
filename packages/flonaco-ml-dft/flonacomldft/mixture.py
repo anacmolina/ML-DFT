@@ -54,4 +54,7 @@ class Mixture(nn.Module):
         return self.nll(x)
 
 def get_models(nf_):
-    return [nf_[0]['models'][-1], nf_[1]['models'][-1]]
+    """
+    Get the models for the mixture from a list of dictionnaries storing the models.
+    """
+    return [nf_[0]['model'], nf_[1]['model']]

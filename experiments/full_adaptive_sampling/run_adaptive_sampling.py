@@ -1,6 +1,5 @@
 import torch
 import numpy as np
-import gpaw.mpi as mpi
 
 from flonacomldft.utils.data_utils import (
     get_path,
@@ -8,26 +7,35 @@ from flonacomldft.utils.data_utils import (
     load_from_pickle,
     save_pickle_file,
 )
-
-from flonacomldft.internal_coordinates import Angles_mapping, get_mix_data
-
+from flonacomldft.internal_coordinates import get_mix_data
 from flonacomldft.full_adaptative_sampling import adaptative_sampling
 
+n_runs = 5
+n_chains = 50
+n_steps = 5
+energy_type="mlp"
+
 # Seed initialization for random generations
-ranks = np.arange(0, mpi.world.size)
-rank = mpi.world.rank
-comm = mpi.world.new_communicator(ranks)
+if "dft" in energy_type:
+    import gpaw.mpi as mpi
+    ranks = np.arange(0, mpi.world.size)
+    rank = mpi.world.rank
+    comm = mpi.world.new_communicator(ranks)
 
-num_seed = np.array([0])
+    num_seed = np.array([36])
 
-if rank == 0:
-    num_seed = np.array([np.random.randint(1e5)])
+    if rank == 0:
+        num_seed = np.array([36])
+        # num_seed = np.array([np.random.randint(1e5)])
 
-comm.broadcast(num_seed, 0)
+    comm.broadcast(num_seed, 0)
+    print("Rank: %d \t Seed: %d" % (rank, num_seed[0]))
+else:
+    num_seed = np.array([36])
+    # num_seed = np.array([np.random.randint(1e5)])
+    print("Seed: %d" % num_seed[0])
 
-print("Rank: %d \t Seed: %d" % (rank, num_seed[0]))
 torch.manual_seed(num_seed[0])
-#torch.manual_seed(36)
 
 # Run MD for both isomers
 
@@ -50,9 +58,6 @@ init_nf_is2 = load_from_pickle(get_path() + "training_is2")
 init_flow_train = [init_nf_is1, init_nf_is2]
 init_mlps = [init_mlp_is1, init_mlp_is2]
 
-n_runs = 5
-n_chains = 50
-n_steps = 50
 
 results = adaptative_sampling(
     xis, #[:n_chains],
@@ -61,7 +66,7 @@ results = adaptative_sampling(
     n_runs,
     n_chains,
     n_steps,
-    "mlp",
+    energy_type,
     init_flow_train,
     init_mlps,
 )

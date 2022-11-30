@@ -15,9 +15,7 @@ from flonacomldft.internal_coordinates import Angles_mapping
 from flonacomldft.mixture import Mixture, get_models
 from flonacomldft.sampling import run_metropolis
 from flonacomldft.internal_coordinates import get_mix_data
-from flonacomldft.train_flow_from_data import (
-    train_flow
-    )
+from flonacomldft.train_flow_from_data import train_flow
 
 '''''
 Parameters we should be able to play with:
@@ -27,6 +25,10 @@ number of steps of retraining flows/mlps
 - portion of the chains that will go through DFT 
 ''''' 
 
+n_runs = 10
+n_chains = 100
+n_sts = 50
+energy_type = "mlp-dft" #"dft"  
 
 # Seed initialization for random generations
 ranks = np.arange(0, mpi.world.size)
@@ -41,7 +43,6 @@ if rank == 0:
 comm.broadcast(num_seed, 0)
 
 print("Rank: %d \t Seed: %d" % (rank, num_seed[0]))
-# torch.manual_seed(num_seed[0])
 torch.manual_seed(36)
 
 # Run MD for both isomers
@@ -64,21 +65,16 @@ init_nf_is2 = load_from_pickle(get_path() + "training_is2")
 
 # Adaptative MCMC
 
-flow_train = [
+dic_flow_trainings = [
     [init_nf_is1, init_nf_is2],
 ]
-flow = [
-    get_models(flow_train[0]),
+flows = [
+    get_models(dic_flow_trainings[0]),
 ]
 mlps = [[init_mlp_is1, init_mlp_is2]]
 
 weights = torch.tensor([0.5, 0.5]).detach()
-mixture = Mixture(flow[0], weights)
-
-n_runs = 10
-n_chains = 100
-n_sts = 50
-energy_type = "mlp-dft" #"dft"  
+mixture = Mixture(flows[0], weights)
 
 #print(xis[:n_chains].shape)
 
@@ -167,22 +163,22 @@ for i in range(n_runs):
     angles_mapping.inv_mapping(is2_prop)
 
     if is1_prop.nelement() != 0:
-        new_flow_is1 = train_flow(
-            flow[i][0],
+        dic_new_flow_is1 = train_flow(
+            flows[i][0],
             is1_prop,
             n_iter=100,
             lr=5e-3,
             bs=100,
             use_scheduler=False,
             step_schedule=100,
-            save_splits=10,
+            save_splits=2,
             grad_clip=1e4,)
     else:
-        new_flow_is1 = flow_train[i][0]
+        dic_new_flow_is1 = dic_flow_trainings[i][0]
 
     if is2_prop.nelement() != 0:
-        new_flow_is2 = train_flow(
-            flow[i][1],
+        dic_new_flow_is2 = train_flow(
+            flows[i][1],
             is2_prop,
             n_iter=100,
             lr=5e-3,
@@ -192,7 +188,7 @@ for i in range(n_runs):
             save_splits=10,
             grad_clip=1e4,)
     else:
-        new_flow_is2 = flow_train[i][1]
+        dic_new_flow_is2 = dic_flow_trainings[i][1]
 
     angles_mapping.mapping(is1_prop)
     angles_mapping.mapping(is2_prop)
@@ -230,8 +226,8 @@ for i in range(n_runs):
             # use only ind_dft
             print("hi :(, T_T")  # _["ind_dft"])
 
-    flow_train.append([new_flow_is1, new_flow_is2])
-    flow.append(get_models(flow_train[i+1]))
+    dic_flow_trainings.append([dic_new_flow_is1, dic_new_flow_is2])
+    flows.append(get_models(dic_flow_trainings[i+1]))
 
     weights = torch.tensor([0.5, 0.5]).detach()
     mixture = Mixture(flow[i+1], weights)

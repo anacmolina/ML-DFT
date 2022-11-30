@@ -1,27 +1,31 @@
 from ase.parallel import parprint as print
+from ase.visualize.plot import plot_atoms
 
 import torch
 import numpy as np
+import matplotlib.pyplot as plt
 
 from flonacomldft.internal_coordinates import Angles_mapping
 from flonacomldft.mixture import Mixture, get_models
 from flonacomldft.train_flow_from_data import train_flow
 from flonacomldft.sampling import run_metropolis
+from flonacomldft.internal_coordinates import Structure
 
 def Transpose(x):
     return x.permute(*torch.arange(x.ndim - 1, -1, -1))
 
 def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
-                       flow_trains, mlp_models):
+                       dic_flow_training_init, mlp_models):
     """
     function for sampling
     """
 
-    flow_train = [flow_trains,
+    dic_flow_trainings = [dic_flow_training_init,
     ]
 
-    flow = [
-        get_models(flow_train[0]),
+    # keeping track of flows separately is redundant
+    flows = [
+        get_models(dic_flow_trainings[0]),
     ]
     
     mlps = [
@@ -50,20 +54,16 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
     x_mlp_is2 = x[count.bool()]
     u_mlp_is2 = u[count.bool()]
 
-    import matplotlib.pyplot as plt
-    from ase.visualize.plot import plot_atoms
-    from flonacomldft.internal_coordinates import Structure
-
     ag6 = Structure()
     plot_atoms(ag6.build_molecule(x_flow_is1[0]))
-    plt.show()
+    plt.show(block=False)
     plot_atoms(ag6.build_molecule(x_flow_is2[0]))
-    plt.show()
+    plt.show(block=False)
 
     for i in range(n_runs):
 
         weights = torch.tensor([0.5, 0.5]).detach()
-        mixture = Mixture(flow[i], weights)        
+        mixture = Mixture(flows[i], weights)        
 
         _ = run_metropolis(
         model=mixture,
@@ -128,8 +128,8 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
         angles_mapping.inv_mapping(x_flow_is2)
 
         if is1_prop.nelement() != 0:
-            new_flow_is1 = train_flow(
-                flow[i][0],
+            dic_new_flow_is1 = train_flow(
+                flows[i][0],
                 x_flow_is1,
                 n_iter=100,
                 lr=5e-3,
@@ -138,11 +138,11 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
                 save_splits=10,
                 grad_clip=1e4,)
         else:
-            new_flow_is1 = flow_train[i][0]
+            dic_new_flow_is1 = dic_flow_trainings[i][0]
 
         if is2_prop.nelement() != 0:
-            new_flow_is2 = train_flow(
-                flow[i][1],
+            dic_new_flow_is2 = train_flow(
+                flows[i][1],
                 x_flow_is2,
                 n_iter=100,
                 lr=5e-3,
@@ -151,7 +151,7 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
                 save_splits=10,
                 grad_clip=1e4,)
         else:
-            new_flow_is2 = flow_train[i][1]
+            dic_new_flow_is2 = dic_flow_trainings[i][1]
 
         angles_mapping.mapping(x_flow_is1)
         angles_mapping.mapping(x_flow_is2)
@@ -189,8 +189,8 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
                 # use only ind_dft
                 print("hi :(, T_T")  # _["ind_dft"])
 
-        flow_train.append([new_flow_is1, new_flow_is2])
-        flow.append(get_models(flow_train[i]))
+        dic_flow_trainings.append([dic_new_flow_is1, dic_new_flow_is2])
+        flows.append(get_models(dic_flow_trainings[i]))
         
     #TODO: free space, delete variable
 
