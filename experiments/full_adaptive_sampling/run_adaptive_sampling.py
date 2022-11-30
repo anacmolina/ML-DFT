@@ -22,8 +22,6 @@ if "dft" in energy_type:
     rank = mpi.world.rank
     comm = mpi.world.new_communicator(ranks)
 
-    num_seed = np.array([36])
-
     if rank == 0:
         num_seed = np.array([36])
         # num_seed = np.array([np.random.randint(1e5)])
@@ -38,7 +36,6 @@ else:
 torch.manual_seed(num_seed[0])
 
 # Run MD for both isomers
-
 # loading traj in internal coordinates
 data_is1 = load_zmat_csv("is1")
 data_is2 = load_zmat_csv("is2")
@@ -46,7 +43,6 @@ data_is2 = load_zmat_csv("is2")
 xis, uis, cis = get_mix_data(data_is1, data_is2)
 
 # Pretrain mlps and flows
-
 # loading pretrain mlps models
 init_mlp_is1 = load_from_pickle(get_path() + "mlp_is1")
 init_mlp_is2 = load_from_pickle(get_path() + "mlp_is2")
