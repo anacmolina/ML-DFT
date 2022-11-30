@@ -3,9 +3,8 @@ Script with all sampling methods.
 
 """
 
-from typing_extensions import runtime
-from flonacomldft.utils.data_utils import get_path, load_from_pickle
-#from flonacomldft.models import Uncentered_MLP
+# from flonacomldft.utils.data_utils import get_path, load_from_pickle
+# from flonacomldft.models import Uncentered_MLP
 import numpy as np
 import torch
 import tqdm
@@ -19,8 +18,6 @@ from flonacomldft.internal_coordinates import Angles_mapping
 
 kb = 8.617333262e-5
 
-#TODO: Remove this later
-#torch.manual_seed(36)
 
 def run_metropolis(
     model,
@@ -52,12 +49,22 @@ def run_metropolis(
         ag6 = Structure()
         calculator = DFTCalculator()
         calculator.initialize_calculator()
+        dft = True
 
     if energy_type == "mlp-dft":
-        mlp_dft = True
+        
+        # mlp_dft = True
+        dft = True
         energy_type = "mlp"
+        
+        ind_dft = []
+        xs_dft = []
+        us_dft = []
+    
     else:
-        mlp_dft = False
+        
+        # mlp_dft = False
+        dft = False
 
     if energy_type == "mlp":
         if(mlps is None):
@@ -73,13 +80,13 @@ def run_metropolis(
     #print('init\n',x_init)
 
     xs = []
-    accs = []
     us = []
-    us_p = []
+    accs = []
     nlls = []
     counts = []
-    ind_dft = []
-
+    xs_prop = []
+    us_prop = []
+    
     if with_tqdm:
         pbar = tqdm.tqdm(range(n_steps))
     else:
@@ -108,17 +115,20 @@ def run_metropolis(
         ind_dft_ = torch.zeros(x.shape[0])
 
         if energy_type == "dft":
-            # TODO -> this part needs to be properly tested
             U_ = []
             indexes_nc = []
 
             for i in range(n_chains):
                 try:
-                    u_dft = calculator.calculate_potential_energy(ag6.build_molecule(x[i]))
+                    u_ = calculator.calculate_potential_energy(ag6.build_molecule(x[i]))
                     #potential_energy = ag6.calculate_potential_energy(
                     #    x[i], txt="ag6_" + str(i) + "_" + str(dt) + ".out"
                     #)
-                    U_.append(u_dft)
+
+                    xs_dft.append(x[i])
+                    us_dft.append(u_)
+
+                    U_.append(u_)
                     #U_.append(-6.3*(1+np.random.rand()*0.1))
                 except:
                     U_.append(0)
@@ -126,8 +136,12 @@ def run_metropolis(
 
             indexes_nc = torch.tensor(indexes_nc)
             ind_dft_ = torch.ones(x.shape[0])
-            U_ = torch.tensor(U_).float()
-            U = U_.clone().detach()
+            U = torch.tensor(U_).float().detach()
+
+            # U = U_.clone().detach()
+
+            x_prop = x.clone().detach() 
+            u_prop = U.clone().detach()
 
         elif energy_type == "mlp":
 
@@ -163,7 +177,7 @@ def run_metropolis(
 
             U_ = U_.reshape(U_.shape[0]).float()
 
-            if mlp_dft:
+            if dft:
 
                 # print('mlp-dft')
                 n_dft = int(U_.shape[0] * 0.2)
@@ -177,10 +191,13 @@ def run_metropolis(
 
                     for i, x_ in enumerate(x[ind_U_sort[:n_dft]]):
                         try:
-                            u_dft = calculator.calculate_potential_energy(ag6.build_molecule(x_))
-                            U_dft.append(u_dft)
+                            u_ = calculator.calculate_potential_energy(ag6.build_molecule(x_))
+                            U_dft.append(u_)
                             #U_dft.append(-6.3*(1+np.random.rand()*0.1))
                             
+                            xs_dft.append(x_)
+                            us_dft.append(u_)
+
                             ind_dft_[ind_U_sort[:n_dft][i]] = 1
                             
                         except:
@@ -193,6 +210,9 @@ def run_metropolis(
                     U_[ind_U_sort[:n_dft]] = U_dft
 
             U = U_.clone().float()
+
+            x_prop = x.clone().detach() 
+            u_prop = U.clone().detach()
 
         else:
             raise RuntimeError("Unknown method for the energy")
@@ -216,11 +236,12 @@ def run_metropolis(
             count = count_init
         
         xs.append(x.float().clone())
-        accs.append(acc.float().clone())
         us.append(U.float().clone())
-        us_p.append(U_.float().clone())
+        accs.append(acc.float().clone())
         nlls.append(nll_x.float().clone())
         counts.append(count.float().clone())
+        xs_prop.append(x_prop.float().clone())
+        us_prop.append(u_prop.float().clone())
         ind_dft.append(ind_dft_.float().clone())
 
         x_init = x.clone().detach()
@@ -229,13 +250,29 @@ def run_metropolis(
 
         #print("acc: {:0.2f}".format(acc.float().mean()))
 
-    to_return = {
-        "xs": torch.stack(xs),
-        "accs": torch.stack(accs),
-        "us": torch.stack(us),
-        "us_p": torch.stack(us_p),
-        "counts": torch.stack(counts),
-        "ind_dft": torch.stack(ind_dft),
-    }
+    us_dft = torch.tensor(us_dft).float().detach()
+
+    if dft:
+        to_return = {
+            "xs": torch.stack(xs),
+            "us": torch.stack(us),
+            "accs": torch.stack(accs),
+            "counts": torch.stack(counts),
+            "xs_prop": torch.stack(xs_prop),
+            "us_prop": torch.stack(us_prop),
+            "ind_dft": torch.stack(ind_dft),
+            "xs_dft": torch.stack(xs_dft),
+            "us_dft": us_dft
+        }
+    else:
+        to_return = {
+            "xs": torch.stack(xs),
+            "us": torch.stack(us),
+            "accs": torch.stack(accs),
+            "counts": torch.stack(counts),
+            "xs_prop": torch.stack(xs_prop),
+            "us_prop": torch.stack(us_prop),
+        }
+
 
     return to_return
