@@ -90,8 +90,8 @@ def run_metropolis(
     accs = []
     nlls = []
     counts = []
-    xs_prop = []
-    us_prop = []
+    #xs_prop = []
+    #us_prop = []
     
     if with_tqdm:
         pbar = tqdm.tqdm(range(n_steps))
@@ -146,8 +146,8 @@ def run_metropolis(
 
             # U = U_.clone().detach()
 
-            x_prop = x.clone().detach() 
-            u_prop = U.clone().detach()
+            #x_prop = x.clone().detach() 
+            #u_prop = U.clone().detach()
 
         elif energy_type == "mlp":
 
@@ -217,8 +217,8 @@ def run_metropolis(
 
             U = U_.clone().float()
 
-            x_prop = x.clone().detach() 
-            u_prop = U.clone().detach()
+            #x_prop = x.clone().detach() 
+            #u_prop = U.clone().detach()
 
         else:
             raise RuntimeError("Unknown method for the energy")
@@ -246,8 +246,8 @@ def run_metropolis(
         accs.append(acc.float().clone())
         nlls.append(nll_x.float().clone())
         counts.append(count.float().clone())
-        xs_prop.append(x_prop.float().clone())
-        us_prop.append(u_prop.float().clone())
+        #xs_prop.append(x_prop.float().clone())
+        #us_prop.append(u_prop.float().clone())
         if dft:
             inds_dft.append(ind_dft.float().clone())
 
@@ -262,8 +262,8 @@ def run_metropolis(
         "us": torch.stack(us),
         "accs": torch.stack(accs),
         "counts": torch.stack(counts),
-        "xs_prop": torch.stack(xs_prop),
-        "us_prop": torch.stack(us_prop),
+        #"xs_prop": torch.stack(xs_prop),
+        #"us_prop": torch.stack(us_prop),
     }
     if dft:
         to_return["inds_dft"] = torch.stack(inds_dft)
