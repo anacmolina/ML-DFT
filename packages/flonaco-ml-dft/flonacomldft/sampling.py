@@ -25,6 +25,7 @@ def run_metropolis(
     count_init,
     n_chains,
     n_steps,
+    n_run="",
     energy_type=None,
     mlps=None,
     mixture=False,
@@ -50,20 +51,26 @@ def run_metropolis(
         calculator.initialize_calculator()
         dft = True
 
-    if energy_type == "mlp-dft":
-        
-        # mlp_dft = True
-        dft = True
-        energy_type = "mlp"
-        
         inds_dft = []
         xs_dft = []
         us_dft = []
+
+    elif energy_type == "mlp-dft":
+        
+        # mlp_dft = True
+        #dft = True
+        energy_type = "mlp"
+        
+        #inds_dft = []
+        #xs_dft = []
+        #us_dft = []
     
     else:
         
         # mlp_dft = False
         dft = False
+
+    print("energy type: ", dft)
 
     if energy_type == "mlp":
         if(mlps is None):
@@ -119,7 +126,7 @@ def run_metropolis(
 
             for i in range(n_chains):
                 try:
-                    u_ = calculator.calculate_potential_energy(ag6.build_molecule(x[i]))
+                    u_ = calculator.calculate_potential_energy(ag6.build_molecule(x[i]), file_name='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out')
                     #potential_energy = ag6.calculate_potential_energy(
                     #    x[i], txt="ag6_" + str(i) + "_" + str(dt) + ".out"
                     #)
@@ -190,7 +197,7 @@ def run_metropolis(
 
                     for i, x_ in enumerate(x[ind_U_sort[:n_dft]]):
                         try:
-                            u_ = calculator.calculate_potential_energy(ag6.build_molecule(x_))
+                            u_ = calculator.calculate_potential_energy(ag6.build_molecule(x_), file_name='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(ind_U_sort[:n_dft][i])+'.out')
                             U_dft.append(u_)
                             #U_dft.append(-6.3*(1+np.random.rand()*0.1))
                             

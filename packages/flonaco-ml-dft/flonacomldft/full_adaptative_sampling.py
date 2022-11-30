@@ -54,11 +54,11 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
     x_mlp_is2 = x[count.bool()]
     u_mlp_is2 = u[count.bool()]
 
-    ag6 = Structure()
-    plot_atoms(ag6.build_molecule(x_flow_is1[0]))
-    plt.show(block=False)
-    plot_atoms(ag6.build_molecule(x_flow_is2[0]))
-    plt.show(block=False)
+    #ag6 = Structure()
+    #plot_atoms(ag6.build_molecule(x_flow_is1[0]))
+    #plt.show(block=False)
+    #plot_atoms(ag6.build_molecule(x_flow_is2[0]))
+    #plt.show(block=False)
 
     for i in range(n_runs):
 
@@ -75,6 +75,7 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
         count_init=count_init,
         n_chains=n_chains,
         n_steps=n_steps,
+        n_run=i,
         energy_type=energy_type,
         mlps=mlps[0],
         mixture=True,
@@ -171,7 +172,7 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
             )
 
             #print(data_for_mlp, _['ind_dft'])
-            data_for_mlp = data_for_mlp[_['ind_dft'].bool()]
+            data_for_mlp = data_for_mlp[_['inds_dft'].bool()]
             mask_mlp = data_for_mlp[:, -1] == 1
 
             is1_prop_dft = data_for_mlp[~mask_mlp]
@@ -201,7 +202,7 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
         'counts': cs_acc,
     }
 
-    all_models = {'flows': flow_train,
+    all_models = {'flows': dic_flow_trainings,
                 'mlps': mlps
     }
 
