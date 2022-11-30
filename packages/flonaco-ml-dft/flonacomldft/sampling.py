@@ -15,7 +15,6 @@ from ase.parallel import parprint as print
 # from flonacomldft.dft_utils import Structure
 from flonacomldft.internal_coordinates import Angles_mapping
 
-
 kb = 8.617333262e-5
 
 
@@ -57,7 +56,7 @@ def run_metropolis(
         dft = True
         energy_type = "mlp"
         
-        ind_dft = []
+        inds_dft = []
         xs_dft = []
         us_dft = []
     
@@ -112,7 +111,7 @@ def run_metropolis(
         Angles_mapping().mapping(x_init)
 
         indexes_nc = None
-        ind_dft_ = torch.zeros(x.shape[0])
+        ind_dft = torch.zeros(x.shape[0])
 
         if energy_type == "dft":
             U_ = []
@@ -135,7 +134,7 @@ def run_metropolis(
                     indexes_nc.append(i)
 
             indexes_nc = torch.tensor(indexes_nc)
-            ind_dft_ = torch.ones(x.shape[0])
+            ind_dft = torch.ones(x.shape[0])
             U = torch.tensor(U_).float().detach()
 
             # U = U_.clone().detach()
@@ -198,7 +197,7 @@ def run_metropolis(
                             xs_dft.append(x_)
                             us_dft.append(u_)
 
-                            ind_dft_[ind_U_sort[:n_dft][i]] = 1
+                            ind_dft[ind_U_sort[:n_dft][i]] = 1
                             
                         except:
                             U_dft.append(0)
@@ -228,7 +227,7 @@ def run_metropolis(
 
         x[~acc] = x_init[~acc]
         U[~acc] = u_init[~acc]
-        ind_dft_[~acc] = 0
+        ind_dft[~acc] = 0
 
         if mixture:
             count[~acc] = count_init[~acc]
@@ -242,7 +241,8 @@ def run_metropolis(
         counts.append(count.float().clone())
         xs_prop.append(x_prop.float().clone())
         us_prop.append(u_prop.float().clone())
-        ind_dft.append(ind_dft_.float().clone())
+        if dft:
+            inds_dft.append(ind_dft.float().clone())
 
         x_init = x.clone().detach()
         u_init = U.clone().detach()
@@ -250,29 +250,17 @@ def run_metropolis(
 
         #print("acc: {:0.2f}".format(acc.float().mean()))
 
-    us_dft = torch.tensor(us_dft).float().detach()
-
+    to_return = {
+        "xs": torch.stack(xs),
+        "us": torch.stack(us),
+        "accs": torch.stack(accs),
+        "counts": torch.stack(counts),
+        "xs_prop": torch.stack(xs_prop),
+        "us_prop": torch.stack(us_prop),
+    }
     if dft:
-        to_return = {
-            "xs": torch.stack(xs),
-            "us": torch.stack(us),
-            "accs": torch.stack(accs),
-            "counts": torch.stack(counts),
-            "xs_prop": torch.stack(xs_prop),
-            "us_prop": torch.stack(us_prop),
-            "ind_dft": torch.stack(ind_dft),
-            "xs_dft": torch.stack(xs_dft),
-            "us_dft": us_dft
-        }
-    else:
-        to_return = {
-            "xs": torch.stack(xs),
-            "us": torch.stack(us),
-            "accs": torch.stack(accs),
-            "counts": torch.stack(counts),
-            "xs_prop": torch.stack(xs_prop),
-            "us_prop": torch.stack(us_prop),
-        }
-
+        to_return["inds_dft"] = torch.stack(inds_dft)
+        to_return["xs_dft"] = torch.stack(xs_dft)
+        to_return["us_dft"] = torch.tensor(us_dft).float().detach()
 
     return to_return
