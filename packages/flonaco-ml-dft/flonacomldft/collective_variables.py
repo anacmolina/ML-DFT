@@ -2,8 +2,6 @@ import torch
 import numpy as np
 from flonacomldft.internal_coordinates import Structure
 
-# TO DO: For the moment we need the Structure class to build the CVs, which requires GPAW. 
-
 d=2.8
 rij_d = lambda rij: rij/d
 

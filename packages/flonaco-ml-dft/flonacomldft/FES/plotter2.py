@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 from flonacomldft.FES.minimizator_path import Path_
+from flonacomldft.utils.data_utils import get_path
 from pytest import approx
 
 
@@ -754,7 +755,9 @@ class CVs:
 
 # from functions.py
 def cvs_points():
-    if os.path.isdir(str(Path.home())+'/flonaco-ml-dft/flonacomldft/FES/'):
+    if 'marylou' in get_path():
+        path_data_points = get_path()
+    elif os.path.isdir(str(Path.home())+'/flonaco-ml-dft/flonacomldft/FES/'):
         path_data_points = str(Path.home())+'/flonaco-ml-dft/flonacomldft/FES/'
     elif os.path.isdir(str(Path.home())+'/ML-DFT/packages/flonaco-ml-dft/flonacomldft/FES/'):
         path_data_points = str(Path.home())+'/ML-DFT/packages/flonaco-ml-dft/flonacomldft/FES/'
