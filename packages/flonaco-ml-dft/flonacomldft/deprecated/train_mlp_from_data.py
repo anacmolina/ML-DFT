@@ -11,12 +11,8 @@ import sklearn.model_selection
 from flonacomldft.models import MLP, center_values
 
 def train_mlp(model, 
-    x_train,
-    y_train,
-    x_test,
-    y_test,
-    #input_val, 
-    #output_val, 
+    input_val, 
+    output_val, 
     n_iter=100, 
     lr=1e-4,
     # bs=100,
@@ -45,45 +41,39 @@ def train_mlp(model,
     grad_norms = []
     model_init = copy.deepcopy(model)
 
-    #x = input_val.detach().requires_grad_().float()
-    #y = output_val.detach().requires_grad_().float()
+    x = input_val.detach().requires_grad_().float()
+    y = output_val.detach().requires_grad_().float()
 
     if retraining:
-        x_train_centered = center_values(x_train, model.x_mean, model.x_centered_std)
-        y_train_centered = center_values(y_train, model.y_mean, model.y_centered_std)
-        x_test_centered = center_values(x_test, model.x_mean, model.x_centered_std)
-        y_test_centered = center_values(y_test, model.y_mean, model.y_centered_std)
+        x_centered = center_values(x, model.x_mean, model.x_centered_std)
+        y_centered = center_values(y, model.y_mean, model.y_centered_std)
     else:
-        x_train_centered, x_mean, x_centered_std = center_values(x_train)
-        y_train_centered, y_mean, y_centered_std = center_values(y_train)
-        x_test_centered = center_values(x_test, x_mean, x_centered_std)
-        y_test_centered = center_values(y_test, y_mean, y_centered_std)
+        x_centered, x_mean, x_centered_std = center_values(x)
+        y_centered, y_mean, y_centered_std = center_values(y)
 
         means = [x_mean, y_mean]
         stds = [x_centered_std, y_centered_std]
 
         model.set_center_values(means, stds)
 
-    
+    arrays = [x_centered, y_centered]
 
-    #arrays = [x_centered, y_centered]
-
-    #data_split = sklearn.model_selection.train_test_split(*arrays, test_size=None,
-    #                                                  train_size=train_size,
-    #                                                  random_state=sk_seed,
-    #                                                  shuffle=True,
-    #                                                  stratify=None)
+    data_split = sklearn.model_selection.train_test_split(*arrays, test_size=None,
+                                                      train_size=train_size,
+                                                      random_state=sk_seed,
+                                                      shuffle=True,
+                                                      stratify=None)
 
     #hyperparameters sklearn.model_selection.RandomizedSearchCV
 
-    #x_train, x_test, y_train, y_test = data_split
+    x_train, x_test, y_train, y_test = data_split
 
     pbar =  tqdm.tqdm(range(n_iter))
 
     for t in pbar:
         optimizer.zero_grad()
 
-        loss = loss_func(x_train_centered, y_train_centered)
+        loss = loss_func(x_train, y_train)
 
         # In case we are running out of memory
         # if return_all_xs or t % (n_iter / 10) == 0:
@@ -98,7 +88,7 @@ def train_mlp(model,
         optimizer.step()
 
         losses.append(loss.item())
-        losses_val.append(loss_func(x_test_centered, y_test_centered).item())
+        losses_val.append(loss_func(x_test, y_test).item())
         pbar.set_description(f'Loss: {losses[-1]:.4f}')
 
         if t % (n_iter / 100) == 0:
@@ -117,7 +107,7 @@ def train_mlp(model,
 
     to_return = {
         'mlp_model': model,
-        "dataset": (x_train_centered, y_train_centered, x_test_centered, y_test_centered),
+        "dataset_split": data_split,
         "losses": losses,
         "losses_test": losses_val,
         "model_init": model_init,
