@@ -14,19 +14,14 @@ def train_mlp(model,
     x_train,
     y_train,
     x_test,
-    y_test,
-    #input_val, 
-    #output_val, 
+    y_test, 
     n_iter=100, 
     lr=1e-4,
     # bs=100,
     use_scheduler=False,
     step_schedule=100,
-    # save_splits=10,
     grad_clip=1e4,
     retraining=False,
-    train_size = 0.8,
-    sk_seed = 42
 ):
 
     #mse
@@ -45,9 +40,6 @@ def train_mlp(model,
     grad_norms = []
     model_init = copy.deepcopy(model)
 
-    #x = input_val.detach().requires_grad_().float()
-    #y = output_val.detach().requires_grad_().float()
-
     if retraining:
         x_train_centered = center_values(x_train, model.x_mean, model.x_centered_std)
         y_train_centered = center_values(y_train, model.y_mean, model.y_centered_std)
@@ -63,20 +55,6 @@ def train_mlp(model,
         stds = [x_centered_std, y_centered_std]
 
         model.set_center_values(means, stds)
-
-    
-
-    #arrays = [x_centered, y_centered]
-
-    #data_split = sklearn.model_selection.train_test_split(*arrays, test_size=None,
-    #                                                  train_size=train_size,
-    #                                                  random_state=sk_seed,
-    #                                                  shuffle=True,
-    #                                                  stratify=None)
-
-    #hyperparameters sklearn.model_selection.RandomizedSearchCV
-
-    #x_train, x_test, y_train, y_test = data_split
 
     pbar =  tqdm.tqdm(range(n_iter))
 
