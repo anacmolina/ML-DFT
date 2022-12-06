@@ -29,7 +29,7 @@ isomer = "ag6_planar"
 mode = "lcao"
 name = isomer + "_" + mode
 
-molecule = get_moleculeecule_isomer_minima(isomer)
+molecule = get_molecule_isomer_minima(isomer)
 
 molecule.set_cell([16, 16, 16])
 molecule.set_pbc(True)

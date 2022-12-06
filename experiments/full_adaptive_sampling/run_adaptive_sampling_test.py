@@ -10,10 +10,10 @@ from flonacomldft.utils.data_utils import (
 from flonacomldft.internal_coordinates import get_mix_data
 from flonacomldft.full_adaptative_sampling import adaptative_sampling
 
-n_runs = 2
-n_chains = 3
-n_steps = 2
-energy_type="dft"
+n_runs = 5
+n_chains = 50
+n_steps = 25
+energy_type="mlp"
 
 # Seed initialization for random generations
 if "dft" in energy_type:

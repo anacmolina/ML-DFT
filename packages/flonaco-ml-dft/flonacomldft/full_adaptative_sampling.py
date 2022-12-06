@@ -14,8 +14,23 @@ from flonacomldft.internal_coordinates import Structure
 def Transpose(x):
     return x.permute(*torch.arange(x.ndim - 1, -1, -1))
 
-def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
-                       dic_flow_training_init, mlp_models):
+#def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
+#                       dic_flow_training_init, mlp_models):
+def adaptative_sampling(
+    x,
+    u,
+    count,
+    mcmc_params,
+    energy_type,
+    dic_flow_training_init,
+    flow_hyperparams,
+    mlp_models
+):
+
+    n_runs = mcmc_params['n_runs']
+    n_chains = mcmc_params['n_chains']
+    n_steps = mcmc_params['n_steps']
+
     """
     function for sampling
     """
@@ -132,12 +147,13 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
             dic_new_flow_is1 = train_flow(
                 flows[i][0],
                 x_flow_is1,
-                n_iter=100,
-                lr=5e-3,
-                use_scheduler=False,
-                step_schedule=100,
-                save_splits=10,
-                grad_clip=1e4,)
+                **flow_hyperparams,)
+                #n_iter=100,
+                #lr=5e-3,
+                #use_scheduler=False,
+                #step_schedule=100,
+                #save_splits=10,
+                #grad_clip=1e4,)
         else:
             dic_new_flow_is1 = dic_flow_trainings[i][0]
 
@@ -145,12 +161,13 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
             dic_new_flow_is2 = train_flow(
                 flows[i][1],
                 x_flow_is2,
-                n_iter=100,
-                lr=5e-3,
-                use_scheduler=False,
-                step_schedule=100,
-                save_splits=10,
-                grad_clip=1e4,)
+                **flow_hyperparams,)
+                #n_iter=100,
+                #lr=5e-3,
+                #use_scheduler=False,
+                #step_schedule=100,
+                #save_splits=10,
+                #grad_clip=1e4,)
         else:
             dic_new_flow_is2 = dic_flow_trainings[i][1]
 

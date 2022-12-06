@@ -1,22 +1,14 @@
 import copy
-from pickletools import optimize
-
 import torch
 import numpy as np
-
 import matplotlib.pyplot as plt
 
+import tqdm
 from torch.nn.utils import clip_grad_norm_
-
-from flonacomldft.utils.data_utils import (
-    get_path
-)
+import torch.optim as optim
+import sklearn.model_selection
 
 from flonacomldft.models import MLP, center_values
-
-import sklearn.model_selection
-import torch.optim as optim
-import tqdm
 
 def train_mlp(model, 
     input_val, 
