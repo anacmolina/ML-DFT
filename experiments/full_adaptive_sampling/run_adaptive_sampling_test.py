@@ -10,10 +10,7 @@ from flonacomldft.utils.data_utils import (
 from flonacomldft.internal_coordinates import get_mix_data
 from flonacomldft.full_adaptative_sampling import adaptative_sampling
 
-n_runs = 5
-n_chains = 50
-n_steps = 25
-energy_type="mlp"
+energy_type="mlp-dft"
 
 # Seed initialization for random generations
 if "dft" in energy_type:
@@ -58,20 +55,38 @@ init_nf_is2 = load_from_pickle(get_path() + "training_is2")
 init_flow_train = [init_nf_is1, init_nf_is2]
 init_mlps = [init_mlp_is1, init_mlp_is2]
 
+mcmc_params = {'n_runs': 2,
+'n_chains': 5,
+'n_steps': 3, 
+}
+
+flow_hyperparams = {'n_iter': 100,
+    'lr': 5e-4,
+    'use_scheduler': False,
+    'step_schedule': 100,
+    'save_splits': 10,
+    'grad_clip': 1e4}
+
+mlp_hyperparams = {'n_iter': 100,
+    'lr': 5e-2,
+    'use_scheduler': False,
+    'step_schedule': 100,
+    'grad_clip': 1e4,
+}
 
 results = adaptative_sampling(
-    xis, #[:n_chains],
-    uis, #[:n_chains],
-    cis, #[:n_chains],
-    n_runs,
-    n_chains,
-    n_steps,
-    energy_type,
-    init_flow_train,
-    init_mlps,
-)
+    x=xis, #[:n_chains],
+    u=uis, #[:n_chains],
+    count=cis, #[:n_chains],
+    mcmc_params=mcmc_params,
+    energy_type=energy_type,
+    dic_flow_training_init=init_flow_train,
+    flow_hyperparams=flow_hyperparams,
+    mlp_hyperparams=mlp_hyperparams,
+    mlp_models=init_mlps,
+    retraining_mlp=True)
 
-save_pickle_file(
-    results,
-    "runs_" + str(n_runs) + "_chains_" + str(n_chains) + "_steps_" + str(n_steps),
-)
+#save_pickle_file(
+#    results,
+#    "runs_" + str(n_runs) + "_chains_" + str(n_chains) + "_steps_" + str(n_steps),
+#)

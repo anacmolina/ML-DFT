@@ -42,7 +42,7 @@ def run_metropolis(
 
     beta = 1 / (kb * T)
 
-    if "dft" in energy_type:
+    if ("dft" in energy_type):
         from flonacomldft.dft_utils import DFTCalculator
         from flonacomldft.internal_coordinates import Structure
         
@@ -54,23 +54,12 @@ def run_metropolis(
         inds_dft = []
         xs_dft = []
         us_dft = []
-
-    elif energy_type == "mlp-dft":
-        
-        # mlp_dft = True
-        #dft = True
-        energy_type = "mlp"
-        
-        #inds_dft = []
-        #xs_dft = []
-        #us_dft = []
-    
+        counts_dft = []
+        if (energy_type == "mlp-dft"):        
+            energy_type = "mlp"
     else:
-        
-        # mlp_dft = False
         dft = False
 
-    print("energy type: ", dft)
 
     if energy_type == "mlp":
         if(mlps is None):
@@ -126,16 +115,13 @@ def run_metropolis(
 
             for i in range(n_chains):
                 try:
-                    u_ = calculator.calculate_potential_energy(ag6.build_molecule(x[i]), file_name='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out')
-                    #potential_energy = ag6.calculate_potential_energy(
-                    #    x[i], txt="ag6_" + str(i) + "_" + str(dt) + ".out"
-                    #)
+                    #u_ = calculator.calculate_potential_energy(ag6.build_molecule(x[i]), file_name='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out')
+                    u_ = -6.3*(1+np.random.rand()*0.1)
+                    U_.append(u_)
 
                     xs_dft.append(x[i])
                     us_dft.append(u_)
-
-                    U_.append(u_)
-                    #U_.append(-6.3*(1+np.random.rand()*0.1))
+                    counts_dft.append(count[i])
                 except:
                     U_.append(0)
                     indexes_nc.append(i)
@@ -195,15 +181,14 @@ def run_metropolis(
 
                     for i, x_ in enumerate(x[ind_U_sort[:n_dft]]):
                         try:
-                            u_ = calculator.calculate_potential_energy(ag6.build_molecule(x_), file_name='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(ind_U_sort[:n_dft][i])+'.out')
+                            #u_ = calculator.calculate_potential_energy(ag6.build_molecule(x_), file_name='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(ind_U_sort[:n_dft][i])+'.out')
+                            u_ = -6.3*(1+np.random.rand()*0.1)
                             U_dft.append(u_)
-                            #U_dft.append(-6.3*(1+np.random.rand()*0.1))
-                            
+
                             xs_dft.append(x_)
                             us_dft.append(u_)
-
-                            ind_dft[ind_U_sort[:n_dft][i]] = 1
-                            
+                            counts_dft.append(count[ind_U_sort[:n_dft][i]])
+                            ind_dft[ind_U_sort[:n_dft][i]] = 1    
                         except:
                             U_dft.append(0)
                             indexes_nc.append(ind_U_sort[:n_dft][i])
@@ -267,5 +252,6 @@ def run_metropolis(
         to_return["inds_dft"] = torch.stack(inds_dft)
         to_return["xs_dft"] = torch.stack(xs_dft)
         to_return["us_dft"] = torch.tensor(us_dft).float().detach()
+        to_return['counts_dft'] = torch.stack(counts_dft)
 
     return to_return

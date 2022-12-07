@@ -24,7 +24,9 @@ def adaptative_sampling(
     energy_type,
     dic_flow_training_init,
     flow_hyperparams,
-    mlp_models
+    mlp_models,
+    mlp_hyperparams,
+    retraining_mlp=False
 ):
 
     n_runs = mcmc_params['n_runs']
@@ -52,9 +54,9 @@ def adaptative_sampling(
     accs_s = []
     cs_acc = []
 
-    USE_DFT_ENERGIES = False
-    if "dft" in energy_type:
-        USE_DFT_ENERGIES = True
+    #USE_DFT_ENERGIES = False
+    #if "dft" in energy_type:
+    #    USE_DFT_ENERGIES = True
 
     x_init = x[:n_chains]
     u_init = u[:n_chains]
@@ -69,11 +71,6 @@ def adaptative_sampling(
     x_mlp_is2 = x[count.bool()]
     u_mlp_is2 = u[count.bool()]
 
-    #ag6 = Structure()
-    #plot_atoms(ag6.build_molecule(x_flow_is1[0]))
-    #plt.show(block=False)
-    #plot_atoms(ag6.build_molecule(x_flow_is2[0]))
-    #plt.show(block=False)
 
     for i in range(n_runs):
 
@@ -82,9 +79,6 @@ def adaptative_sampling(
 
         _ = run_metropolis(
         model=mixture,
-        #u_init=us_acc[i][-1],
-        #x_init=xs_acc[i][-1],
-        #count_init=cs_acc[i][-1],
         u_init=u_init,
         x_init=x_init,
         count_init=count_init,
@@ -92,7 +86,7 @@ def adaptative_sampling(
         n_steps=n_steps,
         n_run=i,
         energy_type=energy_type,
-        mlps=mlps[0],
+        mlps=mlps[-1],
         mixture=True,
         )
 
@@ -108,13 +102,10 @@ def adaptative_sampling(
         xs = xs_acc[i].clone()
         us = us_acc[i].clone()
         cs = cs_acc[i].clone()
-
-        print("shape chains: ", xs.shape)
+        
         data_for_flows = Transpose(
             torch.cat(
                 (
-                    #T(xs_acc[i]),
-                    #T(cs_acc[i].reshape(n_sts, n_chains, 1)),
                     Transpose(xs),
                     Transpose(cs.reshape(n_steps, n_chains, 1)),
                 ),
@@ -124,21 +115,13 @@ def adaptative_sampling(
 
         
         data_for_flows = data_for_flows.reshape(n_steps * n_chains, data_for_flows.shape[-1])
-        #data_for_flows = data_for_flows.unique(dim=0)
 
         mask_flow = data_for_flows[:, -1] == 1
         is1_prop = data_for_flows[~mask_flow][:, :-1]
         is2_prop = data_for_flows[mask_flow][:, :-1]
 
-        # print(data_for_flows)
-        #del data_for_flows
-        print("x_flow shape: ", x_flow_is1.shape)
-        print("is1_prop: ", is1_prop.shape)
         x_flow_is1 = torch.cat((x_flow_is1, is1_prop))
-        print("x_flow shape after: ", x_flow_is1.shape)
-        #print(is1_prop)
-        #print(is2_prop)
-
+        
         angles_mapping = Angles_mapping()
         angles_mapping.inv_mapping(x_flow_is1)
         angles_mapping.inv_mapping(x_flow_is2)
@@ -148,12 +131,6 @@ def adaptative_sampling(
                 flows[i][0],
                 x_flow_is1,
                 **flow_hyperparams,)
-                #n_iter=100,
-                #lr=5e-3,
-                #use_scheduler=False,
-                #step_schedule=100,
-                #save_splits=10,
-                #grad_clip=1e4,)
         else:
             dic_new_flow_is1 = dic_flow_trainings[i][0]
 
@@ -162,50 +139,49 @@ def adaptative_sampling(
                 flows[i][1],
                 x_flow_is2,
                 **flow_hyperparams,)
-                #n_iter=100,
-                #lr=5e-3,
-                #use_scheduler=False,
-                #step_schedule=100,
-                #save_splits=10,
-                #grad_clip=1e4,)
         else:
             dic_new_flow_is2 = dic_flow_trainings[i][1]
 
         angles_mapping.mapping(x_flow_is1)
         angles_mapping.mapping(x_flow_is2)
 
+
         # retrain MLPs
-        #if USE_DFT_ENERGIES:
+        if retraining_mlp:
 
-            #data_for_mlp = Transpose(
-            #    torch.cat(
-            #        (
-            #            Transpose(xs),
-            #            Transpose(us.reshape(n_steps, n_chains, 1)),
-            #            Transpose(cs.reshape(n_steps, n_chains, 1)),
-            #        ),
-            #        dim=0,
-            #    )
-            #)
+            xs_dft = _['xs_dft']
+            us_dft = _['us_dft']
+            cs_dft = _['counts_dft']
 
-            #print(data_for_mlp, _['ind_dft'])
-            #data_for_mlp = data_for_mlp[_['inds_dft'].bool()]
-            #mask_mlp = data_for_mlp[:, -1] == 1
+            data_for_mlp = Transpose(
+                torch.cat(
+                    (
+                        Transpose(xs_dft),
+                        us_dft.reshape(1, -1),
+                        cs_dft.reshape(1, -1),
+                    ),
+                    dim=0,
+                )
+            )
 
-            #is1_prop_dft = data_for_mlp[~mask_mlp]
-            #is2_prop_dft = data_for_mlp[mask_mlp]
+            mask_mlp = data_for_mlp[:, -1].bool()
+            is1_dft = data_for_mlp[~mask_mlp]
+            is2_dft = data_for_mlp[mask_mlp]
 
-            #print(data_for_mlp)
-            #print(is1_prop_dft)
-            #print(is2_prop_dft)
+            x_mlp_is1 = torch.cat((x_mlp_is1, is1_dft[:, :-2]))
+            u_mlp_is1 = torch.cat((u_mlp_is1, is1_dft[:, -2]))
 
-            #if energy_type == "dft":
-                # use all # all index must be  ind_dft == 1
-            #    data_ex = data_for_mlp.reshape(n_steps * n_chains, data_for_mlp.shape[-1])
+            x_mlp_is2 = torch.cat((x_mlp_is2, is2_dft[:, :-2]))
+            u_mlp_is2 = torch.cat((u_mlp_is2, is2_dft[:, -2]))
 
-            #elif energy_type == "mlp-dft":
-                # use only ind_dft
-            #    print("hi :(, T_T")  # _["ind_dft"])
+            from flonacomldft.train_mlp_from_data import train_mlp
+
+            print(mlp_models)
+
+            mlp_is1 = train_mlp(mlps[-1][0], x_mlp_is1, u_mlp_is1, x_mlp_is1, u_mlp_is1, **mlp_hyperparams)
+            mlp_is2 = train_mlp(mlps[-1][1], x_mlp_is2, u_mlp_is2, x_mlp_is2, u_mlp_is2, **mlp_hyperparams)
+
+            mlp_models.append([mlp_is1['mlp_model'], mlp_is2['mlp_model']])
 
         dic_flow_trainings.append([dic_new_flow_is1, dic_new_flow_is2])
         flows.append(get_models(dic_flow_trainings[i]))
