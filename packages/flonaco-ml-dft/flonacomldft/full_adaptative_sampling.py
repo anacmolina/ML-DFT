@@ -14,8 +14,6 @@ from flonacomldft.internal_coordinates import Structure
 def Transpose(x):
     return x.permute(*torch.arange(x.ndim - 1, -1, -1))
 
-#def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
-#                       dic_flow_training_init, mlp_models):
 def adaptative_sampling(
     x,
     u,
