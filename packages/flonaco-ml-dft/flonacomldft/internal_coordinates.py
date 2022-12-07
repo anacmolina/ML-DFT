@@ -5,31 +5,6 @@ import chemcoord as cc
 
 from flonacomldft.utils.silver_isomers_utils import get_construction_table
 
-class Angles_mapping:
-    """
-    Class to store the index at which the angles start in the internal coordinates
-    """
-    def __init__(self, idx_first_angle=5):
-        self.idx_first_angle = idx_first_angle
-    
-    def tensor_checking(self, tensor):
-        if torch.is_tensor(tensor):
-             pass
-        else:
-             raise RuntimeError("It must be a tensor")
-        
-        if len(tensor.shape)==2:
-            pass
-        else:
-            raise RuntimeError("Shape not accepted")
-
-    def mapping(self, tensor):
-        self.tensor_checking(tensor)
-        tensor[:, self.idx_first_angle:] = tensor[:, self.idx_first_angle:].tan()
-        
-    def inv_mapping(self, tensor):
-        self.tensor_checking(tensor)
-        tensor[:, self.idx_first_angle:] = tensor[:, self.idx_first_angle:].arctan()
 
 def rephase(zmat, angle=0, columns=['dihedral13']):
     for column in columns:
