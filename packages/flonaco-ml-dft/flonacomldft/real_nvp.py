@@ -59,7 +59,7 @@ class ResidualAffineCoupling(nn.Module):
 
         return x, log_det_jac
 
-class Angles_mapping(nn.Module):
+class Angles_mapping():
     """
     Class to get the forward and backward mapping of the angles.
     It stores the index at which the angles start in the internal coordinates
@@ -174,8 +174,7 @@ class RealNVP_MLP(nn.Module):
         log_det_jac = torch.zeros(x.shape[0], device=self.device)
 
         x = x - self.centering_args['mean']
-        if self.map_angles:
-            x, log_det_jac = self.angles_mapping.rads_to_reals(x, log_det_jac)
+        x, log_det_jac = self.angles_mapping.rads_to_reals(x, log_det_jac)
         
         for block in range(self.n_blocks):
             couplings = self.coupling_layers[::-1][block]
@@ -224,10 +223,6 @@ class RealNVP_MLP(nn.Module):
 
     def nll(self, x):
         z, log_det_jac = self.backward(x)
-
-        if self.centering_args['type'] == 'white':
-                z = z - self.prior_mean
-
         prior_ll = - 0.5 * torch.einsum('ki,ij,kj->k', z, self.prior_prec, z)
         prior_ll -= 0.5 * (self.dim * np.log(2 * np.pi) + self.prior_log_det)
 

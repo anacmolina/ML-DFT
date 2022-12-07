@@ -7,84 +7,42 @@ import json
 import torch
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
-from flonacomldft.real_nvp_mlp import RealNVP_MLP
+from flonacomldft.real_nvp import RealNVP_MLP, Angles_mapping
 from flonacomldft.train_flow_from_data import train_flow
-from flonacomldft.internal_coordinates import Angles_mapping
-
+from flonacomldft.internal_coordinates import Structure, get_mix_data
 from flonacomldft.utils.data_utils import get_path, save_pickle_file
+from flonacomldft.collective_variables import get_CVs
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-dtype = torch.float32
 
-f = open("flow_specs.out", "a")
+n_iter_ = 2
+lr_ = 1e-3
+mode_label = 1 # or 2
 
-date = time.strftime("%d-%m-%Y")
-random_id = np.random.randint(100)
+torch.manual_seed(100)
 
-f.write("FLONACO ML-DFT\n\n")
-f.write("Flow training\n\n")
-f.write("Date: {}\n".format(date))
-f.write("Random_seed: {}\n\n".format(str(random_id)))
-
-f.write("Ag6 isomer: planar\n")
-
-torch.manual_seed(random_id)
-
-df = pd.read_csv(get_path() + "is1_lcao_zmat.csv")
+df = pd.read_csv(get_path() + "is{:d}_lcao_zmat.csv".format(mode_label))
 U = df.energies
 X = df.drop(["energies"], axis=1)
-
 n = -1
+x_rad = torch.from_numpy(X[:n].to_numpy()).float()
+U_rad = torch.from_numpy(U[:n].to_numpy()).float()
+x_rad_center = x_rad.mean(dim=0)
+x_rad_centered = x_rad - x_rad_center
 
-x_tensor = torch.from_numpy(X[:n].to_numpy()).float()
-U_tensor = torch.from_numpy(U[:n].to_numpy()).float()
+x_real_centered, _ = Angles_mapping().rads_to_reals(x_rad_centered)
+cov_real = torch.cov(x_real_centered.T)
 
-f.write("Samples: {}, Labels: {}\n\n".format(x_tensor.shape[0], x_tensor.shape[1]))
-
-angles_mapping = Angles_mapping()
-angles_mapping.inv_mapping(x_tensor)
-
-cov = torch.cov(x_tensor.T)
-mean = x_tensor.mean(0)
-
-
-args_rnvp = {
-    "dim": x_tensor.shape[1],
-    "n_realnvp_block": 5,
-    "block_depth": 1,
-    # 'args_prior': {'type': 'standn'}, # standard Gaussian base
-    "args_prior": {
-        "type": "white",
-        "cov": cov,
-        "mean": mean,
-    },  # Gaussian with non-trival mean and covariance for base
-    "init_weight_scale": 1e-6,
-}
-
-model = RealNVP_MLP(
-    args_rnvp["dim"],
-    args_rnvp["n_realnvp_block"],
-    args_rnvp["block_depth"],
-    init_weight_scale=args_rnvp["init_weight_scale"],
-    prior_arg=args_rnvp["args_prior"],
-    device=device,
-)
-
-f.write("flow NN architecture: \n")
-f.write("\t n_realnvp_block: {}\n".format(args_rnvp["n_realnvp_block"]))
-f.write("\t block_depth: {}\n".format(args_rnvp["block_depth"]))
-
-f.write("\n")
-
-n_iter_ = 100
-lr_ = 1e-3
-
-f.write("flow training hyperparameters: \n")
-f.write("\t n_iter: {}\n".format(n_iter_))
-f.write("\t lr: {}\n".format(lr_))
-
-f.write("\n")
+centering_args = {"cov": cov_real, "mean": x_rad_center}
+model = RealNVP_MLP(12,
+                    n_blocks=3,
+                    block_depth=1,
+                    init_weight_scale=1e-3,
+                    centering_args=centering_args,
+                    device=device,
+                    )
 
 model_init = copy.deepcopy(model)
 
@@ -93,37 +51,20 @@ model_init = copy.deepcopy(model)
 
 out = train_flow(
     model,
-    x_tensor,
+    x_real_centered,
     n_iter=n_iter_,
     lr=lr_,
-    bs=100,
+    # bs=100,
     use_scheduler=False,
     step_schedule=100,
     save_splits=10,
     grad_clip=1e4,
 )
 
-f.write("DONE!")
-
-f.close()
-# save_pickle_file(_, "flow_trained")
-
-# losses = _["losses"]
-# plt.figure(figsize=(7, 5))
-# plt.plot(list(range(0, len(losses))), np.abs(np.array(losses)))
-# plt.yscale("log")
-# plt.ylabel("Losses")
-# plt.show()
-
-# models = _["models"]
-# N_samples = 250
-
-# x = models[-1].sample(N_samples)
-# angles_mapping.mapping(x)
-# x = x.clone().data.cpu().numpy()
-# c_, r_ = get_CVs(x)
-
-# ax = plotting_fes_db()
-# ax.plot(c_, r_, "mo", label="NF proposals")
-# ax.legend(loc="lower left", fontsize=20)
-# plt.show()
+x_sample = model.sample(100)
+x_sample_cv = np.array(get_CVs(x_sample)).T
+plt.scatter(x_sample_cv[:, 0], x_sample_cv[:, 1], label="mode {:d} - realnvp init".format(mode_label), c='C{:d}'.format(mode_label), alpha=0.5)
+x_rad_cv = np.array(get_CVs(x_rad[:100])).T
+plt.scatter(x_rad_cv[:, 0], x_rad_cv[:, 1], marker='x', c='C{:d}'.format(mode_label), label="mode {:d} - data".format(mode_label))
+plt.legend()
+plt.show(block=False)
