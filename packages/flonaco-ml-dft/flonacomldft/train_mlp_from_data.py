@@ -21,7 +21,6 @@ def train_mlp(model,
     use_scheduler=False,
     step_schedule=100,
     grad_clip=1e4,
-    #retraining=False,
 ):
 
     #mse
@@ -40,7 +39,7 @@ def train_mlp(model,
     grad_norms = []
     model_init = copy.deepcopy(model)
 
-    if model.center:
+    if model.has_centered:
         x_train_centered = center_values(x_train, model.x_mean, model.x_centered_std)
         y_train_centered = center_values(y_train, model.y_mean, model.y_centered_std)
         x_test_centered = center_values(x_test, model.x_mean, model.x_centered_std)

@@ -15,9 +15,11 @@ def Transpose(x):
     return x.permute(*torch.arange(x.ndim - 1, -1, -1))
 
 def adaptative_sampling(
-    x,
-    u,
-    count,
+    #xs_md,
+    #us_md,
+    #counts_md,
+    #xs_dft_init,
+    x, u, count,
     mcmc_params,
     energy_type,
     dic_flow_training_init,

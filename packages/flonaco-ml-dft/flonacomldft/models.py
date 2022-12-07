@@ -5,7 +5,7 @@ import numpy as np
 class MLP(nn.Module):
     def __init__(self, layerdims, activation=torch.relu, init_scale=None):
         super(MLP, self).__init__()
-        self.center = False
+        self.has_centered = False
         self.layerdims = layerdims
         self.activation = activation
         linears = [
@@ -37,6 +37,8 @@ class MLP(nn.Module):
         self.y_mean = means[1]
         self.x_centered_std = stds[0]
         self.y_centered_std = stds[1]
+
+        self.has_centered = True
 
     def predict(self, x):
         """"
