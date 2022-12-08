@@ -8,7 +8,7 @@ from flonacomldft.utils.data_utils import (
 )
 from flonacomldft.internal_coordinates import get_mix_data
 from flonacomldft.sampling import run_metropolis
-from flonacomldft.mixture import Mixture
+from flonacomldft.models.mixture import Mixture
 from flonacomldft.free_energy_computations import compute_BAR, compute_TFP
 
 torch.manual_seed(42)

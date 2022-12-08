@@ -12,7 +12,7 @@ from flonacomldft.utils.data_utils import (
     get_path
 )
 
-from flonacomldft.models import MLP, center_values
+from flonacomldft.models.mlp import MLP, center_values
 
 import sklearn.model_selection
 import torch.optim as optim
@@ -26,6 +26,8 @@ def train_mlp(model,
     # bs=100,
     use_scheduler=False,
     step_schedule=100,
+
+    
     # save_splits=10,
     grad_clip=1e4,
     retraining=False,

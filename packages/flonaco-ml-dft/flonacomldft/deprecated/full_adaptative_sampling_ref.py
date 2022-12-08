@@ -4,7 +4,7 @@ import torch
 import numpy as np
 
 from flonacomldft.internal_coordinates import Angles_mapping
-from flonacomldft.mixture import Mixture, get_models
+from flonacomldft.models.mixture import Mixture, get_models
 from flonacomldft.train_flow_from_data import train_flow
 from flonacomldft.sampling import run_metropolis
 

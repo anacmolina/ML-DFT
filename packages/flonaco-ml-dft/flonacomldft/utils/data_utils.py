@@ -31,6 +31,9 @@ def get_path():
       raise RuntimeError('Data path not understood')
    return ceph_home
 
+def get_project_path():
+    return get_path().split('database')[0]
+
 # def load_pickle_file(file):
 def load_from_pickle(file):
     file_loaded = open(file, 'rb')

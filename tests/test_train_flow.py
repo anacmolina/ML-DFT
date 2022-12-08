@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from flonacomldft.real_nvp import RealNVP_MLP, Angles_mapping
+from flonacomldft.models.real_nvp import RealNVP_MLP, Angles_mapping
 from flonacomldft.train_flow_from_data import train_flow
 from flonacomldft.internal_coordinates import Structure, get_mix_data
 from flonacomldft.utils.data_utils import get_path, save_pickle_file
@@ -44,11 +44,6 @@ model = RealNVP_MLP(12,
                     device=device,
                     )
 
-model_init = copy.deepcopy(model)
-
-# TODO: writing training values in the output file
-# TODO: add way to add isomer
-
 out = train_flow(
     model,
     x_real_centered,
@@ -68,3 +63,9 @@ x_rad_cv = np.array(get_CVs(x_rad[:100])).T
 plt.scatter(x_rad_cv[:, 0], x_rad_cv[:, 1], marker='x', c='C{:d}'.format(mode_label), label="mode {:d} - data".format(mode_label))
 plt.legend()
 plt.show(block=False)
+
+from flonacomldft.utils.data_utils import get_project_path
+from flonacomldft.utils.data_utils import save_pickle_file
+
+f = get_project_path() + "tests/is{:d}_flow_dic_training.pkl".format(mode_label)
+save_pickle_file(out, f)

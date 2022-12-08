@@ -6,10 +6,10 @@ import numpy as np
 
 from ase.io.trajectory import Trajectory
 
-from flonacomldft.mixture import Mixture, get_models
+from flonacomldft.models.mixture import Mixture, get_models
 from flonacomldft.sampling import run_metropolis
-from flonacomldft.real_nvp import init_model
-from flonacomldft.dft_utils import  run_md_get_zmat
+from flonacomldft.models.real_nvp import init_model
+from flonacomldft.dft_calculator import  run_md_get_zmat
 from flonacomldft.internal_coordinates import get_mix_data #, get_internal_coordinates
 from flonacomldft.utils.data_utils import (
     get_path,

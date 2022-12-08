@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from flonacomldft.real_nvp import RealNVP_MLP
+from flonacomldft.models.real_nvp import RealNVP_MLP
 from flonacomldft.train_flow_from_data import train_flow
 
 from flonacomldft.utils.data_utils import get_path, save_pickle_file

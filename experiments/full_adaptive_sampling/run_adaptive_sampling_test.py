@@ -8,7 +8,7 @@ from flonacomldft.utils.data_utils import (
     save_pickle_file,
 )
 from flonacomldft.internal_coordinates import get_mix_data
-from flonacomldft.full_adaptative_sampling import adaptative_sampling
+from flonacomldft.full_adaptive_sampling import adaptative_sampling
 
 n_runs = 2
 n_chains = 3
@@ -70,6 +70,7 @@ results = adaptative_sampling(
     init_flow_train,
     init_mlps,
 )
+
 
 save_pickle_file(
     results,

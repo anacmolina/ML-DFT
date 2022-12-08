@@ -1,3 +1,4 @@
+
 from ase.parallel import parprint as print
 
 from datetime import datetime
@@ -6,7 +7,7 @@ import gpaw.mpi as mpi
 import torch
 import pandas as pd
 
-from flonacomldft.dft_utils import DFTCalculator
+from flonacomldft.dft_calculator import DFTCalculator
 from flonacomldft.utils.silver_isomers_utils import get_molecule_isomer_minima
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

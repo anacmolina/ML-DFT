@@ -11,7 +11,7 @@ from flonacomldft.data_utils import (
 
 from flonacomldft.internal_coordinates import Angles_mapping, get_mix_data
 
-from flonacomldft.full_adaptative_sampling import adaptative_sampling
+from flonacomldft.full_adaptive_sampling import adaptative_sampling
 
 # Seed initialization for random generations
 ranks = np.arange(0, mpi.world.size)

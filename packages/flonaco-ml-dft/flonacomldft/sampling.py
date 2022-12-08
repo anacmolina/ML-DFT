@@ -43,7 +43,7 @@ def run_metropolis(
     beta = 1 / (kb * T)
 
     if "dft" in energy_type:
-        from flonacomldft.dft_utils import DFTCalculator
+        from flonacomldft.dft_calculator import DFTCalculator
         from flonacomldft.internal_coordinates import Structure
         
         ag6 = Structure()

@@ -8,7 +8,7 @@ from flonacomldft.utils.data_utils import (
     save_pickle_file,
 )
 from flonacomldft.internal_coordinates import get_mix_data
-from flonacomldft.full_adaptative_sampling import adaptative_sampling
+from flonacomldft.full_adaptive_sampling import adaptative_sampling
 
 n_runs = 5
 n_chains = 50

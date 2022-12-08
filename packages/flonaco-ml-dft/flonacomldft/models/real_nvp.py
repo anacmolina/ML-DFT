@@ -11,7 +11,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from flonacomldft.models import MLP
+from flonacomldft.models.mlp import MLP
 from torch.distributions.multivariate_normal import MultivariateNormal
 
 

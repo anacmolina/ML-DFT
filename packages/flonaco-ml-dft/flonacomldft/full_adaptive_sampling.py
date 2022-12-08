@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from flonacomldft.internal_coordinates import Angles_mapping
-from flonacomldft.mixture import Mixture, get_models
+from flonacomldft.models.mixture import Mixture, get_models
 from flonacomldft.train_flow_from_data import train_flow
 from flonacomldft.sampling import run_metropolis
 from flonacomldft.internal_coordinates import Structure
