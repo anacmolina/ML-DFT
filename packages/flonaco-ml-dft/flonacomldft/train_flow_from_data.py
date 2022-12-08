@@ -17,7 +17,7 @@ def train_flow(
     save_splits=10,
     grad_clip=1e4,
     use_tune=False,
-    compute_
+    metrics=None,
 ):
     """ 
     Args:
@@ -29,6 +29,8 @@ def train_flow(
         use_scheduler (bool): if learning rate schedule should be used
         step_schedule (int): iteration frequency of schedule
         save_splits: number of snapshots saved during training
+        grad_clip (float): gradient clipping
+        use_tune (bool): whether a tuner from Ray package has been initialized
     """
 
     # setting up the loss
@@ -64,6 +66,7 @@ def train_flow(
 
         # logs
         losses.append(loss.item())
+       
 
         if t % (n_iter / 100) == 0:
             total_norm = 0
@@ -89,6 +92,8 @@ def train_flow(
                 print("lr: {:0.2e}".format(param_group["lr"]), end="\t")
 
             print("")
+            if use_tune:
+                tune.report({"loss":loss.item(), "grad_norm":total_norm})
 
     to_return = {
         "model": model,

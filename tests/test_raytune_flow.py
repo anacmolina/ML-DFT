@@ -46,7 +46,7 @@ def train_flow_is1(config):
                         centering_args=centering_args,
                         device=device,
                         )
-    n_iter = 2
+    n_iter = 10
     out = train_flow(
         model,
         x_real_centered,
@@ -57,8 +57,9 @@ def train_flow_is1(config):
         step_schedule=100,
         save_splits=10,
         grad_clip=1e4,
+        use_tune=True,
     )
-    tune.report(loss=out['losses'][-1])
+    # tune.report({"coin" :out['losses'][-1]})
 
 search_space = {"lr": tune.grid_search([1e-3, 1e-4, 1e-5])}
 tuner = tune.Tuner(
@@ -67,6 +68,14 @@ tuner = tune.Tuner(
 )
 results = tuner.fit()
 dfs = {result.log_dir: result.metrics_dataframe for result in results}
+plt.figure(figsize=(15, 5)) 
+axs = [plt.subplot(1, 2, 1), plt.subplot(1, 2, 2)]
+for d in dfs.values():
+    d['_metric/loss'].plot(ax=axs[0], legend=False)
+    d['_metric/grad_norm'].plot(ax=axs[1], legend=False)
+
+plt.show(block=False)
+
 # x_sample = model.sample(100)
 # x_sample_cv = np.array(get_CVs(x_sample)).T
 # plt.scatter(x_sample_cv[:, 0], x_sample_cv[:, 1], label="mode {:d} - realnvp init".format(mode_label), c='C{:d}'.format(mode_label), alpha=0.5)
