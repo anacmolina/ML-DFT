@@ -55,10 +55,10 @@ init_nf_is2 = load_from_pickle(get_path() + "training_is2")
 init_flow_train = [init_nf_is1, init_nf_is2]
 init_mlps = [init_mlp_is1, init_mlp_is2]
 
-mcmc_params = {'n_runs': 2,
-'n_chains': 5,
-'n_steps': 3, 
-}
+# mcmc params
+n_runs = 2
+n_chains = 5
+n_steps = 3
 
 flow_hyperparams = {'n_iter': 100,
     'lr': 5e-4,
@@ -75,15 +75,20 @@ mlp_hyperparams = {'n_iter': 100,
 }
 
 results = adaptative_sampling(
-    x=xis, #[:n_chains],
-    u=uis, #[:n_chains],
-    count=cis, #[:n_chains],
-    mcmc_params=mcmc_params,
+    xs_md_init=xis,
+    us_md_init=uis,
+    isomers_md_init=cis,
+    xs_dft_init=xis,
+    us_dft_init=uis,
+    isomers_dft_init=cis,
+    n_runs=n_runs,
+    n_chains=n_chains,
+    n_steps=n_steps,
     energy_type=energy_type,
-    dic_flow_training_init=init_flow_train,
+    dict_flows_init=init_flow_train,
     flow_hyperparams=flow_hyperparams,
     mlp_hyperparams=mlp_hyperparams,
-    mlp_models=init_mlps,
+    dict_mlps_init=init_mlps,
     retraining_mlp=True)
 
 #save_pickle_file(

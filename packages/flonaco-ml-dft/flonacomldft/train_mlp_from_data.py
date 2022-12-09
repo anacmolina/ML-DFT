@@ -93,7 +93,7 @@ def train_mlp(model,
         #    models.append(copy.deepcopy(model))
 
     to_return = {
-        'mlp_model': model,
+        'model': model,
         "dataset": (x_train_centered, y_train_centered, x_test_centered, y_test_centered),
         "losses": losses,
         "losses_test": losses_val,

@@ -87,6 +87,8 @@ def train_flow(
 
             print("")
 
+    # TODO: Losses test, save data in the returns
+
     to_return = {
         "model": model,
         "losses": losses,

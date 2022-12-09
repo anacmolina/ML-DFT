@@ -20,9 +20,12 @@ kb = 8.617333262e-5
 
 def run_metropolis(
     model,
-    u_init,
     x_init,
-    count_init,
+    u_init,
+    isomer_init,
+    #u_init,
+    #x_init,
+    #count_init,
     n_chains,
     n_steps,
     n_run="",
@@ -35,7 +38,7 @@ def run_metropolis(
 
     assert u_init.shape[0] == n_chains
     assert x_init.shape[0] == n_chains
-    assert count_init.shape[0] == n_chains
+    assert isomer_init.shape[0] == n_chains
 
     # print(u_init.shape, x_init.shape, count_init.shape)
     # print('assert pass')
@@ -54,7 +57,7 @@ def run_metropolis(
         inds_dft = []
         xs_dft = []
         us_dft = []
-        counts_dft = []
+        isomers_dft = []
         if (energy_type == "mlp-dft"):        
             energy_type = "mlp"
     else:
@@ -67,7 +70,7 @@ def run_metropolis(
         elif(len(mlps)>1):
             mlp_is1, mlp_is2 = mlps
         elif(len(mlps)==1):
-            if(count_init.sum()==0):
+            if(isomer_init.sum()==0):
                 mlp_is1 = mlps
             else:
                 mlp_is2 = mlps
@@ -78,7 +81,7 @@ def run_metropolis(
     us = []
     accs = []
     nlls = []
-    counts = []
+    isomers = []
     #xs_prop = []
     #us_prop = []
     
@@ -92,13 +95,13 @@ def run_metropolis(
         Angles_mapping().inv_mapping(x_init)
 
         if mixture:
-            x, count = model.sample(n_chains, return_mus=True)
+            x, isomer = model.sample(n_chains, return_mus=True)
         else:
             x = model.sample(n_chains)
-            count = count_init
+            isomer = isomer_init
 
         x = x.clone().detach().float()
-        count = count.clone().detach().float()
+        isomer = isomer.clone().detach().float()
 
         nll_x = model.nll(x)
         nll_x_init = model.nll(x_init)
@@ -121,7 +124,7 @@ def run_metropolis(
 
                     xs_dft.append(x[i])
                     us_dft.append(u_)
-                    counts_dft.append(count[i])
+                    isomers_dft.append(isomer[i])
                 except:
                     U_.append(0)
                     indexes_nc.append(i)
@@ -141,19 +144,19 @@ def run_metropolis(
 
             U_ = torch.zeros((x.shape[0], 1))
 
-            if count.sum().int() == count.shape[0]:
+            if isomer.sum().int() == isomer.shape[0]:
 
                 #print('mlp_is2')
                 model_mlp_is2 = mlp_is2
 
-                U_[count.bool()] = model_mlp_is2.predict(x[count.bool()])
+                U_[isomer.bool()] = model_mlp_is2.predict(x[isomer.bool()])
 
-            if count.sum().int() == 0:
+            if isomer.sum().int() == 0:
 
                 #print('mlp_is1')
                 model_mlp_is1 = mlp_is1
 
-                U_[~(count.bool())] = model_mlp_is1.predict(x[~(count.bool())])
+                U_[~(isomer.bool())] = model_mlp_is1.predict(x[~(isomer.bool())])
 
             else:
 
@@ -162,8 +165,8 @@ def run_metropolis(
                 model_mlp_is1 = mlp_is1
                 model_mlp_is2 = mlp_is2
 
-                U_[~(count.bool())] = model_mlp_is1.predict(x[~(count.bool())])
-                U_[count.bool()] = model_mlp_is2.predict(x[count.bool()])
+                U_[~(isomer.bool())] = model_mlp_is1.predict(x[~(isomer.bool())])
+                U_[isomer.bool()] = model_mlp_is2.predict(x[isomer.bool()])
 
             U_ = U_.reshape(U_.shape[0]).float()
 
@@ -187,7 +190,7 @@ def run_metropolis(
 
                             xs_dft.append(x_)
                             us_dft.append(u_)
-                            counts_dft.append(count[ind_U_sort[:n_dft][i]])
+                            isomers_dft.append(isomer[ind_U_sort[:n_dft][i]])
                             ind_dft[ind_U_sort[:n_dft][i]] = 1    
                         except:
                             U_dft.append(0)
@@ -220,15 +223,15 @@ def run_metropolis(
         ind_dft[~acc] = 0
 
         if mixture:
-            count[~acc] = count_init[~acc]
+            isomer[~acc] = isomer_init[~acc]
         else:
-            count = count_init
+            isomer = isomer_init
         
         xs.append(x.float().clone())
         us.append(U.float().clone())
         accs.append(acc.float().clone())
         nlls.append(nll_x.float().clone())
-        counts.append(count.float().clone())
+        isomers.append(isomer.float().clone())
         #xs_prop.append(x_prop.float().clone())
         #us_prop.append(u_prop.float().clone())
         if dft:
@@ -236,7 +239,7 @@ def run_metropolis(
 
         x_init = x.clone().detach()
         u_init = U.clone().detach()
-        count_init = count.clone().detach()
+        isomer_init = isomer.clone().detach()
 
         #print("acc: {:0.2f}".format(acc.float().mean()))
 
@@ -244,7 +247,7 @@ def run_metropolis(
         "xs": torch.stack(xs),
         "us": torch.stack(us),
         "accs": torch.stack(accs),
-        "counts": torch.stack(counts),
+        "isomers": torch.stack(isomers),
         #"xs_prop": torch.stack(xs_prop),
         #"us_prop": torch.stack(us_prop),
     }
@@ -252,6 +255,6 @@ def run_metropolis(
         to_return["inds_dft"] = torch.stack(inds_dft)
         to_return["xs_dft"] = torch.stack(xs_dft)
         to_return["us_dft"] = torch.tensor(us_dft).float().detach()
-        to_return['counts_dft'] = torch.stack(counts_dft)
+        to_return['isomers_dft'] = torch.stack(isomers_dft)
 
     return to_return
