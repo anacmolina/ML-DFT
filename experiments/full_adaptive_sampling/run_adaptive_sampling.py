@@ -49,8 +49,8 @@ init_mlp_is1 = load_from_pickle(get_path() + "mlp_is1")
 init_mlp_is2 = load_from_pickle(get_path() + "mlp_is2")
 
 # loading pretrain flows models
-init_nf_is1 = load_from_pickle(get_path() + "training_is1")
-init_nf_is2 = load_from_pickle(get_path() + "training_is2")
+init_nf_is1 = load_from_pickle(get_path() + "flow_is1")
+init_nf_is2 = load_from_pickle(get_path() + "flow_is2")
 
 init_flow_train = [init_nf_is1, init_nf_is2]
 init_mlps = [init_mlp_is1, init_mlp_is2]

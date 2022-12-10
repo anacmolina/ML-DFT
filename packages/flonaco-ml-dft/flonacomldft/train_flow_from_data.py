@@ -8,9 +8,9 @@ from ase.parallel import parprint as print
 def train_flow(
     model,
     x_train,
+    x_test,
     n_iter=1000,
     lr=5e-3,
-    # bs=100,
     use_scheduler=False,
     step_schedule=100,
     save_splits=10,
@@ -22,7 +22,6 @@ def train_flow(
         x_train (tensor of float)
         n_iter (int)
         lr (float): learning rate
-        # bs (int): batchsize
         use_scheduler (bool): if learning rate schedule should be used
         step_schedule (int): iteration frequency of schedule
         save_splits: number of snapshots saved during training
@@ -41,6 +40,7 @@ def train_flow(
 
     # logs
     losses = []
+    losses_val = []
     models = [copy.deepcopy(model)]
     grad_norms = []
 
@@ -61,6 +61,8 @@ def train_flow(
 
         # logs
         losses.append(loss.item())
+        losses_val.append(loss_func(x_test).item())
+
 
         if t % (n_iter / 100) == 0:
             total_norm = 0
@@ -87,11 +89,13 @@ def train_flow(
 
             print("")
 
-    # TODO: Losses test, save data in the returns
+    # TODO: Save data in the returns
 
     to_return = {
         "model": model,
+        "dataset": (x_train, x_test),
         "losses": losses,
+        "losses_test": losses_val,
         "models": models,
         "grad_norms": grad_norms,
     }

@@ -67,6 +67,10 @@ def adaptative_sampling(
     isomer_init = isomers_md_init[:n_chains]
 
     for i in range(n_runs):
+
+        print(len(dic_flows_training))
+        print(len(dic_flows_training[i]))
+
         weights = torch.tensor([0.5, 0.5]).detach()
         mixture = Mixture(get_models(dic_flows_training[i]), weights)
 
@@ -79,8 +83,8 @@ def adaptative_sampling(
         n_steps=n_steps,
         n_run=i,
         energy_type=energy_type,
-        #mlps=get_models(dic_mlps_training[-1]),
-        mlps=get_models_mlp(dic_mlps_training[-1]),
+        mlps=get_models(dic_mlps_training[-1]),
+        #mlps=get_models_mlp(dic_mlps_training[-1]), TODO: Delete this
         mixture=True,
         )
         
@@ -171,13 +175,14 @@ def adaptative_sampling(
 
             from flonacomldft.train_mlp_from_data import train_mlp
 
-            #mlp_is1 = train_mlp(dic_mlps_training[-1][0]['model'], xs_for_mlps_is1, us_for_mlps_is1, xs_for_mlps_is1, us_for_mlps_is1, **mlp_hyperparams)
-            #mlp_is2 = train_mlp(dic_mlps_training[-1][1]['model'], xs_for_mlps_is2, us_for_mlps_is2, xs_for_mlps_is2, us_for_mlps_is2, **mlp_hyperparams)
+            mlp_is1 = train_mlp(dic_mlps_training[-1][0]['model'], xs_for_mlps_is1, us_for_mlps_is1, xs_for_mlps_is1, us_for_mlps_is1, **mlp_hyperparams)
+            mlp_is2 = train_mlp(dic_mlps_training[-1][1]['model'], xs_for_mlps_is2, us_for_mlps_is2, xs_for_mlps_is2, us_for_mlps_is2, **mlp_hyperparams)
 
-            mlp_is1 = train_mlp(dic_mlps_training[-1][0], xs_for_mlps_is1, us_for_mlps_is1, xs_for_mlps_is1, us_for_mlps_is1, **mlp_hyperparams)
-            mlp_is2 = train_mlp(dic_mlps_training[-1][1], xs_for_mlps_is2, us_for_mlps_is2, xs_for_mlps_is2, us_for_mlps_is2, **mlp_hyperparams)
+            #TODO: Delete this    
+            #mlp_is1 = train_mlp(dic_mlps_training[-1][0], xs_for_mlps_is1, us_for_mlps_is1, xs_for_mlps_is1, us_for_mlps_is1, **mlp_hyperparams)
+            #mlp_is2 = train_mlp(dic_mlps_training[-1][1], xs_for_mlps_is2, us_for_mlps_is2, xs_for_mlps_is2, us_for_mlps_is2, **mlp_hyperparams)
 
-            dic_flows_training.append([mlp_is1, mlp_is2])
+            dic_mlps_training.append([mlp_is1, mlp_is2])
 
         dic_flows_training.append([dic_new_flow_is1, dic_new_flow_is2])
 

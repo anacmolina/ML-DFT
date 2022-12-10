@@ -118,6 +118,7 @@ def run_metropolis(
 
             for i in range(n_chains):
                 try:
+                    #TODO: Activate this later
                     #u_ = calculator.calculate_potential_energy(ag6.build_molecule(x[i]), file_name='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out')
                     u_ = -6.3*(1+np.random.rand()*0.1)
                     U_.append(u_)
@@ -184,6 +185,7 @@ def run_metropolis(
 
                     for i, x_ in enumerate(x[ind_U_sort[:n_dft]]):
                         try:
+                            #TODO: Activate this later
                             #u_ = calculator.calculate_potential_energy(ag6.build_molecule(x_), file_name='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(ind_U_sort[:n_dft][i])+'.out')
                             u_ = -6.3*(1+np.random.rand()*0.1)
                             U_dft.append(u_)

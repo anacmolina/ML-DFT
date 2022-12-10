@@ -58,3 +58,25 @@ def load_csv_file(isomer):
 
 # save_zmat_csv()
 # TODO: write a function that saves the zmat 
+
+def split_data_from_csv(df, train_size, sk_seed):
+    import sklearn.model_selection
+
+    zmat = torch.tensor(df.to_numpy()).float()
+    x = zmat[:, :-1].numpy()
+    y = zmat[:, -1].numpy()
+
+    arrays = [x, y]
+
+    x_train, x_test, y_train, y_test = sklearn.model_selection.train_test_split(*arrays, test_size=None,
+                                                      train_size=train_size,
+                                                      random_state=sk_seed,
+                                                      shuffle=True,
+                                                      stratify=None)
+
+    x_train = torch.from_numpy(x_train).float()
+    y_train = torch.from_numpy(y_train).float()
+    x_test = torch.from_numpy(x_test).float()
+    y_test = torch.from_numpy(y_test).float()
+
+    return x_train, x_test, y_train, y_test 
