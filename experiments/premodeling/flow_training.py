@@ -12,7 +12,7 @@ from flonacomldft.internal_coordinates import Angles_mapping
 from flonacomldft.utils.data_utils import (
     get_path, 
     save_pickle_file,
-    split_data_from_csv
+    split_data_from_dataframe
 )
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -26,13 +26,9 @@ train_size = 0.8
 n_md = 2500 # 5000 steps in total
 df_md = pd.read_csv(get_path() + 'is2_lcao_zmat.csv').loc[:n_md]
 
-x_train_md, x_test_md, y_train_md, y_test_md = split_data_from_csv(df_md, train_size, sk_seed)
+x_train_md, x_test_md, y_train_md, y_test_md = split_data_from_dataframe(df_md, train_size, sk_seed)
 
 del y_test_md, y_train_md
-
-print("Labels: {}".format(x_train_md.shape[1]))
-print("Training set samples: {}".format(x_train_md.shape[0]))
-print("Test set samples: {}".format(x_test_md.shape[0]))
 
 Angles_mapping().inv_mapping(x_train_md)
 Angles_mapping().inv_mapping(x_test_md)

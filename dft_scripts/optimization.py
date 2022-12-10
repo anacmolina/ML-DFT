@@ -6,7 +6,6 @@ from ase.io import write
 
 from flonacomldft.utils.silver_isomers_utils import get_molecule_isomer_minima
 
-
 isomer = "ag6_planar"
 mode = "lcao"
 

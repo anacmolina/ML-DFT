@@ -59,7 +59,7 @@ def load_csv_file(isomer):
 # save_zmat_csv()
 # TODO: write a function that saves the zmat 
 
-def split_data_from_csv(df, train_size, sk_seed):
+def split_data_from_dataframe(df, train_size, sk_seed):
     import sklearn.model_selection
 
     zmat = torch.tensor(df.to_numpy()).float()

@@ -9,8 +9,6 @@ from flonacomldft.train_flow_from_data import train_flow
 from flonacomldft.sampling import run_metropolis
 from flonacomldft.mixture import Mixture, get_models, get_models_mlp
 
-# TODO: add the losses for testint the models
-
 def Transpose(x):
     return x.permute(*torch.arange(x.ndim - 1, -1, -1))
 
