@@ -100,8 +100,6 @@ def run_metropolis(
     
     for dt in pbar:
 
-        Angles_mapping().inv_mapping(x_init)
-
         if mixture:
             x, count = model.sample(n_chains, return_mus=True)
         else:
@@ -113,9 +111,6 @@ def run_metropolis(
 
         nll_x = model.nll(x)
         nll_x_init = model.nll(x_init)
-
-        Angles_mapping().mapping(x)
-        Angles_mapping().mapping(x_init)
 
         indexes_nc = None
         ind_dft = torch.zeros(x.shape[0])

@@ -124,10 +124,6 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
         #print(is1_prop)
         #print(is2_prop)
 
-        angles_mapping = Angles_mapping()
-        angles_mapping.inv_mapping(x_flow_is1)
-        angles_mapping.inv_mapping(x_flow_is2)
-
         if is1_prop.nelement() != 0:
             dic_new_flow_is1 = train_flow(
                 flows[i][0],
@@ -154,8 +150,6 @@ def adaptative_sampling(x, u, count, n_runs, n_chains, n_steps, energy_type,
         else:
             dic_new_flow_is2 = dic_flow_trainings[i][1]
 
-        angles_mapping.mapping(x_flow_is1)
-        angles_mapping.mapping(x_flow_is2)
 
         # retrain MLPs
         #if USE_DFT_ENERGIES:

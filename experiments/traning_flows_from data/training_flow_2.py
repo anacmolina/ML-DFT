@@ -42,6 +42,7 @@ U_tensor = torch.from_numpy(U[:n].to_numpy()).float()
 
 f.write("Samples: {}, Labels: {}\n\n".format(x_tensor.shape[0], x_tensor.shape[1]))
 
+raise Warning("Check the angle mapping and computations of the mean and covariance")
 Angles_mapping().inv_mapping(x_tensor)
 
 cov = torch.cov(x_tensor.T)
