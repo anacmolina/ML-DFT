@@ -21,7 +21,7 @@ def plotting_fes_db(train_data=None):
    plotting = Plotter(400, 'Ag6')
    plotting.readfile(ceph_home + 'unrotated_300.txt')
    
-   ax = plotting.plot_fes(0.1, 300, delta2=1, shift=1.5)
+   fig, ax = plotting.plot_fes(0.1, 300, delta2=1, shift=1.5)
    
    if train_data is not None:
 

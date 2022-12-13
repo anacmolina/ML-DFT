@@ -277,7 +277,7 @@ class Plotter():
         if save:
             plt.savefig(save)
         
-        return ax
+        return fig, ax
     
     
     def plot_fes(self, delta, temp, shift=0, barlabel=None, **kwargs):
@@ -287,9 +287,9 @@ class Plotter():
 
         if barlabel is None:
             barlabel = 'eV'
-        ax = self.plotter(delta, temp, F, 'FES [{}]'.format(barlabel),**kwargs)
+        fig, ax = self.plotter(delta, temp, F, 'FES [{}]'.format(barlabel),**kwargs)
 
-        return ax
+        return fig, ax
 
     def plot_error(self, delta, temp, shift=0, barlabel=None, **kwargs):
         """function that plots the error in the FE surface"""
