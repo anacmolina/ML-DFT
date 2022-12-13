@@ -89,8 +89,6 @@ def train_flow(
 
             print("")
 
-    # TODO: Save data in the returns
-
     to_return = {
         "model": model,
         "dataset": (x_train, x_test),
