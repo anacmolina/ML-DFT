@@ -5,7 +5,7 @@ def losses_plot(losses_train, losses_test, title, figsize=(8, 6), log_yscale=Fal
     ax.plot(losses_train, label='train')
     ax.plot(losses_test, label='test')
     ax.set_title(title)
-    ax.set_ylabel('Losees')
+    ax.set_ylabel('Losses')
     ax.set_xlabel('Iterations')
     ax.legend()
     if log_yscale:
@@ -23,6 +23,7 @@ def plot_sample(x, title, figsize=(8, 6)):
    ax.set_title(title)
    ax.set_xlabel('x coordinate')
    ax.set_ylabel('y coordinate')
+
    return fig, ax 
 
 def plotting_fes_db(train_data=None):
@@ -47,10 +48,19 @@ def collective_variables_plot(C, R, title, figsize=(8, 6)):
 
     return fig, ax
 
-"""def acceptance_rate_plot():
-    
+def acceptance_rate_plot(acceptance_rate, title, xlabel, figsize=(8, 6)):
+    fig, ax = plt.subplots(1, 1, figsize=figsize)
+    ax.plot(acceptance_rate)
+    ax.set_title(title)
+    ax.set_ylabel('Acceptance rate')
+    ax.set_xlabel(xlabel)
+    ax.legend()
     return fig, ax
 
-def populations_convergence_plot():
-    
-    return fig, ax"""
+def populations_convergence_plot(populations, title, figsize=(8, 6)):
+    fig, ax = plt.subplots(1, 1, figsize=figsize)
+    ax.plot(populations)
+    ax.set_title(title)
+    ax.set_ylabel('Populations')
+    ax.legend()
+    return fig, ax
