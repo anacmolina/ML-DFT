@@ -9,6 +9,7 @@ def losses_plot(losses_train, losses_test, figsize):
     ax.set_xlabel('Iterations')
     return fig, ax
 
+"""
 def collective_variables_plot(C, R, figsize):
     
     return fig, ax
@@ -19,4 +20,4 @@ def acceptance_rate_plot():
 
 def populations_convergence_plot():
     
-    return fig, ax
+    return fig, ax"""
