@@ -14,14 +14,9 @@ def adaptative_sampling(
     xs_md_init,
     us_md_init,
     isomers_md_init,
-    xs_md_init_test,
-    isomers_md_init_test,
     xs_dft_init,
     us_dft_init,
     isomers_dft_init,
-    xs_dft_init_test,
-    us_dft_init_test,
-    isomers_dft_init_test,
     n_runs,
     n_chains,
     n_steps,
@@ -42,11 +37,8 @@ def adaptative_sampling(
     xs_for_flows_is1 = xs_md_init[~isomers_md_init.bool()]
     xs_for_flows_is2 = xs_md_init[isomers_md_init.bool()]
 
-    xs_for_flows_is1_test = xs_md_init_test[~isomers_md_init_test.bool()]
-    xs_for_flows_is2_test = xs_md_init_test[isomers_md_init_test.bool()]
-
-    #us_for_flows_is1 = us_md_init[~isomers_md_init.bool()]
-    #us_for_flows_is2 = us_md_init[isomers_md_init.bool()]
+    us_for_flows_is1 = us_md_init[~isomers_md_init.bool()]
+    us_for_flows_is2 = us_md_init[isomers_md_init.bool()]
 
     if retraining_mlp:
 
@@ -55,12 +47,6 @@ def adaptative_sampling(
 
         us_for_mlps_is1 = us_dft_init[~isomers_dft_init.bool()]
         us_for_mlps_is2 = us_dft_init[isomers_dft_init.bool()]
-
-        xs_for_mlps_is1_test = xs_dft_init_test[~isomers_dft_init_test.bool()]
-        xs_for_mlps_is2_test = xs_dft_init_test[isomers_dft_init_test.bool()]
-
-        us_for_mlps_is1_test = us_dft_init_test[~isomers_dft_init_test.bool()]
-        us_for_mlps_is2_test = us_dft_init_test[isomers_dft_init_test.bool()]
 
     dic_flows_training = [dict_flows_init, ]
     dic_mlps_training = [dict_mlps_init, ]
@@ -94,6 +80,7 @@ def adaptative_sampling(
         n_run=i,
         energy_type=energy_type,
         mlps=get_models(dic_mlps_training[-1]),
+        #mlps=get_models_mlp(dic_mlps_training[-1]), TODO: Delete this
         mixture=True,
         )
         
@@ -129,17 +116,13 @@ def adaptative_sampling(
             )
 
             Angles_mapping().inv_mapping(xs_for_flows_is1)
-            Angles_mapping().inv_mapping(xs_for_flows_is1_test)
 
             dic_new_flow_is1 = train_flow(
                 dic_flows_training[i][0]['model'],
                 xs_for_flows_is1,
-                xs_for_flows_is1_test,
-                **flow_hyperparams[0],)
+                **flow_hyperparams,)
 
             Angles_mapping().mapping(xs_for_flows_is1)
-            Angles_mapping().mapping(xs_for_flows_is1_test)
-
         else:
             dic_new_flow_is1 = dic_flows_training[i][0]
 
@@ -151,17 +134,12 @@ def adaptative_sampling(
             )
 
             Angles_mapping().inv_mapping(xs_for_flows_is2)    
-            Angles_mapping().inv_mapping(xs_for_flows_is2_test)    
-
 
             dic_new_flow_is2 = train_flow(
                 dic_flows_training[i][1]['model'],
                 xs_for_flows_is2,
-                xs_for_flows_is2_test,
-                **flow_hyperparams[1],)
-
+                **flow_hyperparams,)
             Angles_mapping().mapping(xs_for_flows_is2)
-            Angles_mapping().mapping(xs_for_flows_is2_test)
         else:
             dic_new_flow_is2 = dic_flows_training[i][1]
         
@@ -193,19 +171,12 @@ def adaptative_sampling(
 
             from flonacomldft.train_mlp_from_data import train_mlp
 
-            mlp_is1 = train_mlp(dic_mlps_training[-1][0]['model'], 
-                                xs_for_mlps_is1,  
-                                xs_for_mlps_is1_test,
-                                us_for_mlps_is1, 
-                                us_for_mlps_is1_test, 
-                                **mlp_hyperparams[0])
+            mlp_is1 = train_mlp(dic_mlps_training[-1][0]['model'], xs_for_mlps_is1, us_for_mlps_is1, xs_for_mlps_is1, us_for_mlps_is1, **mlp_hyperparams)
+            mlp_is2 = train_mlp(dic_mlps_training[-1][1]['model'], xs_for_mlps_is2, us_for_mlps_is2, xs_for_mlps_is2, us_for_mlps_is2, **mlp_hyperparams)
 
-            mlp_is2 = train_mlp(dic_mlps_training[-1][1]['model'], 
-                                xs_for_mlps_is2,  
-                                xs_for_mlps_is2_test,
-                                us_for_mlps_is2, 
-                                us_for_mlps_is2_test, 
-                                **mlp_hyperparams[1])
+            #TODO: Delete this    
+            #mlp_is1 = train_mlp(dic_mlps_training[-1][0], xs_for_mlps_is1, us_for_mlps_is1, xs_for_mlps_is1, us_for_mlps_is1, **mlp_hyperparams)
+            #mlp_is2 = train_mlp(dic_mlps_training[-1][1], xs_for_mlps_is2, us_for_mlps_is2, xs_for_mlps_is2, us_for_mlps_is2, **mlp_hyperparams)
 
             dic_mlps_training.append([mlp_is1, mlp_is2])
 

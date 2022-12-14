@@ -3,16 +3,12 @@ Script with all sampling methods.
 
 """
 
-# from flonacomldft.utils.data_utils import get_path, load_from_pickle
-# from flonacomldft.models import Uncentered_MLP
 import numpy as np
 import torch
 import tqdm
 
 from ase.parallel import parprint as print
 
-# from datetime import datetime
-# from flonacomldft.dft_utils import Structure
 from flonacomldft.internal_coordinates import Angles_mapping
 
 kb = 8.617333262e-5
@@ -23,9 +19,6 @@ def run_metropolis(
     x_init,
     u_init,
     isomer_init,
-    #u_init,
-    #x_init,
-    #count_init,
     n_chains,
     n_steps,
     n_run="",
@@ -242,6 +235,9 @@ def run_metropolis(
         x_init = x.clone().detach()
         u_init = U.clone().detach()
         isomer_init = isomer.clone().detach()
+
+        if with_tqdm:
+            pbar.set_description(f'acc: {acc.float().mean()[-1]:.2f}')
 
         #print("acc: {:0.2f}".format(acc.float().mean()))
 

@@ -1,4 +1,6 @@
 import copy
+import tqdm
+
 import torch
 from torch.nn.utils import clip_grad_norm_
 
@@ -15,16 +17,19 @@ def train_flow(
     step_schedule=100,
     save_splits=10,
     grad_clip=1e4,
+    with_tqdm=False,
 ):
-    """ 
+    """
     Args:
         model (Realnvp_MLP)
         x_train (tensor of float)
+        x_test (tensor of float)
         n_iter (int)
         lr (float): learning rate
         use_scheduler (bool): if learning rate schedule should be used
         step_schedule (int): iteration frequency of schedule
         save_splits: number of snapshots saved during training
+        grad_clip:
     """
 
     # setting up the loss
@@ -39,30 +44,36 @@ def train_flow(
         )
 
     # logs
-    losses = []
-    losses_val = []
+    losses_train = []
+    losses_test = []
     models = [copy.deepcopy(model)]
     grad_norms = []
 
     x = x_train.detach().requires_grad_()
 
-    for t in range(n_iter):
+    if with_tqdm:
+        pbar = tqdm.tqdm(range(n_iter))
+    else:
+        pbar = range(n_iter)
+
+    for t in pbar:
         optimizer.zero_grad()
 
         loss = loss_func(x)
 
         if torch.isinf(loss).any():
             print("Stopped because loss became inf!")
-            return model, losses
+            return model, losses_train
 
         loss.backward()
         clip_grad_norm_(model.parameters(), max_norm=grad_clip)
         optimizer.step()
 
-        # logs
-        losses.append(loss.item())
-        losses_val.append(loss_func(x_test).item())
+        losses_train.append(loss.item())
+        losses_test.append(loss_func(x_test).item())
 
+        if with_tqdm:
+            pbar.set_description(f"Loss: {losses_train[-1]:.4f}")
 
         if t % (n_iter / 100) == 0:
             total_norm = 0
@@ -75,9 +86,11 @@ def train_flow(
         if use_scheduler:
             scheduler.step()
 
-        # prints
         if t % (n_iter / save_splits) == 0 or n_iter <= save_splits:
             models.append(copy.deepcopy(model))
+
+            # prints
+
             print(
                 "t={:0.1e}".format(t), "Loss: {:3.2f}".format(loss.item()), end="  \t"
             )
@@ -92,8 +105,7 @@ def train_flow(
     to_return = {
         "model": model,
         "dataset": (x_train, x_test),
-        "losses": losses,
-        "losses_test": losses_val,
+        "losses": (losses_train, losses_test),
         "models": models,
         "grad_norms": grad_norms,
     }

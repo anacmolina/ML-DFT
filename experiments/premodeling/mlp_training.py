@@ -40,6 +40,6 @@ mlp_hyperparams = {'n_iter': 1000,
     'grad_clip': 1e4,
 }
 
-_ = train_mlp(model, x_train, y_train, x_test, y_test, **mlp_hyperparams)
+_ = train_mlp(model, x_train, x_test, y_train, y_test, **mlp_hyperparams)
 
 save_pickle_file(_, "mlp_is1")
