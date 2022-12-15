@@ -10,6 +10,7 @@ import tqdm
 
 kb = 8.617333262e-5
 
+# TODO: Angles mapping remove from mcmc sampling
 
 def run_metropolis(
     model,
