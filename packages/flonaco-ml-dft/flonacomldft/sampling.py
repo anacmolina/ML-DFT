@@ -7,9 +7,6 @@ import numpy as np
 import torch
 import tqdm
 
-from ase.parallel import parprint as print
-
-from flonacomldft.internal_coordinates import Angles_mapping
 
 kb = 8.617333262e-5
 

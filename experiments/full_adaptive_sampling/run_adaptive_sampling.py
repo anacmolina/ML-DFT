@@ -13,9 +13,51 @@ from flonacomldft.full_adaptive_sampling import adaptative_sampling
 
 
 #energy_type="dft"
-energy_type="mlp-dft"
-#energy_type="mlp"
+# energy_type="mlp-dft"
+energy_type="mlp"
 
+# mcmc params
+n_runs = 2
+n_chains = 5
+n_steps = 3
+
+flow_hyperparams_is1 = {'n_iter': 100,
+    'lr': 5e-4,
+    'use_scheduler': False,
+    'step_schedule': 100,
+    'save_splits': 10,
+    'grad_clip': 1e4}
+
+flow_hyperparams_is2 = {'n_iter': 100,
+    'lr': 5e-4,
+    'use_scheduler': False,
+    'step_schedule': 100,
+    'save_splits': 10,
+    'grad_clip': 1e4}
+
+mlp_hyperparams_is1 = {'n_iter': 100,
+    'lr': 5e-2,
+    'use_scheduler': False,
+    'step_schedule': 100,
+    'grad_clip': 1e4,
+}
+
+mlp_hyperparams_is2 = {'n_iter': 100,
+    'lr': 5e-2,
+    'use_scheduler': False,
+    'step_schedule': 100,
+    'grad_clip': 1e4,
+}
+
+np_seed = 36
+sk_seed = 42
+train_size = 0.8
+n_md = 2500 # 5000 steps in total
+n_nf = 1500 # 2500 configs in total
+
+####### end of arguments and beginning of script
+
+torch.manual_seed(np_seed)
 # Seed initialization for random generations
 if "dft" in energy_type:
     import gpaw.mpi as mpi
@@ -23,29 +65,18 @@ if "dft" in energy_type:
     rank = mpi.world.rank
     comm = mpi.world.new_communicator(ranks)
 
-    num_seed = np.array([36])
-
     if rank == 0:
-        num_seed = np.array([36])
+        num_seed = np.array([np_seed])
         # num_seed = np.array([np.random.randint(1e5)])
 
     comm.broadcast(num_seed, 0)
     print("Rank: %d \t Seed: %d" % (rank, num_seed[0]))
 else:
-    num_seed = np.array([36])
+    num_seed = np.array([np_seed])
     # num_seed = np.array([np.random.randint(1e5)])
     print("Seed: %d" % num_seed[0])
 
-torch.manual_seed(num_seed[0])
 
-# Run MD for both isomers
-
-# loading traj in internal coordinates
-
-sk_seed = 42
-train_size = 0.8
-n_md = 2500 # 5000 steps in total
-n_nf = 1500 # 2500 configs in total
 
 df_md_is1 = pd.read_csv(get_path() + 'is1_lcao_zmat.csv').loc[:n_md]
 x_train_md_is1, x_test_md_is1, y_train_md_is1, y_test_md_is1 = split_data_from_dataframe(df_md_is1, train_size, sk_seed)
@@ -90,38 +121,7 @@ init_nf_is2 = load_from_pickle(get_path() + "flow_is2")
 init_flow_train = [init_nf_is1, init_nf_is2]
 init_mlps = [init_mlp_is1, init_mlp_is2]
 
-# mcmc params
-n_runs = 2
-n_chains = 5
-n_steps = 3
 
-flow_hyperparams_is1 = {'n_iter': 100,
-    'lr': 5e-4,
-    'use_scheduler': False,
-    'step_schedule': 100,
-    'save_splits': 10,
-    'grad_clip': 1e4}
-
-flow_hyperparams_is2 = {'n_iter': 100,
-    'lr': 5e-4,
-    'use_scheduler': False,
-    'step_schedule': 100,
-    'save_splits': 10,
-    'grad_clip': 1e4}
-
-mlp_hyperparams_is1 = {'n_iter': 100,
-    'lr': 5e-2,
-    'use_scheduler': False,
-    'step_schedule': 100,
-    'grad_clip': 1e4,
-}
-
-mlp_hyperparams_is2 = {'n_iter': 100,
-    'lr': 5e-2,
-    'use_scheduler': False,
-    'step_schedule': 100,
-    'grad_clip': 1e4,
-}
 
 results = adaptative_sampling(
     xs_md_init_train=x_train_flow,
