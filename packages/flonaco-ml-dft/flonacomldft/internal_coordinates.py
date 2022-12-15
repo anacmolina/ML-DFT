@@ -20,9 +20,9 @@ def deg_to_rad(zmat, labels):
         zmat[label] = np.deg2rad(zmat[label].tolist())
     return zmat
 
-def get_internal_coordinates(traj):
+def get_internal_coordinates(traj, n_samples_max=None):
     """"
-    traj - What type of objects can traj be? Ase-atoms?
+    traj - output of dft calculator run_moleculer_dynamics
     """
     construction_table = get_construction_table()
     
@@ -33,10 +33,13 @@ def get_internal_coordinates(traj):
         ENERGY = False
 
     xyz = []
-    for traj_ in traj:
+    for i, traj_ in enumerate(traj):
+        if n_samples_max is not None:
+            if i > n_samples_max: break
         xyz.append(cc.Cartesian.from_ase_atoms(traj_))
     
     zmat = [xyz_.get_zmat(construction_table) for xyz_ in xyz]
+    #https://chemcoord.readthedocs.io/en/v2.0.5/src_Cartesian/src_Cartesian/chemcoord.Cartesian.get_grad_zmat.html
     
     b = construction_table.b.to_numpy()
     a = construction_table.a.to_numpy()
@@ -123,10 +126,11 @@ class Structure:
       
     def build_zmat_matrix(self, zmat_values):  
         """"
-        Build the zmat matrix and the molecule from the zmat values
+        Build the zmat matrix (with the frame position/rotation and angles in degrees) from the zmat values (only the internal coordinates with angles in radians).
         
         In:
-            zmat_values: array with the values of the internal coordinates
+            zmat_values: array with the values of the internal coordinates of one only
+            configuration (12 inputs)
         Out:  
             zmat_matrix: df-zmat of coordinates in the basis of the IC
             molecule: Ase Atoms object 
