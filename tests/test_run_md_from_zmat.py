@@ -1,6 +1,6 @@
 # TO DO: Check the whole thing
 import numpy as np
-from flonacomldft.dft_utils import (run_molecular_dynamics)
+from flonacomldft.dft_calculator import (run_molecular_dynamics)
 from flonacomldft.utils.silver_isomers_utils import get_molecule_isomer_minima
 from flonacomldft.internal_coordinates import (
     get_internal_coordinates,

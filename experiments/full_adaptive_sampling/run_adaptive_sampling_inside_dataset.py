@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import pandas as pd
 
 from flonacomldft.utils.data_utils import (
     get_path,
@@ -7,13 +8,13 @@ from flonacomldft.utils.data_utils import (
     load_from_pickle,
     save_pickle_file,
 )
-from flonacomldft.internal_coordinates import get_mix_data
-from flonacomldft.full_adaptative_sampling import adaptative_sampling
 
-n_runs = 2
-n_chains = 3
-n_steps = 2
-energy_type="dft"
+from flonacomldft.internal_coordinates import get_mix_data
+from flonacomldft.full_adaptative_sampling_inside_dataset import adaptative_sampling
+
+#energy_type="dft"
+energy_type="mlp-dft"
+#energy_type="mlp"
 
 # Seed initialization for random generations
 if "dft" in energy_type:
@@ -40,6 +41,7 @@ torch.manual_seed(num_seed[0])
 # Run MD for both isomers
 
 # loading traj in internal coordinates
+
 data_is1 = load_zmat_csv("is1")
 data_is2 = load_zmat_csv("is2")
 
@@ -52,24 +54,59 @@ init_mlp_is1 = load_from_pickle(get_path() + "mlp_is1")
 init_mlp_is2 = load_from_pickle(get_path() + "mlp_is2")
 
 # loading pretrain flows models
-init_nf_is1 = load_from_pickle(get_path() + "training_is1")
-init_nf_is2 = load_from_pickle(get_path() + "training_is2")
+init_nf_is1 = load_from_pickle(get_path() + "flow_is1")
+init_nf_is2 = load_from_pickle(get_path() + "flow_is2")
 
 init_flow_train = [init_nf_is1, init_nf_is2]
 init_mlps = [init_mlp_is1, init_mlp_is2]
 
+# mcmc params
+n_runs = 2
+n_chains = 5
+n_steps = 3
+
+flow_hyperparams_is1 = {'n_iter': 100,
+    'lr': 5e-4,
+    'use_scheduler': False,
+    'step_schedule': 100,
+    'save_splits': 10,
+    'grad_clip': 1e4}
+
+flow_hyperparams_is2 = {'n_iter': 100,
+    'lr': 5e-4,
+    'use_scheduler': False,
+    'step_schedule': 100,
+    'save_splits': 10,
+    'grad_clip': 1e4}
+
+mlp_hyperparams_is1 = {'n_iter': 100,
+    'lr': 5e-2,
+    'use_scheduler': False,
+    'step_schedule': 100,
+    'grad_clip': 1e4,
+}
+
+mlp_hyperparams_is2 = {'n_iter': 100,
+    'lr': 5e-2,
+    'use_scheduler': False,
+    'step_schedule': 100,
+    'grad_clip': 1e4,
+}
 
 results = adaptative_sampling(
-    xis, #[:n_chains],
-    uis, #[:n_chains],
-    cis, #[:n_chains],
-    n_runs,
-    n_chains,
-    n_steps,
-    energy_type,
-    init_flow_train,
-    init_mlps,
-)
+    xis[:n_chains],
+    uis[:n_chains],
+    cis[:n_chains],
+    n_runs=n_runs,
+    n_chains=n_chains,
+    n_steps=n_steps,
+    energy_type=energy_type,
+    dict_flows_init=init_flow_train,
+    flow_hyperparams=[flow_hyperparams_is1, flow_hyperparams_is2],
+    mlp_hyperparams=[mlp_hyperparams_is1, mlp_hyperparams_is2],
+    dict_mlps_init=init_mlps,
+    retraining_mlp=True)
+
 
 save_pickle_file(
     results,
