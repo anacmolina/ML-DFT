@@ -2,25 +2,18 @@ from ase.parallel import parprint as print
 
 import torch
 
+from flonacomldft.internal_coordinates import Angles_mapping
 from flonacomldft.train_flow_from_data import train_flow
 from flonacomldft.sampling import run_metropolis
-from flonacomldft.models.mixture import Mixture, get_models
+from flonacomldft.mixture import Mixture, get_models
 
 def Transpose(x):
     return x.permute(*torch.arange(x.ndim - 1, -1, -1))
 
 def adaptative_sampling(
-    xs_md_init_train,
-    us_md_init_train,
-    isomers_md_init_train,
-    xs_md_init_test,
-    isomers_md_init_test,
-    xs_dft_init_train,
-    us_dft_init_train,
-    isomers_dft_init_train,
-    xs_dft_init_test,
-    us_dft_init_test,
-    isomers_dft_init_test,
+    x_init,
+    u_init,
+    isomer_init,
     n_runs,
     n_chains,
     n_steps,
@@ -38,27 +31,21 @@ def adaptative_sampling(
 
     # setting up databases for flows and mlps
 
-    xs_for_flows_train_is1 = xs_md_init_train[~isomers_md_init_train.bool()]
-    xs_for_flows_train_is2 = xs_md_init_train[isomers_md_init_train.bool()]
+    xs_for_flows_train_is1, xs_for_flows_test_is1 = dict_flows_init[0]['dataset']
+    xs_for_flows_train_is2, xs_for_flows_test_is2 = dict_flows_init[1]['dataset']
 
-    xs_for_flows_test_is1 = xs_md_init_test[~isomers_md_init_test.bool()]
-    xs_for_flows_test_is2 = xs_md_init_test[isomers_md_init_test.bool()]
+    Angles_mapping().mapping(xs_for_flows_train_is1)
+    Angles_mapping().mapping(xs_for_flows_test_is1)
+    Angles_mapping().mapping(xs_for_flows_train_is2)
+    Angles_mapping().mapping(xs_for_flows_test_is2)
+        
 
-    
     if retraining_mlp:
 
-        xs_for_mlps_train_is1 = xs_dft_init_train[~isomers_dft_init_train.bool()]
-        xs_for_mlps_train_is2 = xs_dft_init_train[isomers_dft_init_train.bool()]
+        xs_for_mlps_train_is1, xs_for_mlps_test_is1, us_for_mlps_train_is1, us_for_mlps_test_is1 = dict_mlps_init[0]['dataset']
+        xs_for_mlps_train_is2, xs_for_mlps_test_is2, us_for_mlps_train_is2, us_for_mlps_test_is2 = dict_mlps_init[1]['dataset']
 
-        us_for_mlps_train_is1 = us_dft_init_train[~isomers_dft_init_train.bool()]
-        us_for_mlps_train_is2 = us_dft_init_train[isomers_dft_init_train.bool()]
-
-        xs_for_mlps_test_is1 = xs_dft_init_test[~isomers_dft_init_test.bool()]
-        xs_for_mlps_test_is2 = xs_dft_init_test[isomers_dft_init_test.bool()]
-
-        us_for_mlps_test_is1 = us_dft_init_test[~isomers_dft_init_test.bool()]
-        us_for_mlps_test_is2 = us_dft_init_test[isomers_dft_init_test.bool()]
-
+        
     dict_flows_training = [dict_flows_init, ]
     dict_mlps_training = [dict_mlps_init, ]
 
@@ -69,12 +56,9 @@ def adaptative_sampling(
     accs = []
     isomers = []
     
-    x_init = xs_md_init_train[:n_chains]
-    u_init = us_md_init_train[:n_chains]
-    isomer_init = isomers_md_init_train[:n_chains]
-
     for i in range(n_runs):
 
+        
         weights = torch.tensor([0.5, 0.5]).detach()
         mixture = Mixture(get_models(dict_flows_training[i]), weights)
 
@@ -122,12 +106,17 @@ def adaptative_sampling(
                 (xs_for_flows_train_is1, is1_from_chains)
             )
 
+            Angles_mapping().inv_mapping(xs_for_flows_train_is1)
+            Angles_mapping().inv_mapping(xs_for_flows_test_is1)
+
             dict_new_flow_is1 = train_flow(
                 dict_flows_training[i][0]['model'],
                 xs_for_flows_train_is1,
                 xs_for_flows_test_is1,
                 **flow_hyperparams[0],)
 
+            Angles_mapping().mapping(xs_for_flows_train_is1)
+            Angles_mapping().mapping(xs_for_flows_test_is1)
         else:
             dict_new_flow_is1 = dict_flows_training[i][0]
 
@@ -136,17 +125,21 @@ def adaptative_sampling(
         if is2_from_chains.nelement() != 0:
             xs_for_flows_train_is2 = torch.cat(
                 (xs_for_flows_train_is2, is2_from_chains)
-            )  
+            )
+
+            Angles_mapping().inv_mapping(xs_for_flows_train_is2)    
+            Angles_mapping().inv_mapping(xs_for_flows_test_is2)    
 
             dict_new_flow_is2 = train_flow(
                 dict_flows_training[i][1]['model'],
                 xs_for_flows_train_is2,
-                xs_for_flows_test_is2,
+                xs_for_mlps_test_is2,
                 **flow_hyperparams[1],)
-
+            Angles_mapping().mapping(xs_for_flows_train_is2)
+            Angles_mapping().mapping(xs_for_flows_test_is2)
         else:
             dict_new_flow_is2 = dict_flows_training[i][1]
-
+        
         # retrain MLPs
         if retraining_mlp and ('dft' in energy_type):
 
@@ -175,19 +168,8 @@ def adaptative_sampling(
 
             from flonacomldft.train_mlp_from_data import train_mlp
 
-            mlp_is1 = train_mlp(dict_mlps_training[-1][0]['model'], 
-                                xs_for_mlps_train_is1,  
-                                xs_for_mlps_test_is1,
-                                us_for_mlps_train_is1, 
-                                us_for_mlps_test_is1, 
-                                **mlp_hyperparams[0])
-
-            mlp_is2 = train_mlp(dict_mlps_training[-1][1]['model'], 
-                                xs_for_mlps_train_is2,  
-                                xs_for_mlps_test_is2,
-                                us_for_mlps_train_is2, 
-                                us_for_mlps_test_is2, 
-                                **mlp_hyperparams[1])
+            mlp_is1 = train_mlp(dict_mlps_training[-1][0]['model'], xs_for_mlps_train_is1, xs_for_mlps_test_is1, us_for_mlps_train_is1, us_for_mlps_test_is1, **mlp_hyperparams[0])
+            mlp_is2 = train_mlp(dict_mlps_training[-1][1]['model'], xs_for_mlps_train_is2, xs_for_mlps_test_is2, us_for_mlps_train_is2, us_for_mlps_test_is2, **mlp_hyperparams[1])
 
             dict_mlps_training.append([mlp_is1, mlp_is2])
 

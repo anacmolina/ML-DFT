@@ -6,7 +6,6 @@ from ase.io import write
 
 from flonacomldft.utils.silver_isomers_utils import get_molecule_isomer_minima
 
-
 isomer = "ag6_planar"
 mode = "lcao"
 
@@ -22,6 +21,7 @@ calc = GPAW(
     h=0.18,
     spinpol=True,
     xc="PBE",
+    basis="pvalence.dz",
     symmetry="off",
     nbands=-4,
     txt=name + ".out",
