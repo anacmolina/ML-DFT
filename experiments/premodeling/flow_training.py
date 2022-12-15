@@ -20,11 +20,13 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 random_id = np.random.randint(100)
 torch.manual_seed(random_id)
 
+isomer = 'is2'
+
 sk_seed = 42
 train_size = 0.8
 
 n_md = 2500 # 5000 steps in total
-df_md = pd.read_csv(get_path() + 'is2_lcao_zmat.csv').loc[:n_md]
+df_md = pd.read_csv(get_path() + isomer + '_lcao_zmat.csv').loc[:n_md]
 
 x_train_md, x_test_md, y_train_md, y_test_md = split_data_from_dataframe(df_md, train_size, sk_seed)
 
@@ -73,4 +75,4 @@ _ = train_flow(
     **flow_hyperparams,
 )
 
-save_pickle_file(_, "flow_is2")
+save_pickle_file(_, "flow_" + isomer)

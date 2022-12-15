@@ -114,8 +114,8 @@ def train_mlp(
         "model": model,
         "dataset": (
             x_train_centered,
-            y_train_centered,
             x_test_centered,
+            y_train_centered,
             y_test_centered,
         ),
         "losses": (losses_train, losses_test),

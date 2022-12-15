@@ -4,13 +4,11 @@ import pandas as pd
 
 from flonacomldft.utils.data_utils import (
     get_path,
-    load_zmat_csv,
     load_from_pickle,
     save_pickle_file,
     split_data_from_dataframe
 )
 
-from flonacomldft.internal_coordinates import get_mix_data
 from flonacomldft.full_adaptative_sampling import adaptative_sampling
 
 #energy_type="dft"
@@ -125,15 +123,14 @@ mlp_hyperparams_is2 = {'n_iter': 100,
 }
 
 results = adaptative_sampling(
-    xs_md_init=x_train_flow,
-    us_md_init=y_train_flow,
-    isomers_md_init=isomers_train_flow,
+    xs_md_init_train=x_train_flow,
+    us_md_init_train=y_train_flow,
+    isomers_md_init_train=isomers_train_flow,
     xs_md_init_test=x_test_flow,
-    us_md_init_test=y_test_flow,
     isomers_md_init_test=isomers_test_flow,
-    xs_dft_init=x_train_mlp,
-    us_dft_init=y_train_mlp,
-    isomers_dft_init=isomers_train_mlp,
+    xs_dft_init_train=x_train_mlp,
+    us_dft_init_train=y_train_mlp,
+    isomers_dft_init_train=isomers_train_mlp,
     xs_dft_init_test=x_test_mlp,
     us_dft_init_test=y_test_mlp,
     isomers_dft_init_test=isomers_test_mlp,
@@ -147,7 +144,7 @@ results = adaptative_sampling(
     dict_mlps_init=init_mlps,
     retraining_mlp=True)
 
-#save_pickle_file(
-#    results,
-#    "runs_" + str(n_runs) + "_chains_" + str(n_chains) + "_steps_" + str(n_steps),
-#)
+save_pickle_file(
+    results,
+    "runs_" + str(n_runs) + "_chains_" + str(n_chains) + "_steps_" + str(n_steps),
+)
