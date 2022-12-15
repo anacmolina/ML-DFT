@@ -64,3 +64,5 @@ def populations_convergence_plot(populations, title, figsize=(8, 6)):
     ax.set_ylabel('Populations')
     ax.legend()
     return fig, ax
+
+#TODO: Correlations between prediction and target mlp
