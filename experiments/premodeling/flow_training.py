@@ -7,7 +7,6 @@ import pandas as pd
 
 from flonacomldft.models.real_nvp import RealNVP_MLP
 from flonacomldft.train_flow_from_data import train_flow
-from flonacomldft.internal_coordinates import Angles_mapping
 
 from flonacomldft.utils.data_utils import (
     get_path, 
@@ -31,9 +30,6 @@ df_md = pd.read_csv(get_path() + isomer + '_lcao_zmat.csv').loc[:n_md]
 x_train_md, x_test_md, y_train_md, y_test_md = split_data_from_dataframe(df_md, train_size, sk_seed)
 
 del y_test_md, y_train_md
-
-Angles_mapping().inv_mapping(x_train_md)
-Angles_mapping().inv_mapping(x_test_md)
 
 cov = torch.cov(x_train_md.T)
 mean = x_train_md.mean(0)
