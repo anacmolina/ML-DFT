@@ -20,6 +20,7 @@ def deg_to_rad(zmat, labels):
         zmat[label] = np.deg2rad(zmat[label].tolist())
     return zmat
 
+
 def get_internal_coordinates(traj, n_samples_max=None):
     """"
     traj - output of dft calculator run_moleculer_dynamics
@@ -45,7 +46,8 @@ def get_internal_coordinates(traj, n_samples_max=None):
     a = construction_table.a.to_numpy()
     d = construction_table.d.to_numpy()
     ind = construction_table.index.to_numpy()
-
+     
+    # build label of data frame 
     label_b = ['bond'+str(i)+str(j) for i, j in zip(ind, b)]
     label_a = ['angle'+str(i)+str(j) for i, j in zip(ind, a)]
     label_d = ['dihedral'+str(i)+str(j) for i, j in zip(ind, d)]
@@ -106,7 +108,6 @@ class Structure:
     Class storing:
         - the construction table
         - the ase symbols string
-        - possibly the calculator? 
 
     the method to go from internal coordinates to cartesian+molecule:
         - build zmat_matrix : zmat_values (internal coord) ---> zmat_matrix (xyz)
@@ -121,20 +122,18 @@ class Structure:
         self.construction_table = construction_table.copy()
         self.symbols = symbols
         self.Natoms = len(self.symbols)                              
-        self.calculator = None
-
       
     def build_zmat_matrix(self, zmat_values):  
         """"
-        Build the zmat matrix (with the frame position/rotation and angles in degrees) from the zmat values (only the internal coordinates with angles in radians).
+        Build the chemcoord zmat matrix adding default frame position/rotation and 
+        angles in degrees from the zmat values (only the internal coordinates with 
+        angles in radians).
         
         In:
             zmat_values: array with the values of the internal coordinates of one only
             configuration (12 inputs)
         Out:  
-            zmat_matrix: df-zmat of coordinates in the basis of the IC
-            molecule: Ase Atoms object 
-                - storing cartesian coordinates, forces, energies, etc.
+            zmat_matrix: chemcoord df-zmat of coordinates in the basis of the IC
         """
 
         if torch.is_tensor(zmat_values):
@@ -150,7 +149,7 @@ class Structure:
         
         if len(zmat_values)==12:
          
-         # reference frame shift - values taken from chemcoord
+            # reference frame shift - values taken from chemcoord
             b[0] = 1.27
             a[0:2] = np.array([2.21657, 2.21657])
             d[0:3] = np.array([2.21657, 2.21657, 2.21657])
@@ -179,6 +178,16 @@ class Structure:
         return zmat_matrix
 
     def build_molecule(self, zmat_values):
+        """"
+        Build the ase molecule to feed in the DFT calculator from the zmat values 
+        (only the internal coordinates with angles in radians).
+        
+        In:
+            zmat_values: array with the values of the internal coordinates of one only
+            configuration (12 inputs)
+        Out:  
+            molecule: ase object
+        """
 
         zmat_matrix = self.build_zmat_matrix(zmat_values)
         molecule = zmat_matrix.get_cartesian().get_ase_atoms()
