@@ -19,7 +19,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 random_id = np.random.randint(100)
 torch.manual_seed(random_id)
 
-isomer = 'is2'
+isomer = 'is1'
 
 sk_seed = 42
 train_size = 0.8
@@ -38,27 +38,28 @@ args_rnvp = {
     "dim": x_train_md.shape[1],
     "n_realnvp_block": 5,
     "block_depth": 1,
-    "args_prior": {
-        "type": "white",
-        "cov": cov,
-        "mean": mean,
-    },  # Gaussian with non-trival mean and covariance for base
+    #"args_prior": {
+    #    "type": "white",
+    #    "cov": cov,
+    #    "mean": mean,
+    #},  # Gaussian with non-trival mean and covariance for base
     "init_weight_scale": 1e-6,
 }
 
-model = RealNVP_MLP(
-    args_rnvp["dim"],
+model = RealNVP_MLP(args_rnvp["dim"],
     args_rnvp["n_realnvp_block"],
     args_rnvp["block_depth"],
     init_weight_scale=args_rnvp["init_weight_scale"],
-    prior_arg=args_rnvp["args_prior"],
+    centering_args={'mean': mean,
+                    'cov': cov},
+    #prior_arg=args_rnvp["args_prior"],
     device=device,
 )
 
 model_init = copy.deepcopy(model)
 
 flow_hyperparams = {'n_iter': 1000,
-    'lr': 5e-4,
+    'lr': 5e-3,
     'use_scheduler': False,
     'step_schedule': 100,
     'save_splits': 10,

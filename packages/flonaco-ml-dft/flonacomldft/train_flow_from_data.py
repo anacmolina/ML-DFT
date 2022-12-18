@@ -111,7 +111,6 @@ def train_flow(
 
     to_return = {
         "model": model,
-        #"dataset": (x_train, x_test),
         "losses": (losses_train, losses_test),
         "models": models,
         "grad_norms": grad_norms,

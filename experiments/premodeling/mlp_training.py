@@ -7,11 +7,11 @@ from flonacomldft.utils.data_utils import (
     split_data_from_dataframe
 )
 
-from flonacomldft.models import MLP
+from flonacomldft.models.mlp import MLP
 
 from flonacomldft.train_mlp_from_data import train_mlp
 
-isomer = 'is2'
+isomer = 'is1'
 
 sk_seed = 42
 train_size = 0.8

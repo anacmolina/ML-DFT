@@ -77,7 +77,6 @@ else:
     print("Seed: %d" % num_seed[0])
 
 
-
 df_md_is1 = pd.read_csv(get_path() + 'is1_lcao_zmat.csv').loc[:n_md]
 x_train_md_is1, x_test_md_is1, y_train_md_is1, y_test_md_is1 = split_data_from_dataframe(df_md_is1, train_size, sk_seed)
 
