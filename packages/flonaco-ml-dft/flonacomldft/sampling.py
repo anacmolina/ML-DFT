@@ -3,17 +3,12 @@ Script with all sampling methods.
 
 """
 
-# from flonacomldft.utils.data_utils import get_path, load_from_pickle
-# from flonacomldft.models import Uncentered_MLP
 import numpy as np
 import torch
 import tqdm
 
 from ase.parallel import parprint as print
-
-# from datetime import datetime
-# from flonacomldft.dft_utils import Structure
-from flonacomldft.internal_coordinates import Angles_mapping
+from flonacomldft.internal_coordinates import logdetjac_to_xyz
 
 kb = 8.617333262e-5
 
@@ -27,7 +22,8 @@ def run_metropolis(
     n_steps,
     n_run="",
     energy_type=None,
-    mlps=None,
+    frac_dft=0.2,
+    model_mlps=None,
     mixture=False,
     T=300,
     with_tqdm=False,
@@ -46,53 +42,38 @@ def run_metropolis(
         from flonacomldft.dft_calculator import DFTCalculator
         from flonacomldft.internal_coordinates import Structure
         
-        ag6 = Structure()
+        structure = Structure()
         calculator = DFTCalculator()
         calculator.initialize_calculator()
-        dft = True
+        use_dft = True
 
         inds_dft = []
         xs_dft = []
         us_dft = []
-
-    elif energy_type == "mlp-dft":
-        
-        # mlp_dft = True
-        #dft = True
-        energy_type = "mlp"
-        
-        #inds_dft = []
-        #xs_dft = []
-        #us_dft = []
     
     else:
-        
         # mlp_dft = False
-        dft = False
+        use_dft = False
 
-    print("energy type: ", dft)
+    print("energy type: ", use_dft)
 
-    if energy_type == "mlp":
-        if(mlps is None):
+    if "mlp" in energy_type:
+        if(model_mlps is None):
             raise RuntimeError("No MLP model to calculate energy")
-        elif(len(mlps)>1):
-            mlp_is1, mlp_is2 = mlps
-        elif(len(mlps)==1):
+        elif(len(model_mlps)>1):
+            model_mlp_is1, model_mlp_is2 = model_mlps
+        elif(len(model_mlps)==1):
             if(count_init.sum()==0):
-                mlp_is1 = mlps
+                model_mlp_is1 = model_mlps
             else:
-                mlp_is2 = mlps
-
-    #print('init\n',x_init)
+                model_mlp_is2 = model_mlps
 
     xs = []
     us = []
     accs = []
     nlls = []
     counts = []
-    #xs_prop = []
-    #us_prop = []
-    
+
     if with_tqdm:
         pbar = tqdm.tqdm(range(n_steps))
     else:
@@ -101,152 +82,92 @@ def run_metropolis(
     for dt in pbar:
 
         if mixture:
-            x, count = model.sample(n_chains, return_mus=True)
+            x_new, count_new = model.sample(n_chains, return_mus=True)
         else:
-            x = model.sample(n_chains)
-            count = count_init
+            x_new = model.sample(n_chains)
+            count_new = count_init
 
-        x = x.clone().detach().float()
-        count = count.clone().detach().float()
+        x_new = x_new.clone().detach().float()
+        count_new = count_new.clone().detach().float()
 
-        nll_x = model.nll(x)
+        nll_x = model.nll(x_new)
         nll_x_init = model.nll(x_init)
+        
+       
+        if "mlp" in energy_type:
+            u_new = torch.zeros((n_chains, 1))
+            # Marylou: I suspect the line below are unnecessary - commented for now
+            # if count.sum().int() == count.shape[0]:
+            #     u_new[count.bool()] = model_mlp_is2.predict(x[count.bool()])
+            # elif count.sum().int() == 0:
+            #     u_new[~(count.bool())] = model_mlp_is1.predict(x[~(count.bool())])
+            # else:
 
-        indexes_nc = None
-        ind_dft = torch.zeros(x.shape[0])
+            u_new[~(count_new.bool())] = model_mlp_is1.predict(x_new[~(count_new.bool())])
+            u_new[count_new.bool()] = model_mlp_is2.predict(x_new[count_new.bool()])
+            u_new = u_new.squeeze().float()
 
-        if energy_type == "dft":
-            U_ = []
-            indexes_nc = []
 
-            for i in range(n_chains):
-                try:
-                    u_ = calculator.calculate_potential_energy(ag6.build_molecule(x[i]), file_name='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out')
-                    #potential_energy = ag6.calculate_potential_energy(
-                    #    x[i], txt="ag6_" + str(i) + "_" + str(dt) + ".out"
-                    #)
-
-                    xs_dft.append(x[i])
-                    us_dft.append(u_)
-
-                    U_.append(u_)
-                    #U_.append(-6.3*(1+np.random.rand()*0.1))
-                except:
-                    U_.append(0)
-                    indexes_nc.append(i)
-
-            indexes_nc = torch.tensor(indexes_nc)
-            ind_dft = torch.ones(x.shape[0])
-            U = torch.tensor(U_).float().detach()
-
-            # U = U_.clone().detach()
-
-            #x_prop = x.clone().detach() 
-            #u_prop = U.clone().detach()
-
-        elif energy_type == "mlp":
-
-            # print('mlps')
-
-            U_ = torch.zeros((x.shape[0], 1))
-
-            if count.sum().int() == count.shape[0]:
-
-                #print('mlp_is2')
-                model_mlp_is2 = mlp_is2
-
-                U_[count.bool()] = model_mlp_is2.predict(x[count.bool()])
-
-            if count.sum().int() == 0:
-
-                #print('mlp_is1')
-                model_mlp_is1 = mlp_is1
-
-                U_[~(count.bool())] = model_mlp_is1.predict(x[~(count.bool())])
-
+        if "dft" in energy_type:
+            ind_not_computed = torch.zeros(n_chains) # keeps indices where DFT fails
+            ind_dft = torch.zeros(n_chains) # boolean table of where DFT is used
+            if energy_type == "dft":
+                ind_dft = torch.ones(n_chains)
+                u_new = torch.zeros((n_chains))
             else:
+                n_dft = int(u_new.shape[0] * frac_dft)
+                U_sort, ind_U_sort = u_new.sort()
+                for idx in ind_U_sort[:n_dft]:
+                    ind_dft[idx] = 1
+            print("DFT idx: ", ind_dft)
 
-                mlp_is1, mlp_is2 = mlps[0], mlps[1]
+            for i,flag_dft in enumerate(ind_dft):
+                if flag_dft:
+                    try:
+                        u_ = calculator.calculate_potential_energy(
+                            structure.build_molecule(x_new[i]), 
+                            file_name='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out'
+                                            )
+                        u_new[i] = u_
+                        #u_new[i] = (-6.3*(1+np.random.rand()*0.1))
 
-                model_mlp_is1 = mlp_is1
-                model_mlp_is2 = mlp_is2
+                        xs_dft.append(x[i])
+                        us_dft.append(u_)
+                    except:
+                        u_new.append(0)
+                        ind_not_computed[i] = 1
 
-                U_[~(count.bool())] = model_mlp_is1.predict(x[~(count.bool())])
-                U_[count.bool()] = model_mlp_is2.predict(x[count.bool()])
-
-            U_ = U_.reshape(U_.shape[0]).float()
-
-            if dft:
-
-                # print('mlp-dft')
-                n_dft = int(U_.shape[0] * 0.2)
-
-                if n_dft > 0:
-
-                    U_sort, ind_U_sort = U_.sort()
-
-                    U_dft = []
-                    indexes_nc = []
-
-                    for i, x_ in enumerate(x[ind_U_sort[:n_dft]]):
-                        try:
-                            u_ = calculator.calculate_potential_energy(ag6.build_molecule(x_), file_name='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(ind_U_sort[:n_dft][i])+'.out')
-                            U_dft.append(u_)
-                            #U_dft.append(-6.3*(1+np.random.rand()*0.1))
-                            
-                            xs_dft.append(x_)
-                            us_dft.append(u_)
-
-                            ind_dft[ind_U_sort[:n_dft][i]] = 1
-                            
-                        except:
-                            U_dft.append(0)
-                            indexes_nc.append(ind_U_sort[:n_dft][i])
-
-                    indexes_nc = torch.tensor(indexes_nc)
-                    U_dft = torch.tensor(U_dft).float()
-
-                    U_[ind_U_sort[:n_dft]] = U_dft
-
-            U = U_.clone().float()
-
-            #x_prop = x.clone().detach() 
-            #u_prop = U.clone().detach()
-
-        else:
-            raise RuntimeError("Unknown method for the energy")
-
-        ratio = -beta * (U) + nll_x
+        ratio = -beta * u_new + nll_x
         ratio += beta * u_init - nll_x_init
         ratio = torch.exp(ratio)
         u = torch.rand_like(ratio)
         acc = u < torch.min(ratio, torch.ones_like(ratio))
 
-        if indexes_nc is not None and indexes_nc.shape[0] != 0:
-            acc[indexes_nc] = torch.full((1, len(indexes_nc)), False)
+        if ind_not_computed is not None and ind_not_computed.shape[0] != 0:
+            acc[ind_not_computed] = torch.full((1, len(ind_not_computed)), False)
 
-        x[~acc] = x_init[~acc]
-        U[~acc] = u_init[~acc]
+        x_new[~acc] = x_init[~acc]
+        u_new[~acc] = u_init[~acc]
         ind_dft[~acc] = 0
 
         if mixture:
-            count[~acc] = count_init[~acc]
+            count_new[~acc] = count_init[~acc]
         else:
-            count = count_init
+            count_new = count_init
         
-        xs.append(x.float().clone())
-        us.append(U.float().clone())
+        xs.append(x_new.float().clone())
+        us.append(u_new.float().clone())
         accs.append(acc.float().clone())
         nlls.append(nll_x.float().clone())
-        counts.append(count.float().clone())
+        counts.append(count_new.float().clone())
         #xs_prop.append(x_prop.float().clone())
         #us_prop.append(u_prop.float().clone())
-        if dft:
+        if use_dft:
             inds_dft.append(ind_dft.float().clone())
 
-        x_init = x.clone().detach()
-        u_init = U.clone().detach()
-        count_init = count.clone().detach()
+        x_init = x_new.clone().detach()
+        u_init = u_new.clone().detach()
+        count_init = count_new.clone().detach()
 
         #print("acc: {:0.2f}".format(acc.float().mean()))
 
@@ -255,10 +176,8 @@ def run_metropolis(
         "us": torch.stack(us),
         "accs": torch.stack(accs),
         "counts": torch.stack(counts),
-        #"xs_prop": torch.stack(xs_prop),
-        #"us_prop": torch.stack(us_prop),
     }
-    if dft:
+    if use_dft:
         to_return["inds_dft"] = torch.stack(inds_dft)
         to_return["xs_dft"] = torch.stack(xs_dft)
         to_return["us_dft"] = torch.tensor(us_dft).float().detach()
