@@ -128,10 +128,10 @@ def run_metropolis(
                             structure.build_molecule(x_new[i]), 
                             file_name='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out'
                                             )
-                        u_new[i] = u_
+                        u_new[i] = u_ - logdetjac_to_xyz(x_new[i])
                         #u_new[i] = (-6.3*(1+np.random.rand()*0.1))
 
-                        xs_dft.append(x[i])
+                        xs_dft.append(x_new[i])
                         us_dft.append(u_)
                     except:
                         u_new.append(0)
