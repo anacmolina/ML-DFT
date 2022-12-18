@@ -77,6 +77,15 @@ def get_internal_coordinates(traj, n_samples_max=None):
 
     return torch.from_numpy(new_zmat).float() 
 
+def logdetjac_to_xyz(zmat, structure): 
+    """"
+    zmat: array of internal coordinates for a single configuration (12,)
+    """
+    zmat_matrix = structure.build_zmat_matrix(zmat)
+    det = zmat_matrix.get_grad_cartesian(as_function=False)
+    det = det.reshape(structure.Natoms * 3, structure.Natoms * 3)
+    return np.linalg.slogdet(det)
+
 def get_pos_energy(zmat):
     u_tensor = zmat[:, -1]
     x_tensor = zmat[:, :-1]
