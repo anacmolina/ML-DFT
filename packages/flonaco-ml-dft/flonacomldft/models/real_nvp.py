@@ -133,14 +133,14 @@ class RealNVP_MLP(nn.Module):
         self.angles_mapping = Angles_mapping()
 
         if centering_args is None:
-            self.centering_args = {['mean']: torch.zeros((dim,)).to(device),}
+            self.centering_args = {["mean_out"]: torch.zeros((dim,)).to(device),}
             self.prior_prec =  torch.eye(dim).to(device)
             self.prior_log_det = 0
             self.prior_distrib = MultivariateNormal(
                 torch.zeros((dim,).to(device), device=self.device), self.prior_prec)
         else:
             self.centering_args = centering_args
-            cov = centering_args['cov']
+            cov = centering_args["cov_base"]
             self.prior_prec = torch.inverse(cov).to(device)
             self.prior_prec = 0.5 * (self.prior_prec + self.prior_prec.T)
             self.prior_log_det = - torch.logdet(self.prior_prec)
@@ -166,14 +166,14 @@ class RealNVP_MLP(nn.Module):
                     x, log_det_jac = coupling_layer(x, log_det_jac)
 
         x, log_det_jac = self.angles_mapping.reals_to_rads(x, log_det_jac)
-        x = x + self.centering_args['mean']
+        x = x + self.centering_args["mean_out"]
 
         return x, log_det_jac
 
     def backward(self, x, return_per_block=False):
         log_det_jac = torch.zeros(x.shape[0], device=self.device)
 
-        x = x - self.centering_args['mean']
+        x = x - self.centering_args["mean_out"]
         x, log_det_jac = self.angles_mapping.rads_to_reals(x, log_det_jac)
         
         for block in range(self.n_blocks):
@@ -253,8 +253,8 @@ def init_model(zmat, n_blocks=15, block_depth=1, init_weight_scale=1e-6, device=
     mean = x_tensor.mean(0)
     centering_args =  {
         "type": "white",
-        "cov": cov,
-        "mean": mean
+        "cov_base": cov,
+        "mean_out": mean
         }  # Gaussian with non-trival mean and covariance for base
 
     model = RealNVP_MLP(

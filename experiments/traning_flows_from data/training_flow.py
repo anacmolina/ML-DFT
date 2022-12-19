@@ -53,8 +53,8 @@ args_rnvp = {
     # 'args_prior': {'type': 'standn'}, # standard Gaussian base
     "args_prior": {
         "type": "white",
-        "cov": cov,
-        "mean": mean,
+        "cov_base": cov,
+        "mean_out": mean,
     },  # Gaussian with non-trival mean and covariance for base
     "init_weight_scale": 1e-6,
 }

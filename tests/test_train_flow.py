@@ -35,7 +35,7 @@ x_rad_centered = x_rad - x_rad_center
 x_real_centered, _ = Angles_mapping().rads_to_reals(x_rad_centered)
 cov_real = torch.cov(x_real_centered.T)
 
-centering_args = {"cov": cov_real, "mean": x_rad_center}
+centering_args = {"cov_base": cov_real, "mean_out": x_rad_center}
 model = RealNVP_MLP(12,
                     n_blocks=3,
                     block_depth=1,
