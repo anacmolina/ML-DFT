@@ -32,15 +32,14 @@ x_test = torch.cat((x_test_md, x_test_nf))
 y_test = torch.cat((y_test_md, y_test_nf))
 
 n_hidden = 50
-n_layers = 50
-model = MLP([x_train.shape[1], n_hidden, n_layers, 1])
+n_layers = 2
+model = MLP([x_train.shape[1]] +  [n_hidden] * n_layers + [1])
 
 mlp_hyperparams = {'n_iter': 1000,
     'lr': 5e-3,
     'use_scheduler': False,
     'step_schedule': 100,
-    'grad_clip': 1e4,
-}
+    }
 
 _ = train_mlp(model, x_train, x_test, y_train, y_test, **mlp_hyperparams)
 

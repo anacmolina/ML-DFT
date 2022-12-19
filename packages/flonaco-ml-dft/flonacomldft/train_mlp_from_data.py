@@ -18,7 +18,6 @@ def train_mlp(
     use_scheduler=False,
     step_schedule=100,
     save_splits=10,
-    grad_clip=1e4,
     with_tqdm=False,
 ):
     """
@@ -39,7 +38,7 @@ def train_mlp(
     # mse: loss function with data centered
     def loss_func(x, y):
         # x and y centered
-        return ((model(x) - y[:, None]) ** 2).mean()
+        return ((model(x).squeeze() - y) ** 2).mean()
 
     # setting the optimizer
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -86,14 +85,13 @@ def train_mlp(
             return model, losses_train
 
         loss.backward(retain_graph=True)
-        clip_grad_norm_(model.parameters(), max_norm=grad_clip)
         optimizer.step()
 
         losses_train.append(loss.item())
         losses_test.append(loss_func(x_test_centered, y_test_centered).item())
 
         if with_tqdm:
-            pbar.set_description(f"Loss: {losses_train[-1]:.4f}")
+            pbar.set_description(f"Loss train: {losses_train[-1]:.4f}, loss test: {losses_test[-1]:.4f}")
 
         if t % (n_iter / 100) == 0:
             total_norm = 0

@@ -71,7 +71,8 @@ def split_data_from_dataframe(df, train_size, sk_seed):
 
     arrays = [x, y]
 
-    x_train, x_test, y_train, y_test = sklearn.model_selection.train_test_split(*arrays, test_size=None,
+    x_train, x_test, y_train, y_test = sklearn.model_selection.train_test_split(*arrays,
+                                                      test_size=None,
                                                       train_size=train_size,
                                                       random_state=sk_seed,
                                                       shuffle=True,

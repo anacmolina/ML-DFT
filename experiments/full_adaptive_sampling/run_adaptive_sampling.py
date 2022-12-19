@@ -39,14 +39,12 @@ mlp_hyperparams_is1 = {'n_iter': 100,
     'lr': 5e-2,
     'use_scheduler': False,
     'step_schedule': 100,
-    'grad_clip': 1e4,
 }
 
 mlp_hyperparams_is2 = {'n_iter': 100,
     'lr': 5e-2,
     'use_scheduler': False,
     'step_schedule': 100,
-    'grad_clip': 1e4,
 }
 
 np_seed = 36
