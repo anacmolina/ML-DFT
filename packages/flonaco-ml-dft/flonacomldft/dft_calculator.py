@@ -23,9 +23,8 @@ class DFTCalculator:
         self.calculator = None
         self.cell = [16, 16, 16]
 
-    #def initialize_calculator(self, file_name='md', rank=0):
     def initialize_calculator(self, file_name='ag6', rank=0):
-        self.path = os.path.join(os.getcwd(), 'flowMC')    
+        self.path = os.path.join(os.getcwd(), 'DFTComputations')    
         self.file = self.path + '/' + file_name + '.out'
 
         if rank==0 and os.path.isdir(self.path)==False:

@@ -5,6 +5,7 @@ import numpy as np
 class MLP(nn.Module):
     def __init__(self, layerdims, activation=torch.relu, init_scale=None):
         super(MLP, self).__init__()
+        self.has_centered = False
         self.layerdims = layerdims
         self.activation = activation
         linears = [
@@ -37,6 +38,8 @@ class MLP(nn.Module):
         self.x_centered_std = stds[0]
         self.y_centered_std = stds[1]
 
+        self.has_centered = True
+
     def predict(self, x):
         """"
         Predicts the uncentered y value for a given the uncentered x value
@@ -49,6 +52,8 @@ class MLP(nn.Module):
 
         y = y * self.y_centered_std
         y = y + self.y_mean
+
+        self.center = True
 
         return y
 

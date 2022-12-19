@@ -29,9 +29,12 @@ X = df.drop(["energies"], axis=1)
 n = -1
 x_rad = torch.from_numpy(X[:n].to_numpy()).float()
 U_rad = torch.from_numpy(U[:n].to_numpy()).float()
+
+# centering in radian
 x_rad_center = x_rad.mean(dim=0)
 x_rad_centered = x_rad - x_rad_center
 
+# computing the tanh in order to estimate the covariance for the flow base distribution 
 x_real_centered, _ = Angles_mapping().rads_to_reals(x_rad_centered)
 cov_real = torch.cov(x_real_centered.T)
 
@@ -46,7 +49,8 @@ model = RealNVP_MLP(12,
 
 out = train_flow(
     model,
-    x_real_centered,
+    x_real_centered, # passing centered values to the flows 
+    ## to add x_test
     n_iter=n_iter_,
     lr=lr_,
     # bs=100,

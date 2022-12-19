@@ -137,7 +137,7 @@ class RealNVP_MLP(nn.Module):
             self.prior_prec =  torch.eye(dim).to(device)
             self.prior_log_det = 0
             self.prior_distrib = MultivariateNormal(
-                torch.zeros((dim,).to(device), device=self.device), self.prior_prec)
+                torch.zeros((dim,)).to(device), self.prior_prec)
         else:
             self.centering_args = centering_args
             cov = centering_args["cov_base"]

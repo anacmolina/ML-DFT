@@ -11,6 +11,7 @@ from flonacomldft.utils.data_utils import (
 
 from flonacomldft.full_adaptive_sampling import adaptative_sampling
 
+
 #energy_type="dft"
 # energy_type="mlp-dft"
 energy_type="mlp"
@@ -74,7 +75,6 @@ else:
     num_seed = np.array([np_seed])
     # num_seed = np.array([np.random.randint(1e5)])
     print("Seed: %d" % num_seed[0])
-
 
 
 df_md_is1 = pd.read_csv(get_path() + 'is1_lcao_zmat.csv').loc[:n_md]

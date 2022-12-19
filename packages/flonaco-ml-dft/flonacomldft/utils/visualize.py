@@ -11,10 +11,8 @@ from flonacomldft.collective_variables import get_CVs
 
 def plot_sample(x):
    fig, ax = plt.subplots()
-   symbols = np.full(6, 'Ag')
    ag6 = Structure()
-   ag6.build_molecule(x)
-   plot_atoms(ag6.molecule, ax)
+   plot_atoms(ag6.build_molecule(x), ax)
 
 def plotting_fes_db(train_data=None):
    
@@ -23,7 +21,7 @@ def plotting_fes_db(train_data=None):
    plotting = Plotter(400, 'Ag6')
    plotting.readfile(ceph_home + 'unrotated_300.txt')
    
-   ax = plotting.plot_fes(0.1, 300, delta2=1, shift=1.5)
+   fig, ax = plotting.plot_fes(0.1, 300, delta2=1, shift=1.5)
    
    if train_data is not None:
 
