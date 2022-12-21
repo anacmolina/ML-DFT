@@ -173,7 +173,7 @@ class RealNVP_MLP(nn.Module):
     def backward(self, x, return_per_block=False):
         log_det_jac = torch.zeros(x.shape[0], device=self.device)
 
-        x = x - self.centering_args["mean_out"]
+        x = x #- self.centering_args["mean_out"]
         x, log_det_jac = self.angles_mapping.rads_to_reals(x, log_det_jac)
         
         for block in range(self.n_blocks):
