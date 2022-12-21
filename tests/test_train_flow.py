@@ -17,7 +17,7 @@ from flonacomldft.collective_variables import get_CVs
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-n_iter_ = 2
+n_iter_ = 50
 lr_ = 1e-3
 mode_label = 1 # or 2
 
@@ -49,6 +49,7 @@ model = RealNVP_MLP(12,
 
 out = train_flow(
     model,
+    x_real_centered,
     x_real_centered, # passing centered values to the flows 
     ## to add x_test
     n_iter=n_iter_,
@@ -61,12 +62,16 @@ out = train_flow(
 )
 
 x_sample = model.sample(100)
+
+from flonacomldft.plots import plotting_fes_db
+
+fig, ax = plotting_fes_db()
 x_sample_cv = np.array(get_CVs(x_sample)).T
-plt.scatter(x_sample_cv[:, 0], x_sample_cv[:, 1], label="mode {:d} - realnvp init".format(mode_label), c='C{:d}'.format(mode_label), alpha=0.5)
+ax.scatter(x_sample_cv[:, 0], x_sample_cv[:, 1], label="mode {:d} - realnvp init".format(mode_label), c='C{:d}'.format(mode_label), alpha=0.5)
 x_rad_cv = np.array(get_CVs(x_rad[:100])).T
-plt.scatter(x_rad_cv[:, 0], x_rad_cv[:, 1], marker='x', c='C{:d}'.format(mode_label), label="mode {:d} - data".format(mode_label))
-plt.legend()
-plt.show(block=False)
+ax.scatter(x_rad_cv[:, 0], x_rad_cv[:, 1], marker='x', c='C{:d}'.format(mode_label), label="mode {:d} - data".format(mode_label))
+ax.legend()
+plt.show()
 
 from flonacomldft.utils.data_utils import get_project_path
 from flonacomldft.utils.data_utils import save_pickle_file
