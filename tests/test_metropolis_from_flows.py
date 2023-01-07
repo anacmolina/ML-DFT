@@ -7,19 +7,15 @@ import pandas as pd
 import gpaw.mpi as mpi
 from ase.parallel import parprint as print
 
-from flonacomldft.dft_calculator import (
-    Structure
-)
 
-from flonacomldft.utils.data_utils import (
+from flonacomldft.utils.io_utils import (
     get_path,
-    load_zmat_csv,
+    load_csv_file,
     load_from_pickle,
     save_pickle_file
 )
 
 from flonacomldft.internal_coordinates import (
-    shuffle_arr,
     get_mix_data
 )
 
@@ -45,8 +41,8 @@ mpi.world.barrier()
 
 ceph_home = get_path()
 
-is1 = load_zmat_csv('is1')
-is2 = load_zmat_csv('is2')
+is1 = load_csv_file("is1_lcao_zmat.csv")
+is2 = load_csv_file("is2_lcao_zmat.csv")
 
 xis, uis, cis = get_mix_data(is1, is2)
 

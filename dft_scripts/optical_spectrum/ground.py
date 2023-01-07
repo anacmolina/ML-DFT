@@ -2,10 +2,10 @@ import sys
 
 from ase.io import read
 from gpaw import GPAW, Mixer
-from flonacomldft.utils.data_utils import load_from_pickle
+from flonacomldft.utils.io_utils import load_pickle_file
 
 i = int(sys.argv[1])
-molecules = load_from_pickle("../molecules")
+molecules = load_pickle_file("../molecules")
 
 atoms = molecules[i]
 atoms.set_cell([16, 16, 16])

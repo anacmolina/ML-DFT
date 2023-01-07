@@ -7,7 +7,6 @@ from ase.md.velocitydistribution import (MaxwellBoltzmannDistribution,
 #from ase.parallel import parprint as print
 
 from flonacomldft.internal_coordinates import get_internal_coordinates
-# from flonacomldft.utils.data_utils import trajectories_folder
 
 from gpaw import GPAW
 import gpaw.mpi as mpi

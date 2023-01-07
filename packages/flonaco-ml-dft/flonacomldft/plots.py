@@ -26,15 +26,15 @@ def plot_sample(x, title, figsize=(8, 6)):
 
    return fig, ax 
 
-def plotting_fes_db(train_data=None):
+# TODO: add values as parameters to modify the FES plot
 
-   from flonacomldft.utils.data_utils import get_path
+def plotting_fes_db():
+
+   from flonacomldft.utils.io_utils import get_path
    from flonacomldft.FES.plotter2 import Plotter
-
-   ceph_home = get_path()
    
    plotting = Plotter(400, 'Ag6')
-   plotting.readfile(ceph_home + 'unrotated_300.txt')
+   plotting.readfile(get_path() + 'unrotated_300.txt')
    
    fig, ax = plotting.plot_fes(0.1, 300, delta2=1, shift=1.5)
    

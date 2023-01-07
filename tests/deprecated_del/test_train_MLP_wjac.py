@@ -4,7 +4,7 @@ import tqdm
 
 import matplotlib.pyplot as plt
 
-from flonacomldft.utils.data_utils import (
+from flonacomldft.utils.io_utils import (
     get_path, 
     save_pickle_file, 
     split_data_from_dataframe,

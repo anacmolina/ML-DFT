@@ -13,8 +13,6 @@ from flonacomldft.internal_coordinates import logdetjac_to_xyz
 
 kb = 8.617333262e-5
 
-# TODO: Angles mapping remove from mcmc sampling
-
 def run_metropolis(
     model,
     x_init,
@@ -49,9 +47,11 @@ def run_metropolis(
         calculator.initialize_calculator()
         use_dft = True
 
-        inds_dft = []
         xs_dft = []
         us_dft = []
+        isomers_dft = []
+        inds_dft = []
+
     else:
         # mlp_dft = False
         use_dft = False
@@ -120,7 +120,8 @@ def run_metropolis(
                 for idx in ind_u_sort[:n_dft]:
                     ind_dft[idx] = 1
             print("DFT idx: ", ind_dft)
-
+            
+            # TODO: type of isomer_dft
             for i,flag_dft in enumerate(ind_dft):
                 if flag_dft:
                     try:
@@ -133,6 +134,7 @@ def run_metropolis(
 
                         xs_dft.append(x_new[i])
                         us_dft.append(u_)
+                        isomers_dft.append(isomer_new[i])
                     except:
                         u_new.append(0)
                         ind_not_computed[i] = 1

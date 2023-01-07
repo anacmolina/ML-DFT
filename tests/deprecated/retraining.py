@@ -1,8 +1,8 @@
 from flonacomldft.train_mlp_from_data import train_mlp
 
-from flonacomldft.utils.data_utils import (
+from flonacomldft.utils.io_utils import (
     get_path,
-    load_from_pickle,
+    load_pickle_file,
     save_pickle_file
 )
 
@@ -12,7 +12,7 @@ import pandas as pd
 #MLP retraining, watch loss.backward(retain_graph=True)
 
 data = torch.tensor(pd.read_csv(get_path() + 'x_nf_is1.csv').to_numpy())
-model = load_from_pickle('mlp_is1')
+model = load_pickle_file('mlp_is1')
 
 model = model['mlp_model']
 

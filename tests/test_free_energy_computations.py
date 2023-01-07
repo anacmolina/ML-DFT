@@ -1,9 +1,9 @@
 import torch
 import numpy as np
-from flonacomldft.utils.data_utils import (
+from flonacomldft.utils.io_utils import (
     get_path,
-    load_zmat_csv,
-    load_from_pickle,
+    load_csv_file,
+    load_pickle_file,
     # save_pickle_file
 )
 from flonacomldft.internal_coordinates import get_mix_data
@@ -14,13 +14,13 @@ from flonacomldft.free_energy_computations import compute_BAR, compute_TFP
 torch.manual_seed(42)
 ceph_home = get_path()
 
-is1 = load_zmat_csv('is1')
-is2 = load_zmat_csv('is2')
+is1 = load_csv_file(get_path() + "is1_lcao_zmat.csv")
+is2 = load_csv_file(get_path() + "is2_lcao_zmat.csv")
 
 xis, uis, cis = get_mix_data(is1, is2)
 
-dic_flow_training_is1 = load_from_pickle(ceph_home + 'training_is1')
-dic_flow_training_is2 = load_from_pickle(ceph_home + 'training_is2') 
+dic_flow_training_is1 = load_pickle_file(get_path() + 'training_is1')
+dic_flow_training_is2 = load_pickle_file(get_path() + 'training_is2') 
 
 models = np.array([dic_flow_training_is1['model'],
                    dic_flow_training_is2['model']])
@@ -32,8 +32,8 @@ mixture = Mixture(models, torch.tensor([0.5, 0.5]).detach())
 n_steps = 200
 n_chains = 10
 
-mlp_is1 = load_from_pickle(get_path() + 'mlp_is1')
-mlp_is2 = load_from_pickle(get_path() + 'mlp_is2')
+mlp_is1 = load_pickle_file(get_path() + 'mlp_is1')
+mlp_is2 = load_pickle_file(get_path() + 'mlp_is2')
 
 models_mlps = [mlp_is1, mlp_is2]
 

@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 from flonacomldft.FES.minimizator_path import Path_
-from flonacomldft.utils.data_utils import get_path
+from flonacomldft.utils.io_utils import get_path
 from pytest import approx
 
 

@@ -2,9 +2,9 @@ import torch
 import numpy as np
 import pandas as pd
 
-from flonacomldft.utils.data_utils import (
+from flonacomldft.utils.io_utils import (
     get_path,
-    load_from_pickle,
+    load_pickle_file,
     save_pickle_file,
     split_data_from_dataframe
 )
@@ -108,12 +108,12 @@ isomers_test_mlp = torch.cat((torch.zeros(x_test_md_is1.shape[0]+x_test_nf_is1.s
 # Pretrain mlps and flows
 
 # loading pretrain mlps models
-init_mlp_is1 = load_from_pickle(get_path() + "mlp_is1")
-init_mlp_is2 = load_from_pickle(get_path() + "mlp_is2")
+init_mlp_is1 = load_pickle_file(get_path() + "mlp_is1")
+init_mlp_is2 = load_pickle_file(get_path() + "mlp_is2")
 
 # loading pretrain flows models
-init_nf_is1 = load_from_pickle(get_path() + "flow_is1")
-init_nf_is2 = load_from_pickle(get_path() + "flow_is2")
+init_nf_is1 = load_pickle_file(get_path() + "flow_is1")
+init_nf_is2 = load_pickle_file(get_path() + "flow_is2")
 
 init_flow_train = [init_nf_is1, init_nf_is2]
 init_mlps = [init_mlp_is1, init_mlp_is2]
