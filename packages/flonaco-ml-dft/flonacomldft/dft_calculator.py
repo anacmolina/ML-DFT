@@ -23,12 +23,13 @@ class DFTCalculator:
         self.cell = [16, 16, 16]
 
     def initialize_calculator(self, filename='ag6', rank=0, path=os.getcwd()):
+        
         self.path = os.path.join(path, 'DFTComputations')    
         self.file = self.path + '/' + filename + '.out'
 
         if rank==0 and os.path.isdir(self.path)==False:
             #print('Folder created: %s Rank: %d '%(self.path, rank))
-            os.mkdir(self.path)
+            os.makedirs(self.path, exist_ok=True)
         else:
             pass
         
