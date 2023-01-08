@@ -13,6 +13,8 @@ from flonacomldft.internal_coordinates import (
     save_internal_coordinates_to_csv
 )
 
+# TODO: check changes in the flatiron file
+
 mode_label = 1 # or 2
 
 torch.manual_seed(42)

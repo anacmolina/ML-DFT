@@ -87,7 +87,7 @@ def adaptative_sampling(
         n_steps=n_steps,
         n_run=i,
         energy_type=energy_type,
-        mlps=get_models(dict_mlps_training[-1]),
+        mlp_models=get_models(dict_mlps_training[-1]),
         mixture=True,
         )
         
@@ -122,11 +122,20 @@ def adaptative_sampling(
                 (xs_for_flows_train_is1, is1_from_chains)
             )
 
+            from flonacomldft.utils.data_processing import centering_in_radian
+            
+            x_rad_center = dict_flows_training[i][0]['model'].centering_args['mean_out']
+
+            xs_train_ = centering_in_radian(xs_for_flows_train_is1.clone(), x_rad_center, return_centering_args=False)
+            xs_test_ = centering_in_radian(xs_for_flows_test_is1.clone(), x_rad_center, return_centering_args=False)
+
             dict_new_flow_is1 = train_flow(
                 dict_flows_training[i][0]['model'],
-                xs_for_flows_train_is1,
-                xs_for_flows_test_is1,
+                xs_train_,
+                xs_test_,
                 **flow_hyperparams[0],)
+            
+            del xs_train_, xs_test_, x_rad_center
 
         else:
             dict_new_flow_is1 = dict_flows_training[i][0]
@@ -138,11 +147,20 @@ def adaptative_sampling(
                 (xs_for_flows_train_is2, is2_from_chains)
             )  
 
+            from flonacomldft.utils.data_processing import centering_in_radian
+            
+            x_rad_center = dict_flows_training[i][1]['model'].centering_args['mean_out']
+
+            xs_train_ = centering_in_radian(xs_for_flows_train_is2.clone(), x_rad_center, return_centering_args=False)
+            xs_test_ = centering_in_radian(xs_for_flows_test_is2.clone(), x_rad_center, return_centering_args=False)
+
             dict_new_flow_is2 = train_flow(
                 dict_flows_training[i][1]['model'],
-                xs_for_flows_train_is2,
-                xs_for_flows_test_is2,
+                xs_train_,
+                xs_test_,
                 **flow_hyperparams[1],)
+
+            del xs_train_, xs_test_, x_rad_center
 
         else:
             dict_new_flow_is2 = dict_flows_training[i][1]

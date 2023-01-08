@@ -1,14 +1,14 @@
 import torch
 import numpy as np
-import pandas as pd
 
 from flonacomldft.utils.io_utils import (
-    get_path,
+    get_project_path,
+    load_csv_file,
     load_pickle_file,
     save_pickle_file,
-    split_data_from_dataframe
 )
 
+from flonacomldft.utils.data_processing import split_data_from_dataframe
 from flonacomldft.full_adaptive_sampling import adaptative_sampling
 
 
@@ -48,10 +48,10 @@ mlp_hyperparams_is2 = {'n_iter': 100,
 }
 
 np_seed = 36
-sk_seed = 42
+sk_seed = 42 # BE CAREFUL! same for all the splitting data in flows and mlps
 train_size = 0.8
 n_md = 2500 # 5000 steps in total
-n_nf = 1500 # 2500 configs in total
+n_flow = 20 # 2500 configs in total
 
 ####### end of arguments and beginning of script
 
@@ -75,61 +75,73 @@ else:
     print("Seed: %d" % num_seed[0])
 
 
-df_md_is1 = pd.read_csv(get_path() + 'is1_lcao_zmat.csv').loc[:n_md]
-x_train_md_is1, x_test_md_is1, y_train_md_is1, y_test_md_is1 = split_data_from_dataframe(df_md_is1, train_size, sk_seed)
+xs_md_is1 = load_csv_file('is1_lcao_zmat.csv')[:n_md]
+xs_flow_is1 = load_csv_file('is1_flow_zmat.csv')[:n_flow]
+xs_md_is2 = load_csv_file('is2_lcao_zmat.csv')[:n_md]
+xs_flow_is2 = load_csv_file('is2_flow_zmat.csv')[:n_flow]
 
-df_nf_is1 = pd.read_csv(get_path() + 'x_nf_is1.csv').loc[:n_nf]
-x_train_nf_is1, x_test_nf_is1, y_train_nf_is1, y_test_nf_is1 = split_data_from_dataframe(df_nf_is1, train_size, sk_seed)
+# add column with 0 for is1 configs and 1 for is2 configs
+xs_md_is1 = torch.cat( (xs_md_is1, torch.zeros((xs_md_is1.shape[0], 1)) ), dim=1 )
+xs_flow_is1 = torch.cat( (xs_flow_is1, torch.zeros((xs_flow_is1.shape[0], 1)) ), dim=1 )
+xs_md_is2 = torch.cat( (xs_md_is2, torch.ones((xs_md_is2.shape[0], 1)) ), dim=1 )
+xs_flow_is2 = torch.cat( (xs_flow_is2, torch.ones((xs_flow_is2.shape[0], 1)) ), dim=1 )
 
-df_md_is2 = pd.read_csv(get_path() + 'is2_lcao_zmat.csv').loc[:n_md]
-x_train_md_is2, x_test_md_is2, y_train_md_is2, y_test_md_is2 = split_data_from_dataframe(df_md_is2, train_size, sk_seed)
-
-df_nf_is2 = pd.read_csv(get_path() + 'x_nf_is2.csv').loc[:n_nf]
-x_train_nf_is2, x_test_nf_is2, y_train_nf_is2, y_test_nf_is2 = split_data_from_dataframe(df_nf_is2, train_size, sk_seed)
+# splitting data into train and test
+x_train_md_is1, x_test_md_is1 = split_data_from_dataframe(xs_md_is1, train_size, sk_seed)
+x_train_flow_is1, x_test_flow_is1 = split_data_from_dataframe(xs_flow_is1, train_size, sk_seed)
+x_train_md_is2, x_test_md_is2 = split_data_from_dataframe(xs_md_is2, train_size, sk_seed)
+x_train_flow_is2, x_test_flow_is2 = split_data_from_dataframe(xs_flow_is2, train_size, sk_seed)
 
 x_train_flow = torch.cat((x_train_md_is1, x_train_md_is2))
-y_train_flow = torch.cat((y_train_md_is1, y_train_md_is2))
-isomers_train_flow = torch.cat((torch.zeros(x_train_md_is1.shape[0]), torch.ones(x_train_md_is2.shape[0])))  
-
 x_test_flow = torch.cat((x_test_md_is1, x_test_md_is2))
-y_test_flow = torch.cat((y_test_md_is1, y_test_md_is2))
-isomers_test_flow = torch.cat((torch.zeros(x_test_md_is1.shape[0]), torch.ones(x_test_md_is2.shape[0])))
 
-x_train_mlp = torch.cat((x_train_md_is1, x_train_nf_is1, x_train_md_is2, x_train_nf_is2))
-y_train_mlp = torch.cat((y_train_md_is1, y_train_nf_is1, y_train_md_is2, y_train_nf_is2))
-isomers_train_mlp = torch.cat((torch.zeros(x_train_md_is1.shape[0]+x_train_nf_is1.shape[0]), 
-                                torch.ones(x_train_md_is2.shape[0]+x_train_nf_is2.shape[0])))  
+x_train_mlp = torch.cat((x_train_md_is1, x_train_flow_is1, x_train_md_is2, x_train_flow_is2))
+x_test_mlp = torch.cat((x_test_md_is1, x_test_flow_is1, x_test_md_is2, x_test_flow_is2))
 
-x_test_mlp = torch.cat((x_test_md_is1, x_test_nf_is1, x_test_md_is2, x_test_nf_is2))
-y_test_mlp = torch.cat((y_test_md_is1, y_test_nf_is1, y_test_md_is2, y_test_nf_is2))
-isomers_test_mlp = torch.cat((torch.zeros(x_test_md_is1.shape[0]+x_test_nf_is1.shape[0]), 
-                                torch.ones(x_test_md_is2.shape[0]+x_test_nf_is2.shape[0])))  
+# configurations for the running the adaptative sampling
 
-# Pretrain mlps and flows
+# for flows
+u_train_flow = x_train_flow[:, 13]
+isomers_train_flow = x_train_flow[:, 14]
+x_train_flow = x_train_flow[:, :12]
 
-# loading pretrain mlps models
-init_mlp_is1 = load_pickle_file(get_path() + "mlp_is1")
-init_mlp_is2 = load_pickle_file(get_path() + "mlp_is2")
+isomers_test_flow = x_test_flow[:, 14]
+x_test_flow = x_test_flow[:, :12]
+
+# for mlps
+u_train_mlp = x_train_mlp[:, 13]
+isomers_train_mlp = x_train_mlp[:, 14]
+x_train_mlp = x_train_mlp[:, :12]
+
+u_test_mlp = x_test_mlp[:, 13]
+isomers_test_mlp = x_test_mlp[:, 14]
+x_test_mlp = x_test_mlp[:, :12]
+
+# pretrain flows and mlps
 
 # loading pretrain flows models
-init_nf_is1 = load_pickle_file(get_path() + "flow_is1")
-init_nf_is2 = load_pickle_file(get_path() + "flow_is2")
+init_nf_is1 = load_pickle_file("is1_flow_dic_training.pkl")
+init_nf_is2 = load_pickle_file("is2_flow_dic_training.pkl")
+
+# loading pretrain mlps models
+init_mlp_is1 = load_pickle_file("is1_mlp_dic_training.pkl")
+init_mlp_is2 = load_pickle_file("is2_mlp_dic_training.pkl")
 
 init_flow_train = [init_nf_is1, init_nf_is2]
 init_mlps = [init_mlp_is1, init_mlp_is2]
 
 
-results = adaptative_sampling(
+out = adaptative_sampling(
     xs_md_init_train=x_train_flow,
-    us_md_init_train=y_train_flow,
+    us_md_init_train=u_train_flow,
     isomers_md_init_train=isomers_train_flow,
     xs_md_init_test=x_test_flow,
     isomers_md_init_test=isomers_test_flow,
     xs_dft_init_train=x_train_mlp,
-    us_dft_init_train=y_train_mlp,
+    us_dft_init_train=u_train_mlp,
     isomers_dft_init_train=isomers_train_mlp,
     xs_dft_init_test=x_test_mlp,
-    us_dft_init_test=y_test_mlp,
+    us_dft_init_test=u_test_mlp,
     isomers_dft_init_test=isomers_test_mlp,
     n_runs=n_runs,
     n_chains=n_chains,
@@ -141,7 +153,6 @@ results = adaptative_sampling(
     dict_mlps_init=init_mlps,
     retraining_mlp=True)
 
-save_pickle_file(
-    results,
-    "runs_" + str(n_runs) + "_chains_" + str(n_chains) + "_steps_" + str(n_steps),
-)
+f = "experiments/adaptative_sampling_runs_{:d}_chains_{:d}_steps_{:d}_flow_dic_training.pkl".format(n_runs, n_chains, n_steps)
+save_pickle_file(out, f, path=get_project_path())
+

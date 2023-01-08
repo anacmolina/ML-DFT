@@ -23,7 +23,7 @@ def run_metropolis(
     n_run="",
     energy_type=None,
     frac_dft=0.2,
-    model_mlps=None,
+    mlp_models=None,
     mixture=False,
     T=300,
     with_tqdm=False,
@@ -60,15 +60,15 @@ def run_metropolis(
 
 
     if "mlp" in energy_type:
-        if(model_mlps is None):
+        if(mlp_models is None):
             raise RuntimeError("No MLP model to calculate energy")
-        elif(len(model_mlps)>1):
-            model_mlp_is1, model_mlp_is2 = model_mlps
-        elif(len(model_mlps)==1):
+        elif(len(mlp_models)>1):
+            model_mlp_is1, model_mlp_is2 = mlp_models
+        elif(len(mlp_models)==1):
             if(isomer_init.sum()==0):
-                model_mlp_is1 = model_mlps
+                model_mlp_is1 = mlp_models
             else:
-                model_mlp_is2 = model_mlps
+                model_mlp_is2 = mlp_models
 
     xs = []
     us = []
