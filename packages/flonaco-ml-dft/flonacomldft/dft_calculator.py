@@ -6,7 +6,7 @@ from ase.md.velocitydistribution import (MaxwellBoltzmannDistribution,
                                          Stationary, ZeroRotation)
 #from ase.parallel import parprint as print
 
-from flonacomldft.internal_coordinates import get_internal_coordinates
+from flonacomldft.internal_coordinates import get_internal_coordinates_from_trajectory
 
 from gpaw import GPAW
 import gpaw.mpi as mpi
@@ -22,9 +22,9 @@ class DFTCalculator:
         self.calculator = None
         self.cell = [16, 16, 16]
 
-    def initialize_calculator(self, file_name='ag6', rank=0):
-        self.path = os.path.join(os.getcwd(), 'DFTComputations')    
-        self.file = self.path + '/' + file_name + '.out'
+    def initialize_calculator(self, filename='ag6', rank=0, path=os.getcwd()):
+        self.path = os.path.join(path, 'DFTComputations')    
+        self.file = self.path + '/' + filename + '.out'
 
         if rank==0 and os.path.isdir(self.path)==False:
             #print('Folder created: %s Rank: %d '%(self.path, rank))
@@ -40,13 +40,13 @@ class DFTCalculator:
         
         #self.calculator = GPAW(mode = 'fd', h =0.18, xc = 'PBE', eigensolver = 'rmm-diis', spinpol = True, nbands=-4) 
 
-    def calculate_potential_energy(self, molecule, file_name=None):
+    def calculate_potential_energy(self, molecule, filename=None):
         
         if self.calculator is None:
             self.initialize_calculator()
 
-        if file_name is not None:
-            self.file = self.path + '/' + file_name
+        if filename is not None:
+            self.file = self.path + '/' + filename
 
         self.calculator.set(txt=self.file)
 
@@ -57,11 +57,10 @@ class DFTCalculator:
         # print(self.calculator)
         molecule.set_calculator(self.calculator)
       
-
         # Calculating the potential energy
         return molecule.get_potential_energy()
 
-    def run_molecular_dynamics(self, molecule, iters, file_name, starting=True,
+    def run_molecular_dynamics(self, molecule, iters, filename, starting=True,
                                temp=300):
         rank = mpi.world.rank
         mpi.world.barrier()
@@ -73,7 +72,7 @@ class DFTCalculator:
 
         # Building calculator
         if self.calculator is None:
-            self.initialize_calculator(file_name=file_name, rank=rank)
+            self.initialize_calculator(filename=filename, rank=rank)
 
         molecule.set_calculator(self.calculator)
     
@@ -98,10 +97,11 @@ class DFTCalculator:
 
         return traj
 
-def run_md_get_zmat(molecule, iterations, file_name, starting=True):
+# TODO: review this
+def run_md_get_zmat(molecule, iterations, filename, starting=True):
     dft_calculator = DFTCalculator()
-    dft_calculator.initialize_calculator(file_name=file_name)
+    dft_calculator.initialize_calculator(filename=filename)
     md_traj = dft_calculator.run_molecular_dynamics(molecule, iterations,
-                                                file_name, starting)
-    zmat = get_internal_coordinates(md_traj).detach()
+                                                filename, starting)
+    zmat = get_internal_coordinates_from_trajectory(md_traj).detach()
     return zmat

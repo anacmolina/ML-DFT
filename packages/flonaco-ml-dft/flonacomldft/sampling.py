@@ -127,7 +127,7 @@ def run_metropolis(
                     try:
                         u_ = calculator.calculate_potential_energy(
                             structure.build_molecule(x_new[i]), 
-                            file_name='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out'
+                            filename='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out'
                                             )
                         u_new[i] = u_ - logdetjac_to_xyz(x_new[i]) / beta
                         #u_new[i] = (-6.3*(1+np.random.rand()*0.1))
@@ -145,12 +145,14 @@ def run_metropolis(
         u = torch.rand_like(ratio)
         acc = u < torch.min(ratio, torch.ones_like(ratio))
 
-        if ind_not_computed is not None and ind_not_computed.shape[0] != 0:
-            acc[ind_not_computed] = torch.full((1, len(ind_not_computed)), False)
+        if use_dft:
+            if ind_not_computed is not None and ind_not_computed.shape[0] != 0:
+                acc[ind_not_computed] = torch.full((1, len(ind_not_computed)), False)
+
+            ind_dft[~acc] = 0
 
         x_new[~acc] = x_init[~acc]
         u_new[~acc] = u_init[~acc]
-        ind_dft[~acc] = 0
 
         if mixture:
             isomer_new[~acc] = isomer_init[~acc]
@@ -163,6 +165,7 @@ def run_metropolis(
         accs.append(acc.float().clone())
         nlls.append(nll_x.float().clone())
         isomers.append(isomer_new.float().clone())
+        
         if use_dft:
             inds_dft.append(ind_dft.float().clone())
 
@@ -171,7 +174,7 @@ def run_metropolis(
         isomer_init = isomer_new.clone().detach()
 
         if with_tqdm:
-            pbar.set_description(f'acc: {acc.float().mean()[-1]:.2f}')
+            pbar.set_description(f'acc: {acc.float().mean():.2f}')
 
 
         #print("acc: {:0.2f}".format(acc.float().mean()))

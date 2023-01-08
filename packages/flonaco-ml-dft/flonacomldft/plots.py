@@ -65,4 +65,25 @@ def populations_convergence_plot(populations, title, figsize=(8, 6)):
     ax.legend()
     return fig, ax
 
-#TODO: Correlations between prediction and target mlp
+def plot_correlation_target_and_predict_value(target_train, predicted_train, target_test=None, predicted_test=None, title='', figsize=(6, 6)):
+    
+    import torch
+    import numpy as np
+    
+    fig, ax = plt.subplots(1, 1, figsize=figsize)
+    ax.scatter(target_train, predicted_train.detach().numpy()[:], label='train')
+    if target_test is not None and predicted_test is not None:
+        ax.scatter(target_test, predicted_test.detach().numpy()[:], label='test')
+        predicted = torch.cat((predicted_train, predicted_test))
+    else:
+        predicted = predicted_train
+    min_ = predicted.detach().numpy().min()
+    max_ = predicted.detach().numpy().max()
+    range_ = np.linspace(min_, max_, 2)
+    ax.plot(range_, range_, 'k')
+    ax.set_title(title)
+    ax.set_ylabel('predicted value')
+    ax.set_xlabel('actual value')
+    ax.legend()
+    
+    return fig, ax

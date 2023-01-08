@@ -43,15 +43,15 @@ def get_simulation_folder_path(name, path=os.getcwd()):
         raise RuntimeError('Folder not found')
 
 # load pickle file
-def load_pickle_file(file):
-    file_loaded = open(file, 'rb')
+def load_pickle_file(filename, path=get_path()):
+    file_loaded = open(path + filename, 'rb')
     _ = pickle.load(file_loaded)
     file_loaded.close()
     return _
 
 # save pickle file
-def save_pickle_file(data, filename):
-    outfile = open(filename, 'wb')
+def save_pickle_file(data, filename, path=get_path()):
+    outfile = open(path + filename, 'wb')
     pickle.dump(data, outfile)
     outfile.close()
 

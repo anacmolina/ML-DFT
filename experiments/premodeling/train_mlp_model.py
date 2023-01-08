@@ -9,7 +9,7 @@ from flonacomldft.train_mlp_from_data import train_mlp
 from flonacomldft.utils.io_utils import get_project_path, save_pickle_file
 import matplotlib.pyplot as plt
 
-mode_label = 1 #or 2
+mode_label = 2 #or 2
 
 xs_md = load_csv_file("is{:d}_lcao_zmat.csv".format(mode_label))
 
@@ -47,5 +47,5 @@ plt.plot(out['losses'][1], label='test')
 plt.legend()
 plt.show(block=False)
 
-f = get_project_path() + "database/is{:d}_mlp_dic_training.pkl".format(mode_label)
+f = "is{:d}_mlp_dic_training.pkl".format(mode_label)
 save_pickle_file(out, f)

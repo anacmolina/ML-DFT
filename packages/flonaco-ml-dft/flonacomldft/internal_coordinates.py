@@ -112,14 +112,16 @@ def logdetjac_to_xyz(zmat, structure):
     return np.linalg.slogdet(det)
 
 def get_pos_energy(zmat):
-    u_tensor = zmat[:, -1]
-    x_tensor = zmat[:, :-1]
-    return x_tensor, u_tensor
+     u_tensor = zmat[:, -1]
+     x_tensor = zmat[:, :-1]
+     return x_tensor, u_tensor
 
 def shuffle_arr(vs, indexes):
     concat = lambda vs: torch.cat(vs)
     v = concat(vs)
     return v[indexes]
+
+# TODO: delete get mix, add new function
 
 def get_mix_data(data_1, data_2):
     xi_is1, ui_is1 = get_pos_energy(data_1)
@@ -135,6 +137,7 @@ def get_mix_data(data_1, data_2):
     uis = shuffle_arr([ui_is1, ui_is2], indexes)
     cis = shuffle_arr([ci_is1, ci_is2], indexes)
     return xis, uis, cis
+
 
 class Structure:
     """

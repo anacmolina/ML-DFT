@@ -12,7 +12,7 @@ from flonacomldft.utils.io_utils import (
 from flonacomldft.full_adaptive_sampling import adaptative_sampling
 
 
-# energy_type="dft"
+#energy_type="dft"
 # energy_type="mlp-dft"
 energy_type="mlp"
 
@@ -117,6 +117,7 @@ init_nf_is2 = load_pickle_file(get_path() + "flow_is2")
 
 init_flow_train = [init_nf_is1, init_nf_is2]
 init_mlps = [init_mlp_is1, init_mlp_is2]
+
 
 
 results = adaptative_sampling(
