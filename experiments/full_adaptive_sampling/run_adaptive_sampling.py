@@ -17,9 +17,9 @@ from flonacomldft.full_adaptive_sampling import adaptative_sampling
 energy_type="mlp"
 
 # mcmc params
-n_runs = 2
-n_chains = 5
-n_steps = 3
+n_runs = 10
+n_chains = 50
+n_steps = 30
 
 flow_hyperparams_is1 = {'n_iter': 100,
     'lr': 5e-4,

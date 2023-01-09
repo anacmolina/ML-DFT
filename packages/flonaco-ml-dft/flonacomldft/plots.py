@@ -57,6 +57,7 @@ def acceptance_rate_plot(acceptance_rate, title, xlabel, figsize=(8, 6)):
     ax.legend()
     return fig, ax
 
+# TODO: fix this function
 def populations_convergence_plot(populations, title, figsize=(8, 6)):
     fig, ax = plt.subplots(1, 1, figsize=figsize)
     ax.plot(populations)

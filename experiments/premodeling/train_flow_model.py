@@ -17,7 +17,8 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # for flows
 
-n_iter = 100
+
+n_iter = 5000 #100 # long_training 10000
 lr = 1e-4
 mode_label = 1 # or 2
 
@@ -39,7 +40,7 @@ xs_train, centering_args = centering_in_radian(xs_train)
 xs_test = centering_in_radian(xs_test, xs_train_mean, return_centering_args=False)
 
 model = RealNVP_MLP(12,
-                    n_blocks=3,
+                    n_blocks=8,
                     block_depth=1,
                     init_weight_scale=1e-3,
                     centering_args=centering_args,
@@ -58,6 +59,6 @@ out = train_flow(
     grad_clip=1e4,
 )
 
-f = "is{:d}_flow_dic_training.pkl".format(mode_label)
+f = "is{:d}_flow_dic_training_long_training.pkl".format(mode_label)
 save_pickle_file(out, f)
 
