@@ -11,7 +11,6 @@ from flonacomldft.utils.io_utils import (
 from flonacomldft.utils.data_processing import split_data_from_dataframe
 from flonacomldft.full_adaptive_sampling import adaptative_sampling
 
-
 # energy_type="dft"
 # energy_type="mlp-dft"
 energy_type="mlp"
