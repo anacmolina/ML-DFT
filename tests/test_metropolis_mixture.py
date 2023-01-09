@@ -32,11 +32,11 @@ torch.manual_seed(num_seed[0])
 
 # mcmc chains parameters
 
-n_chains = 10
-n_steps = 50
+n_chains = 50
+n_steps = 100
 energy_type = 'mlp'
 
-# TODO: build this as a functions
+# load data
 
 xs_is1 = load_csv_file('is{:d}_lcao_zmat.csv'.format(1))
 xs_is2 = load_csv_file('is{:d}_lcao_zmat.csv'.format(2))
@@ -85,11 +85,11 @@ out = run_metropolis(
     n_run="",
     energy_type=energy_type,
     frac_dft=0.2,
-    mlps_models=mlp_models,
+    mlp_models=mlp_models,
     mixture=True,
     T=300,
     with_tqdm=True,
 )
 
-f = "experiments/mcmc_chains_{:d}_steps{:d}_flow_dic_training.pkl".format(n_chains, n_steps)
+f = "experiments/mcmc_mixture_chains_{:d}_steps_{:d}.pkl".format(n_chains, n_steps)
 save_pickle_file(out, f, path=get_project_path())

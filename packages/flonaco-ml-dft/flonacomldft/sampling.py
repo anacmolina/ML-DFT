@@ -62,9 +62,9 @@ def run_metropolis(
     if "mlp" in energy_type:
         if(mlp_models is None):
             raise RuntimeError("No MLP model to calculate energy")
-        elif(len(mlp_models)>1):
+        if mixture:
             model_mlp_is1, model_mlp_is2 = mlp_models
-        elif(len(mlp_models)==1):
+        else:
             if(isomer_init.sum()==0):
                 model_mlp_is1 = mlp_models
             else:
@@ -104,8 +104,15 @@ def run_metropolis(
             #     u_new[~(count.bool())] = model_mlp_is1.predict(x[~(count.bool())])
             # else:
 
-            u_new[~(isomer_new.bool())] = model_mlp_is1.predict(x_new[~(isomer_new.bool())])
-            u_new[isomer_new.bool()] = model_mlp_is2.predict(x_new[isomer_new.bool()])
+            if mixture:
+                u_new[~(isomer_new.bool())] = model_mlp_is1.predict(x_new[~(isomer_new.bool())])
+                u_new[isomer_new.bool()] = model_mlp_is2.predict(x_new[isomer_new.bool()])
+            else:
+                if(isomer_new.sum()==0):
+                    u_new = model_mlp_is1.predict(x_new)
+                else:
+                    u_new = model_mlp_is2.predict(x_new)
+
             u_new = u_new.squeeze().float()
 
         if "dft" in energy_type:
@@ -136,7 +143,7 @@ def run_metropolis(
                         us_dft.append(u_)
                         isomers_dft.append(isomer_new[i])
                     except:
-                        u_new.append(0)
+                        u_new[i] = 0.
                         ind_not_computed[i] = 1
 
         ratio = -beta * u_new + nll_x
@@ -147,7 +154,8 @@ def run_metropolis(
 
         if use_dft:
             if ind_not_computed is not None and ind_not_computed.shape[0] != 0:
-                acc[ind_not_computed] = torch.full((1, len(ind_not_computed)), False)
+                #print(ind_not_computed)
+                acc[ind_not_computed.bool()] = torch.full((1, len(ind_not_computed)), False)
 
             ind_dft[~acc] = 0
 

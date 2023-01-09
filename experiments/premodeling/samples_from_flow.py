@@ -13,16 +13,15 @@ from flonacomldft.internal_coordinates import (
     save_internal_coordinates_to_csv
 )
 
-# TODO: check changes in the flatiron file
-
 mode_label = 1 # or 2
 
 torch.manual_seed(42)
 
-flow_is1 = load_pickle_file( "is{:d}_flow_dic_training.pkl".format(mode_label))
-flow_is1_model = flow_is1['model']
+flow_model = load_pickle_file( "is{:d}_flow_dic_training.pkl".format(mode_label))['model']
 
-xs_samples = flow_is1_model.sample(10)
+N = 500
+
+xs_samples = flow_model.sample(N)
 
 flow_configurations = []
 
@@ -30,7 +29,7 @@ structure = Structure()
 calculator = DFTCalculator()
 calculator.initialize_calculator()
 
-for i, x_sample in enumerate(xs_samples[:2]):
+for i, x_sample in enumerate(xs_samples):
     molecule = structure.build_molecule(x_sample.detach())
     calculator.calculate_potential_energy(molecule, 
                             filename='ag6_flow_is{:d}_{:d}.out'.format(mode_label,i))
