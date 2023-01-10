@@ -18,7 +18,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # for flows
 
 
-n_iter = 5000 #100 # long_training 10000
+n_iter = 500 #100 # long_training 10000
 lr = 1e-4
 mode_label = 1 # or 2
 
@@ -59,6 +59,6 @@ out = train_flow(
     grad_clip=1e4,
 )
 
-f = "is{:d}_flow_dic_training_long_training.pkl".format(mode_label)
+f = "is{:d}_flow_dic_training_test.pkl".format(mode_label)
 save_pickle_file(out, f)
 

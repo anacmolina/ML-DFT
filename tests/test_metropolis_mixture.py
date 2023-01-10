@@ -32,8 +32,8 @@ torch.manual_seed(num_seed[0])
 
 # mcmc chains parameters
 
-n_chains = 50
-n_steps = 100
+n_chains = 100
+n_steps = 150
 energy_type = 'mlp'
 
 # load data
@@ -65,6 +65,11 @@ flow_models = np.array([flow_is1['model'],
 
 mixture = Mixture(flow_models, torch.tensor([0.5, 0.5]).detach())
 
+#xs, cs =  mixture.sample(5, return_mus=True)
+#print(xs, cs)
+#xs_rad = mixture.rad_center(xs.clone(), cs.bool())
+#print(mixture.nll(xs_rad), mixture.nll(xs))
+
 # mlp models
 
 mlp_is1 = load_pickle_file('is1_mlp_dic_training.pkl')
@@ -88,7 +93,7 @@ out = run_metropolis(
     mlp_models=mlp_models,
     mixture=True,
     T=300,
-    with_tqdm=True,
+    with_tqdm=False,
 )
 
 f = "experiments/mcmc_mixture_chains_{:d}_steps_{:d}.pkl".format(n_chains, n_steps)

@@ -92,8 +92,8 @@ def run_metropolis(
         x_new = x_new.clone().detach().float()
         isomer_new = isomer_new.clone().detach().float()
 
-        nll_x = model.nll(x_new)
-        nll_x_init = model.nll(x_init)
+        nll_x = model.nll(model.rad_center(x_new, isomer_new))
+        nll_x_init = model.nll(model.rad_center(x_init, isomer_init))
        
         if "mlp" in energy_type:
             u_new = torch.zeros((n_chains, 1))
@@ -150,6 +150,7 @@ def run_metropolis(
         ratio += beta * u_init - nll_x_init
         ratio = torch.exp(ratio)
         u = torch.rand_like(ratio)
+
         acc = u < torch.min(ratio, torch.ones_like(ratio))
 
         if use_dft:
@@ -167,6 +168,7 @@ def run_metropolis(
         else:
             isomer_new = isomer_init
 
+        print('accs: {:2f}'.format(acc.float().mean()))
         
         xs.append(x_new.float().clone())
         us.append(u_new.float().clone())

@@ -50,6 +50,14 @@ class Mixture(nn.Module):
 
         return - torch.logsumexp(torch.stack(args), 0)
 
+    def rad_center(self, xs, cs):
+
+        xs_rad = []
+        for x, mu in zip(xs, cs):
+            xs_rad.append(x - self.models[mu.int()].centering_args["mean_out"])
+
+        return torch.stack(xs_rad)
+
     def U(self, x):
         return self.nll(x)
 
