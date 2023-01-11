@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-def losses_plot(losses_train, losses_test, title, figsize=(8, 6), log_yscale=False):
+def plot_losses(losses_train, losses_test, title='losses', figsize=(8, 6), log_yscale=False):
     fig, ax = plt.subplots(1, 1, figsize=figsize)
     ax.plot(losses_train, label='train')
     ax.plot(losses_test, label='test')

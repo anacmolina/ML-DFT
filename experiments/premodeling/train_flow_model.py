@@ -44,6 +44,8 @@ model = RealNVP_MLP(12,
                     block_depth=1,
                     init_weight_scale=1e-3,
                     centering_args=centering_args,
+                    hidden_dim=100,
+                    hidden_depth=3,
                     device=device,
                     )
 
