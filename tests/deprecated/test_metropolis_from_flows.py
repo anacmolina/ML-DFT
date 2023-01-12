@@ -15,7 +15,7 @@ from flonacomldft.utils.io_utils import (
     save_pickle_file
 )
 
-from flonacomldft.internal_coordinates import (
+from flonacomldft.utils.data_processing import (
     get_mix_data
 )
 

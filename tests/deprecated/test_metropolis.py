@@ -18,10 +18,7 @@ from flonacomldft.utils.data_utils import (
     save_pickle_file
 )
 
-from flonacomldft.internal_coordinates import (
-    shuffle_arr,
-    get_mix_data
-)
+from flonacomldft.utils.data_processing import get_mix_data
 
 from flonacomldft.sampling import run_metropolis
 from flonacomldft.models.mixture import Mixture

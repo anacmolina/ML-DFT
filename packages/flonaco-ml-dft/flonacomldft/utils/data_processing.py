@@ -46,4 +46,28 @@ def centering_in_radian(xs, x_rad_center=None, return_centering_args=True):
         return x_real_centered
 
 
- 
+ # TODO: delete get mix, add new function
+def get_pos_energy(zmat):
+     u_tensor = zmat[:, -1]
+     x_tensor = zmat[:, :-1]
+     return x_tensor, u_tensor
+
+def shuffle_arr(vs, indexes):
+    concat = lambda vs: torch.cat(vs)
+    v = concat(vs)
+    return v[indexes]
+
+def get_mix_data(data_1, data_2):
+    xi_is1, ui_is1 = get_pos_energy(data_1)
+    xi_is2, ui_is2 = get_pos_energy(data_2)
+    ci_is1, ci_is2 = torch.zeros(xi_is1.shape[0]), torch.ones(xi_is2.shape[0]) 
+
+    n_points = xi_is1.shape[0] + xi_is2.shape[0]
+
+    indexes = torch.randperm(n_points)
+
+    # Unifying all data from MD and shuffling in order to to Metropolis-Hastings
+    xis = shuffle_arr([xi_is1, xi_is2], indexes)
+    uis = shuffle_arr([ui_is1, ui_is2], indexes)
+    cis = shuffle_arr([ci_is1, ci_is2], indexes)
+    return xis, uis, cis

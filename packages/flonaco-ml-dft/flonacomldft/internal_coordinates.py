@@ -6,6 +6,9 @@ import chemcoord as cc
 from flonacomldft.utils.io_utils import get_path
 from flonacomldft.utils.silver_isomers_utils import get_construction_table
 
+def add_phase(tensor, phase = 2 * torch.pi):
+    return tensor - phase
+
 def get_labels_from_construction_table(construction_table, all_labels=False):
 
     construction_table = construction_table.copy()
@@ -27,9 +30,11 @@ def get_labels_from_construction_table(construction_table, all_labels=False):
 
         return labels
 
-def from_molecule_to_zmat_tensor(molecule, construction_table, return_logdetjac=True, return_potential_energy=True, temperature=None):
+def from_molecule_to_zmat_tensor(molecule, construction_table, return_logdetjac=True,
+                                    return_potential_energy=True, temperature=None):
     
-    zmat_matrix = cc.Cartesian.from_ase_atoms(molecule).get_zmat(construction_table.copy()).minimize_dihedrals()
+    zmat_matrix = cc.Cartesian.from_ase_atoms(molecule).get_zmat(construction_table.copy())
+    zmat_matrix = zmat_matrix.minimize_dihedrals()
     zmat_values = zmat_matrix.loc[:, ['bond', 'angle', 'dihedral']]
     zmat_values.loc[:, ['angle', 'dihedral']] = zmat_values.loc[:, ['angle', 'dihedral']].apply(np.deg2rad)
     zmat_values = zmat_values.to_numpy()[1:, :]
@@ -54,26 +59,6 @@ def from_molecule_to_zmat_tensor(molecule, construction_table, return_logdetjac=
         return zmat_flatten, logdetjac
     if return_logdetjac==False and return_potential_energy==False:
         return zmat_flatten
-
-def add_phase(tensor, phase = 2 * torch.pi):
-    return tensor - phase
-
-def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_energy=True, add_logdetjac=True, add_isomer=False, filename='traj.csv', path=get_path()):
-
-        labels = get_labels_from_construction_table(construction_table)
-        
-        if add_logdetjac:
-            labels = labels + ['logdetjac']
-            
-        if add_potential_energy:
-            labels = labels + ['potential_energy']
-
-        if add_isomer:
-            labels = labels + ['isomer']
-
-        df = pd.DataFrame(xs.detach().numpy())
-        df.columns=labels
-        df.to_csv(path + '/' + filename, index=False)
 
 def get_internal_coordinates_from_trajectory(trajectory, construction_table, add_logdetjac=True, add_potential_energy=True, temperature=None):
 
@@ -113,33 +98,6 @@ def logdetjac_to_xyz(zmat, structure):
     det = zmat_matrix.get_grad_cartesian(as_function=False)
     det = det.reshape(structure.Natoms * 3, structure.Natoms * 3)
     return np.linalg.slogdet(det)
-
-def get_pos_energy(zmat):
-     u_tensor = zmat[:, -1]
-     x_tensor = zmat[:, :-1]
-     return x_tensor, u_tensor
-
-def shuffle_arr(vs, indexes):
-    concat = lambda vs: torch.cat(vs)
-    v = concat(vs)
-    return v[indexes]
-
-# TODO: delete get mix, add new function
-
-def get_mix_data(data_1, data_2):
-    xi_is1, ui_is1 = get_pos_energy(data_1)
-    xi_is2, ui_is2 = get_pos_energy(data_2)
-    ci_is1, ci_is2 = torch.zeros(xi_is1.shape[0]), torch.ones(xi_is2.shape[0]) 
-
-    n_points = xi_is1.shape[0] + xi_is2.shape[0]
-
-    indexes = torch.randperm(n_points)
-
-    # Unifying all data from MD and shuffling in order to to Metropolis-Hastings
-    xis = shuffle_arr([xi_is1, xi_is2], indexes)
-    uis = shuffle_arr([ui_is1, ui_is2], indexes)
-    cis = shuffle_arr([ci_is1, ci_is2], indexes)
-    return xis, uis, cis
 
 
 class Structure:
@@ -233,3 +191,20 @@ class Structure:
         molecule = zmat_matrix.get_cartesian().get_ase_atoms()
 
         return molecule 
+
+def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_energy=True, add_logdetjac=True, add_isomer=False, filename='traj.csv', path=get_path()):
+
+        labels = get_labels_from_construction_table(construction_table)
+        
+        if add_logdetjac:
+            labels = labels + ['logdetjac']
+            
+        if add_potential_energy:
+            labels = labels + ['potential_energy']
+
+        if add_isomer:
+            labels = labels + ['isomer']
+
+        df = pd.DataFrame(xs.detach().numpy())
+        df.columns=labels
+        df.to_csv(path + '/' + filename, index=False)
