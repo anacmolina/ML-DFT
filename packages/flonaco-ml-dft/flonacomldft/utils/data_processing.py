@@ -1,11 +1,11 @@
 import torch
 import pandas as pd
+import sklearn.model_selection
+from flonacomldft.models.real_nvp import Angles_mapping
 
 # split data
 
 def split_data_from_dataframe(tensor, train_size, sk_seed):
-    
-    import sklearn.model_selection
 
     arrays = [tensor.numpy()]
 
@@ -23,8 +23,6 @@ def split_data_from_dataframe(tensor, train_size, sk_seed):
 
 # centering data in radians
 def centering_in_radian(xs, x_rad_center=None, return_centering_args=True):
-
-    from flonacomldft.models.real_nvp import Angles_mapping
 
     # centering in radian
     if x_rad_center is None:

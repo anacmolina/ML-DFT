@@ -14,6 +14,32 @@ import torch.nn.functional as F
 from flonacomldft.models.mlp import MLP
 from torch.distributions.multivariate_normal import MultivariateNormal
 
+class Angles_mapping():
+    """
+    Class to get the forward and backward mapping of the angles.
+    It stores the index at which the angles start in the internal coordinates
+
+    """
+    def __init__(self, idx_first_angle=5):
+        self.idx_first_angle = idx_first_angle
+
+    def rads_to_reals(self, x_rads, log_det_jac=None):
+        if log_det_jac is None:
+            log_det_jac = 0
+
+        x_reals = x_rads.clone()
+        x_reals[:, self.idx_first_angle:] = x_rads[:, self.idx_first_angle:].tan()
+        log_det_jac += torch.log(1 + x_reals[:, self.idx_first_angle:]**2).sum(-1)
+        return x_reals, log_det_jac
+        
+    def reals_to_rads(self, x_reals, log_det_jac=None):
+        if log_det_jac is None:
+            log_det_jac = 0
+
+        x_rads = x_reals.clone()
+        x_rads[:, self.idx_first_angle:] = x_reals[:, self.idx_first_angle:].arctan()
+        log_det_jac -= torch.log(1 + x_reals[:, self.idx_first_angle:]**2).sum(-1)
+        return x_rads, log_det_jac
 
 class ResidualAffineCoupling(nn.Module):
     """ Residual Affine Coupling layer 
@@ -58,33 +84,6 @@ class ResidualAffineCoupling(nn.Module):
                 raise RuntimeError('Scale factor has NaN entries')
 
         return x, log_det_jac
-
-class Angles_mapping():
-    """
-    Class to get the forward and backward mapping of the angles.
-    It stores the index at which the angles start in the internal coordinates
-
-    """
-    def __init__(self, idx_first_angle=5):
-        self.idx_first_angle = idx_first_angle
-
-    def rads_to_reals(self, x_rads, log_det_jac=None):
-        if log_det_jac is None:
-            log_det_jac = 0
-
-        x_reals = x_rads.clone()
-        x_reals[:, self.idx_first_angle:] = x_rads[:, self.idx_first_angle:].tan()
-        log_det_jac += torch.log(1 + x_reals[:, self.idx_first_angle:]**2).sum(-1)
-        return x_reals, log_det_jac
-        
-    def reals_to_rads(self, x_reals, log_det_jac=None):
-        if log_det_jac is None:
-            log_det_jac = 0
-
-        x_rads = x_reals.clone()
-        x_rads[:, self.idx_first_angle:] = x_reals[:, self.idx_first_angle:].arctan()
-        log_det_jac -= torch.log(1 + x_reals[:, self.idx_first_angle:]**2).sum(-1)
-        return x_rads, log_det_jac
        
 class RealNVP_MLP(nn.Module):
     """ Minimal Real NVP architecture

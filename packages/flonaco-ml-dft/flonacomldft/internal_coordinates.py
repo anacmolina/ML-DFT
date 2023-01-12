@@ -9,7 +9,8 @@ from flonacomldft.utils.silver_isomers_utils import get_construction_table
 def add_phase(tensor, phase = 2 * torch.pi):
     return tensor - phase
 
-class Coordinates_mapping:
+
+class Coordinates_mapping():
     """
     Coordinates_mapping (Object)
     Class storing:
@@ -36,10 +37,10 @@ class Coordinates_mapping:
         angles in degrees from the zmat values (only the internal coordinates with 
         angles in radians).
         
-        In:
+        Args:
             zmat_values: array with the values of the internal coordinates of one only
             configuration (12 inputs)
-        Out:  
+        Returns:  
             zmat_matrix: chemcoord df-zmat of coordinates in the basis of the IC
         """
 
