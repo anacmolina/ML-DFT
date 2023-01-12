@@ -8,7 +8,6 @@ import torch
 import tqdm
 
 from ase.parallel import parprint as print
-from flonacomldft.internal_coordinates import logdetjac_to_xyz
 
 
 kb = 8.617333262e-5
@@ -133,10 +132,10 @@ def run_metropolis(
                 if flag_dft:
                     try:
                         u_ = calculator.calculate_potential_energy(
-                            structure.build_molecule(x_new[i]), 
+                            structure.get_molecule_from_internal(x_new[i]), 
                             filename='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out'
                                             )
-                        u_new[i] = u_ - logdetjac_to_xyz(x_new[i]) / beta
+                        u_new[i] = u_ - structure.logdetjac_internal_to_xyz(x_new[i]) / beta
                         #u_new[i] = (-6.3*(1+np.random.rand()*0.1))
 
                         xs_dft.append(x_new[i])

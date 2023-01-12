@@ -38,7 +38,7 @@ def get_CVs(data):
    for x in data:
    
       structure = Structure()
-      molecule = structure.build_molecule(x)
+      molecule = structure.get_molecule_from_internal(x)
                                                                                
       C_vals.append(compute_C(molecule))
       R_vals.append(compute_R(molecule))

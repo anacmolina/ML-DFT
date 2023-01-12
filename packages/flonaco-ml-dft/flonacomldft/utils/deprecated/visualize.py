@@ -13,7 +13,7 @@ from flonacomldft.collective_variables import get_CVs
 def plot_sample(x):
    fig, ax = plt.subplots()
    ag6 = Structure()
-   plot_atoms(ag6.build_molecule(x), ax)
+   plot_atoms(ag6.get_molecule_from_internal(x), ax)
 
 def plotting_fes_db(train_data=None):
       

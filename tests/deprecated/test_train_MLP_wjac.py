@@ -13,7 +13,7 @@ from flonacomldft.utils.io_utils import (
 
 from flonacomldft.models.mlp import MLP
 from flonacomldft.train_mlp_from_data import train_mlp
-from flonacomldft.internal_coordinates import logdetjac_to_xyz, Structure
+from flonacomldft.internal_coordinates import Structure
 
 isomer = 'is1'
 
@@ -40,12 +40,12 @@ u_test = torch.cat((u_test_md, u_test_nf))
 structure = Structure()
 u_train_wjac = []
 for u, x in tqdm.tqdm(zip(u_train, x_train)):
-    u_wjac = u - (kb * T) * logdetjac_to_xyz(x, structure)[1]
+    u_wjac = u - (kb * T) * structure.logdetjac_internal_to_xyz(x, structure)[1]
     u_train_wjac.append(u_wjac)
 
 u_test_wjac = []
 for u, x in tqdm.tqdm(zip(u_test, x_test)):
-    u_wjac = u - (kb * T) * logdetjac_to_xyz(x, structure)[1]
+    u_wjac = u - (kb * T) * structure.logdetjac_internal_to_xyz(x, structure)[1]
     u_test_wjac.append(u_wjac)
 
 u_train_wjac = torch.stack(u_train_wjac)
