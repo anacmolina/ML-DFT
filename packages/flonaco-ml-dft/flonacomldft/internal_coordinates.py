@@ -58,7 +58,7 @@ def from_molecule_to_zmat_tensor(molecule, construction_table, return_logdetjac=
 def add_phase(tensor, phase = 2 * torch.pi):
     return tensor - phase
 
-def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_energy=True, add_logdetjac=True, filename='traj.csv', path=get_path()):
+def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_energy=True, add_logdetjac=True, add_isomer=False, filename='traj.csv', path=get_path()):
 
         labels = get_labels_from_construction_table(construction_table)
         
@@ -67,6 +67,9 @@ def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_ener
             
         if add_potential_energy:
             labels = labels + ['potential_energy']
+
+        if add_isomer:
+            labels = labels + ['isomer']
 
         df = pd.DataFrame(xs.detach().numpy())
         df.columns=labels

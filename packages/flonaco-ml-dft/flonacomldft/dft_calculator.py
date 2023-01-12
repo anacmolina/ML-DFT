@@ -98,11 +98,11 @@ class DFTCalculator:
 
         return traj
 
-# TODO: review this
-def run_md_get_zmat(molecule, iterations, filename, starting=True):
-    dft_calculator = DFTCalculator()
-    dft_calculator.initialize_calculator(filename=filename)
-    md_traj = dft_calculator.run_molecular_dynamics(molecule, iterations,
-                                                filename, starting)
-    zmat = get_internal_coordinates_from_trajectory(md_traj).detach()
-    return zmat
+# # TODO: review this
+# def run_md_get_zmat(molecule, iterations, filename, starting=True):
+#     dft_calculator = DFTCalculator()
+#     dft_calculator.initialize_calculator(filename=filename)
+#     md_traj = dft_calculator.run_molecular_dynamics(molecule, iterations,
+#                                                 filename, starting)
+#     zmat = get_internal_coordinates_from_trajectory(md_traj).detach()
+#     return zmat

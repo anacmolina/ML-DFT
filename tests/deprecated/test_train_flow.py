@@ -63,7 +63,7 @@ out = train_flow(
 
 x_sample = model.sample(100)
 
-from flonacomldft.plots import plotting_fes_db
+from flonacomldft.utils.plots import plotting_fes_db
 
 fig, ax = plotting_fes_db()
 x_sample_cv = np.array(get_CVs(x_sample)).T

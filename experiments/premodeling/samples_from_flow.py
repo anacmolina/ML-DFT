@@ -17,7 +17,7 @@ mode_label = 1 # or 2
 
 torch.manual_seed(42)
 
-flow_model = load_pickle_file( "is{:d}_flow_dic_training.pkl".format(mode_label))['model']
+flow_model = load_pickle_file( "models/is{:d}_flow_dic_training.pkl".format(mode_label))['model']
 
 N = 500
 
@@ -40,4 +40,4 @@ xs_internal_coordinates = get_internal_coordinates_from_trajectory(flow_configur
 
 save_internal_coordinates_to_csv(xs_internal_coordinates,
             get_construction_table(), 
-            filename='is{:d}_flow_zmat.csv'.format(mode_label))
+            filename='int_coords/is{:d}_flow_zmat.csv'.format(mode_label))
