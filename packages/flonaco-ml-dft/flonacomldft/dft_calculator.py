@@ -102,5 +102,5 @@ class DFTCalculator:
 #     dft_calculator.initialize_calculator(filename=filename)
 #     md_traj = dft_calculator.run_molecular_dynamics(molecule, iterations,
 #                                                 filename, starting)
-#     zmat = structure.get_internal_from_trajectory(md_traj).detach()
+#     zmat = coord_maps.get_internal_from_trajectory(md_traj).detach()
 #     return zmat

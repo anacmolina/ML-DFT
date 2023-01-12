@@ -39,9 +39,9 @@ def run_metropolis(
 
     if "dft" in energy_type:
         from flonacomldft.dft_calculator import DFTCalculator
-        from flonacomldft.internal_coordinates import Structure
+        from flonacomldft.internal_coordinates import Coordinates_mapping
         
-        structure = Structure()
+        coord_maps = Coordinates_mapping()
         calculator = DFTCalculator()
         calculator.initialize_calculator()
         use_dft = True
@@ -132,10 +132,10 @@ def run_metropolis(
                 if flag_dft:
                     try:
                         u_ = calculator.calculate_potential_energy(
-                            structure.get_molecule_from_internal(x_new[i]), 
+                            coord_maps.get_molecule_from_internal(x_new[i]), 
                             filename='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out'
                                             )
-                        u_new[i] = u_ - structure.logdetjac_internal_to_xyz(x_new[i]) / beta
+                        u_new[i] = u_ - coord_maps.logdetjac_internal_to_xyz(x_new[i]) / beta
                         #u_new[i] = (-6.3*(1+np.random.rand()*0.1))
 
                         xs_dft.append(x_new[i])

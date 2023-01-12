@@ -7,7 +7,7 @@ from flonacomldft.utils.io_utils import (
 from flonacomldft.dft_calculator import DFTCalculator
 
 from flonacomldft.internal_coordinates import (
-    Structure,
+    Coordinates_mapping,
     get_construction_table,
     save_internal_coordinates_to_csv
 )
@@ -24,18 +24,18 @@ xs_samples = flow_model.sample(N)
 
 flow_configurations = []
 
-structure = Structure()
+coord_maps = Coordinates_mapping()
 calculator = DFTCalculator()
 calculator.initialize_calculator()
 
 for i, x_sample in enumerate(xs_samples):
-    molecule = structure.get_molecule_from_internal(x_sample.detach())
+    molecule = coord_maps.get_molecule_from_internal(x_sample.detach())
     calculator.calculate_potential_energy(molecule, 
                             filename='ag6_flow_is{:d}_{:d}.out'.format(mode_label,i))
 
     flow_configurations.append(molecule)
 
-xs_internal_coordinates = structure.get_internal_from_trajectory(flow_configurations, temperature=300)
+xs_internal_coordinates = coord_maps.get_internal_from_trajectory(flow_configurations, temperature=300)
 
 save_internal_coordinates_to_csv(xs_internal_coordinates,
             get_construction_table(), 

@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 from flonacomldft.models.real_nvp import RealNVP_MLP, Angles_mapping
 from flonacomldft.train_flow_from_data import train_flow
-from flonacomldft.internal_coordinates import Structure
+from flonacomldft.internal_coordinates import Coordinates_mapping
 from flonacomldft.utils.io_utils import get_path, save_pickle_file
 from flonacomldft.collective_variables import get_CVs
 

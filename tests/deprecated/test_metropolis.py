@@ -8,7 +8,7 @@ import pandas as pd
 from ase.parallel import parprint as print
 
 # from flonacomldft.dft_utils import (
-#     Structure
+#     Coordinates_mapping
 # )
 
 from flonacomldft.utils.data_utils import (

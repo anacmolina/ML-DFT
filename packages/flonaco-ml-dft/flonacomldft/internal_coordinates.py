@@ -9,9 +9,9 @@ from flonacomldft.utils.silver_isomers_utils import get_construction_table
 def add_phase(tensor, phase = 2 * torch.pi):
     return tensor - phase
 
-class Structure:
+class Coordinates_mapping:
     """
-    Structure (Object)
+    Coordinates_mapping (Object)
     Class storing:
         - the construction table
         - the ase symbols string
@@ -132,7 +132,7 @@ class Structure:
             (opt) potential_energy (array): potential energy tensor
         """
         
-        zmat_matrix = cc.Cartesian.from_ase_atoms(molecule).get_zmat(construction_table.copy())
+        zmat_matrix = cc.Cartesian.from_ase_atoms(molecule).get_zmat(self.construction_table.copy())
         zmat_matrix = zmat_matrix.minimize_dihedrals()
         zmat_values = zmat_matrix.loc[:, ['bond', 'angle', 'dihedral']]
         zmat_values.loc[:, ['angle', 'dihedral']] = zmat_values.loc[:, ['angle', 'dihedral']].apply(np.deg2rad)
@@ -142,7 +142,7 @@ class Structure:
         zmat_flatten = torch.tensor(zmat_flatten).detach().requires_grad_().float()
 
         if return_logdetjac:
-            struct = Structure(construction_table)
+            struct = Coordinates_mapping()
             logdetjac = torch.tensor([self.logdetjac_internal_to_xyz(zmat_flatten, struct)[1]]).float()
 
             if return_potential_energy:
