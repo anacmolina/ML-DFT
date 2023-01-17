@@ -12,8 +12,8 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # for flows
 
-n_iter = 500 #100 # long_training 10000
-lr = 1e-4
+n_iter = 5000 
+lr = 1e-3
 mode_label = 1 # or 2
 
 torch.manual_seed(100)
@@ -29,12 +29,12 @@ xs_rad_train, centering_args = centering_in_radian(xs_train)
 xs_rad_test = centering_in_radian(xs_test, xs_train_mean, return_centering_args=False)
 
 model = RealNVP_MLP(12,
-                    n_blocks=8,
+                    n_blocks=4,
                     block_depth=1,
                     init_weight_scale=1e-3,
                     centering_args=centering_args,
-                    hidden_dim=100,
-                    hidden_depth=3,
+                    hidden_dim=32,
+                    hidden_depth=4,
                     device=device,
                     )
 
@@ -56,7 +56,7 @@ from flonacomldft.utils.plots import plotting_fes_db, plot_losses
 import matplotlib.pyplot as plt
 
 plot_losses(out['losses'][0], out['losses'][1])
-plt.show(block=False)
+plt.show()
 
 xs_sample = out['model'].sample(100)
 
@@ -67,7 +67,7 @@ fig, ax = plotting_fes_db()
 ax.scatter(x_sample_cv[:, 0], x_sample_cv[:, 1], label="mode {:d} - realnvp init".format(mode_label), c='C{:d}'.format(mode_label))#, alpha=0.5)
 ax.scatter(x_cv[:, 0], x_cv[:, 1], marker='x', c='C{:d}'.format(mode_label), label="mode {:d} - data".format(mode_label), alpha=0.5)
 ax.legend()
-plt.show(block=False)
+plt.show()
 
 f = "models/is{:d}_flow_dic_training_test.pkl".format(mode_label)
 save_pickle_file(out, f)

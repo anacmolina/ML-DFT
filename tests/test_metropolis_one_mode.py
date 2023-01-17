@@ -42,9 +42,8 @@ if mode_label==1:
 elif mode_label==2:
     isomer = 1
 
-xs = load_csv_file('is{:d}_lcao_zmat.csv'.format(mode_label))
-xs = torch.cat( (xs, torch.full((xs.shape[0], 1), isomer)), dim=1 )
 
+xs = load_csv_file("datasets/is{:d}_md_test.csv".format(mode_label)) # remove energy and logdetjac values
 xs = xs[torch.randperm(xs.size()[0])]
 xs = xs[:n_chains]
 
@@ -56,11 +55,11 @@ isomer_init = xs[:, 14]
 
 # flow models
 
-flow_model = load_pickle_file('is{:d}_flow_dic_training.pkl'.format(mode_label))['model']
+flow_model = load_pickle_file('models/is{:d}_flow_dic_training.pkl'.format(mode_label))['model']
 
 # mlp models
 
-mlp_model = load_pickle_file('is{:d}_mlp_dic_training.pkl'.format(mode_label))['model']
+mlp_model = load_pickle_file('models/is{:d}_mlp_dic_training.pkl'.format(mode_label))['model']
 
 
 # initialize metropolis simulation
