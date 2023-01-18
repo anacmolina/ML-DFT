@@ -8,7 +8,7 @@ from flonacomldft.train_mlp_from_data import train_mlp
 from flonacomldft.utils.io_utils import save_pickle_file
 import matplotlib.pyplot as plt
 
-mode_label = 1 #or 2
+mode_label = 2 #or 2
 
 xs_md_train = load_csv_file("datasets/is{:d}_md_train.csv".format(mode_label))
 xs_flow_train = load_csv_file("datasets/is{:d}_flow_test.csv".format(mode_label))
@@ -27,7 +27,7 @@ x_train = x_train.clone()[:, :12]
 x_test = x_test.clone()[:, :12]
 
 n_hidden = 64
-n_layers = 2
+n_layers = 8
 model = MLP([x_train.shape[1]] +  [n_hidden] * n_layers + [1])
 
 mlp_hyperparams = {'n_iter': 5000,
@@ -55,7 +55,7 @@ plot_correlation_target_and_predict_value(
     out['model'].predict(x_test),
     title='MLP mode {:d}'.format(mode_label)
 )
-plt.show(block=False)
+plt.show()
 
 f = "is{:d}_mlp_dic_training.pkl".format(mode_label)
 save_pickle_file(out, f)
