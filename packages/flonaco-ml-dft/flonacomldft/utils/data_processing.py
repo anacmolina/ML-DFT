@@ -22,6 +22,7 @@ def split_data_from_dataframe(tensor, train_size, sk_seed):
     return x_train, x_test 
 
 # centering data in radians
+# TODO: look into the centering args convention
 def centering_in_radian(xs, x_rad_center=None, return_centering_args=True):
 
     # centering in radian
