@@ -1,25 +1,42 @@
 import torch
 import pandas as pd
 
+# TODO: Avoid using sklearn
+
 # split data
 
-def split_data_from_dataframe(tensor, train_size, sk_seed):
+def split_data_from_dataframe(dataset, train_size, sk_seed):
     
-    import sklearn.model_selection
+    from torch.utils.data import random_split
 
-    arrays = [tensor.numpy()]
+    length = int(dataset.shape[0]*train_size)
+    lengths = [length, dataset.shape[0]-length]
 
-    x_train, x_test = sklearn.model_selection.train_test_split(*arrays,
-                                                      test_size=None,
-                                                      train_size=train_size,
-                                                      random_state=sk_seed,
-                                                      shuffle=True,
-                                                      stratify=None)
+    split = random_split(dataset=dataset,
+                        lengths=lengths,
+                        generator= torch.Generator().manual_seed(sk_seed))
 
-    x_train = torch.from_numpy(x_train).float()
-    x_test = torch.from_numpy(x_test).float()
+    dataset_splitted = [dataset[data.indices] for data in split]
 
-    return x_train, x_test 
+    return tuple(dataset_splitted)
+
+#def split_data_from_dataframe(tensor, train_size, sk_seed):
+#    
+#    import sklearn.model_selection
+#
+#    arrays = [tensor.numpy()]
+#
+#    x_train, x_test = sklearn.model_selection.train_test_split(*arrays,
+#                                                      test_size=None,
+#                                                      train_size=train_size,
+#                                                      random_state=sk_seed,
+#                                                      shuffle=True,
+#                                                      stratify=None)
+#
+#    x_train = torch.from_numpy(x_train).float()
+#    x_test = torch.from_numpy(x_test).float()
+#
+#    return x_train, x_test 
 
 # centering data in radians
 def centering_in_radian(xs, x_rad_center=None, return_centering_args=True):
@@ -44,6 +61,8 @@ def centering_in_radian(xs, x_rad_center=None, return_centering_args=True):
         return x_real_centered, centering_args
     else:
         return x_real_centered
+
+# TODO: 
 
 
  
