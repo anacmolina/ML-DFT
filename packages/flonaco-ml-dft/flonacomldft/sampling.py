@@ -126,12 +126,13 @@ def run_metropolis(
                 u_sort, ind_u_sort = u_new.sort()
                 for idx in ind_u_sort[:n_dft]:
                     ind_dft[idx] = 1
-            print("DFT idx: ", ind_dft)
+            #print("DFT idx: ", ind_dft)
             
             # TODO: type of isomer_dft
             for i,flag_dft in enumerate(ind_dft):
                 if flag_dft:
                     try:
+                        #TODO: CHANGE THIS
                         u_ = calculator.calculate_potential_energy(
                             structure.build_molecule(x_new[i]), 
                             filename='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out'
@@ -140,7 +141,8 @@ def run_metropolis(
                         #u_new[i] = (-6.3*(1+np.random.rand()*0.1))
 
                         xs_dft.append(x_new[i])
-                        us_dft.append(u_)
+                        #us_dft.append(u_) #TODO: ALERT! Possible BUG, ALERT
+                        us_dft.append(u_new[i])
                         isomers_dft.append(isomer_new[i])
                     except:
                         u_new[i] = 0.
@@ -154,8 +156,7 @@ def run_metropolis(
         acc = u < torch.min(ratio, torch.ones_like(ratio))
 
         if use_dft:
-            if ind_not_computed is not None and ind_not_computed.shape[0] != 0:
-                #print(ind_not_computed)
+            if ind_not_computed is not None and ind_not_computed.sum() != 0:
                 acc[ind_not_computed.bool()] = torch.full((1, len(ind_not_computed)), False)
 
             ind_dft[~acc] = 0
@@ -187,7 +188,7 @@ def run_metropolis(
             pbar.set_description(f'acc: {acc.float().mean():.2f}')
 
 
-        #print("acc: {:0.2f}".format(acc.float().mean()))
+        print("acc: {:0.2f}".format(acc.float().mean()))
 
     to_return = {
         "xs": torch.stack(xs),
@@ -197,6 +198,7 @@ def run_metropolis(
 
     }
     if use_dft:
+        #TODO: empty lists BUG
         to_return["inds_dft"] = torch.stack(inds_dft)
         to_return["xs_dft"] = torch.stack(xs_dft)
         to_return["us_dft"] = torch.tensor(us_dft).float().detach()

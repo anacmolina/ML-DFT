@@ -241,32 +241,7 @@ class RealNVP_MLP(nn.Module):
         """
         return self.nll(x)
 
-# TODO: delete this 
-# def init_model(zmat, n_blocks=15, block_depth=1, init_weight_scale=1e-6, device='cpu'):
-# 
-#     # Set this as a default for all the files
-#     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# 
-#     x_tensor = zmat[:, :-1]
-# 
-#     cov = torch.cov(x_tensor.T)
-#     cov = torch.eye(12) * cov.mean()
-#     mean = x_tensor.mean(0)
-#     centering_args =  {
-#         "type": "white",
-#         "cov_base": cov,
-#         "mean_out": mean
-#         }  # Gaussian with non-trival mean and covariance for base
-# 
-#     model = RealNVP_MLP(
-#         x_tensor.shape[-1],
-#         n_blocks,
-#         block_depth,
-#         init_weight_scale=init_weight_scale,
-#         centering_args=centering_args,
-#         device=device,
-#     )
-# 
-#     return model
-# 
-# 
+    #TODO: Fix adding 2 inputs instead of 3
+    def rad_center(self, x, cs):
+        return x - self.centering_args["mean_out"]
+

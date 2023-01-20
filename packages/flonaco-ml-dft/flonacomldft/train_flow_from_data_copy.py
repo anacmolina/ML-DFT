@@ -7,15 +7,11 @@ from torch.nn.utils import clip_grad_norm_
 from ase.parallel import parprint as print
 from ray import tune
 
-from flonacomldft.sampling import run_metropolis
-
 
 def train_flow(
     model,
     x_train,
     x_test,
-    u_test,
-    isomer,
     n_iter=1000,
     lr=5e-3,
     use_scheduler=False,
@@ -55,7 +51,6 @@ def train_flow(
     # logs
     losses_train = []
     losses_test = []
-    acc_rates = []
     models = [copy.deepcopy(model)]
     grad_norms = []
 
@@ -95,33 +90,6 @@ def train_flow(
 
         if use_scheduler:
             scheduler.step()
-
-        #TODO: ADD CONDITION TO START COMPUTING DFT OR MLP (ALTERNATE BETWEEN THE TWO STATES), DONT COMPUTE FOR ALL CASES WITH DFT, IMPOSSIBLE
-        n_chains = 5
-        x_samp = x_train.clone()[:n_chains]
-        u_samp = u_test.clone()[:n_chains]
-
-        _ = run_metropolis(
-        model=model,
-        x_init=x_samp,
-        u_init=u_samp,
-        isomer_init=torch.full((n_chains, 1), isomer),
-        n_chains=n_chains,
-        n_steps=1,
-        n_run="",
-        energy_type='dft',
-        frac_dft=None,
-        mlp_models=None,
-        mixture=False,
-        T=300,
-        with_tqdm=False,
-)
-        
-        acc = _['accs']
-        #print(acc)
-        acc_rate = (acc.cpu().numpy() * 1).mean()
-        print('acc_rates: ', acc_rates)
-        acc_rates.append(acc_rate)
 
         if t % (n_iter / save_splits) == 0 or n_iter <= save_splits:
             models.append(copy.deepcopy(model))
