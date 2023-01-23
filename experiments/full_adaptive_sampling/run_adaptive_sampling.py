@@ -4,6 +4,8 @@ import numpy as np
 from flonacomldft.utils.io_utils import (
     load_csv_file,
     load_pickle_file,
+    save_pickle_file,
+    get_project_path
 )
 
 from flonacomldft.full_adaptive_sampling import adaptative_sampling
@@ -13,9 +15,9 @@ from flonacomldft.full_adaptive_sampling import adaptative_sampling
 energy_type="mlp"
 
 # mcmc params
-n_runs = 15
-n_chains = 5
-n_steps = 3
+n_runs = 10
+n_chains = 50
+n_steps = 30
 
 flow_hyperparams_is1 = {'n_iter': 100,
     'lr': 5e-4,
@@ -144,6 +146,6 @@ out = adaptative_sampling(
     dict_mlps_init=init_mlps,
     retraining_mlp=True)
 
-#f = "experiments/adaptative_sampling_runs_{:d}_chains_{:d}_steps_{:d}_flow_dic_training.pkl".format(n_runs, n_chains, n_steps)
-#save_pickle_file(out, f, path=get_project_path())
+f = "experiments/adaptative_sampling_runs_{:d}_chains_{:d}_steps_{:d}_flow_dic_training.pkl".format(n_runs, n_chains, n_steps)
+save_pickle_file(out, f, path=get_project_path())
 

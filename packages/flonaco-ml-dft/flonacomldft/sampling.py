@@ -55,7 +55,7 @@ def run_metropolis(
         # mlp_dft = False
         use_dft = False
 
-    print("Use DFT: ", use_dft)
+    #print("Use DFT: ", use_dft)
 
 
     if "mlp" in energy_type:
@@ -125,21 +125,23 @@ def run_metropolis(
                 u_sort, ind_u_sort = u_new.sort()
                 for idx in ind_u_sort[:n_dft]:
                     ind_dft[idx] = 1
-            print("DFT idx: ", ind_dft)
+            #print("DFT idx: ", ind_dft)
             
             # TODO: type of isomer_dft
             for i,flag_dft in enumerate(ind_dft):
                 if flag_dft:
                     try:
+                        #TODO: CHANGE THIS
                         u_ = calculator.calculate_potential_energy(
                             coord_maps.get_molecule_from_internal(x_new[i]), 
                             filename='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out'
                                             )
-                        u_new[i] = u_ - coord_maps.logdetjac_internal_to_xyz(x_new[i]) / beta
-                        #u_new[i] = (-6.3*(1+np.random.rand()*0.1))
+                        u_new[i] = u_ - logdetjac_to_xyz(x_new[i]) / beta
+                        #u_new[i] = torch.tensor(-6.3*(1+np.random.rand()*0.1))
 
                         xs_dft.append(x_new[i])
-                        us_dft.append(u_)
+                        #us_dft.append(u_) #TODO: ALERT! Possible BUG, ALERT
+                        us_dft.append(u_new[i])
                         isomers_dft.append(isomer_new[i])
                     except:
                         u_new[i] = 0.
@@ -153,11 +155,11 @@ def run_metropolis(
         acc = u < torch.min(ratio, torch.ones_like(ratio))
 
         if use_dft:
-            if ind_not_computed is not None and ind_not_computed.shape[0] != 0:
-                #print(ind_not_computed)
+            if ind_not_computed is not None and ind_not_computed.sum() != 0:
                 acc[ind_not_computed.bool()] = torch.full((1, len(ind_not_computed)), False)
 
             ind_dft[~acc] = 0
+            inds_dft.append(ind_dft.float().clone())
 
         x_new[~acc] = x_init[~acc]
         u_new[~acc] = u_init[~acc]
@@ -167,7 +169,7 @@ def run_metropolis(
         else:
             isomer_new = isomer_init
 
-        print('accs: {:2f}'.format(acc.float().mean()))
+        #print('accs: {:2f}'.format(acc.float().mean()))
         
         xs.append(x_new.float().clone())
         us.append(u_new.float().clone())
@@ -175,8 +177,8 @@ def run_metropolis(
         nlls.append(nll_x.float().clone())
         isomers.append(isomer_new.float().clone())
         
-        if use_dft:
-            inds_dft.append(ind_dft.float().clone())
+        #if use_dft:
+        #    inds_dft.append(ind_dft.float().clone())
 
         x_init = x_new.clone().detach()
         u_init = u_new.clone().detach()
@@ -196,6 +198,7 @@ def run_metropolis(
 
     }
     if use_dft:
+        #TODO: empty lists BUG
         to_return["inds_dft"] = torch.stack(inds_dft)
         to_return["xs_dft"] = torch.stack(xs_dft)
         to_return["us_dft"] = torch.tensor(us_dft).float().detach()

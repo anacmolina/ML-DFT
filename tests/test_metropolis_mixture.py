@@ -38,11 +38,8 @@ energy_type = 'mlp'
 
 # load data
 
-xs_is1 = load_csv_file('is{:d}_lcao_zmat.csv'.format(1))
-xs_is2 = load_csv_file('is{:d}_lcao_zmat.csv'.format(2))
-
-xs_is1 = torch.cat( (xs_is1, torch.zeros((xs_is1.shape[0], 1)) ), dim=1 )
-xs_is2 = torch.cat( (xs_is2, torch.ones((xs_is2.shape[0], 1)) ), dim=1 )
+xs_is1 = load_csv_file('datasets/is{:d}_md_test.csv'.format(1))
+xs_is2 = load_csv_file('datasets/is{:d}_md_test.csv'.format(2))
 
 xs = torch.cat((xs_is1, xs_is2))
 xs = xs[torch.randperm(xs.size()[0])]
@@ -64,11 +61,6 @@ flow_models = np.array([flow_is1['model'],
                       flow_is2['model']])
 
 mixture = Mixture(flow_models, torch.tensor([0.5, 0.5]).detach())
-
-#xs, cs =  mixture.sample(5, return_mus=True)
-#print(xs, cs)
-#xs_rad = mixture.rad_center(xs.clone(), cs.bool())
-#print(mixture.nll(xs_rad), mixture.nll(xs))
 
 # mlp models
 
