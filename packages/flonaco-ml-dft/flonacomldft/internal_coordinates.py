@@ -200,29 +200,6 @@ class Coordinates_mapping():
             return zmat_flatten, logdetjac
         else:
             return zmat_flatten
-        
-
-
-    def get_real_centered_from_internal(self, zmats, logdetjacs, isomer, 
-                                        temperature=300, energies=None):
-        """    
-        Centers the internal coordinates and takes in real space from raw zmat
-
-        Args:
-            zmats (torch.tensor - (nsamples, dims)): zmat tensor
-            logdetjacs (torch.tensor) - (nsamples): logdetjac tensor
-            isomer (str): isomer name '0' or '1'
-        """
-        zmats = zmats - self.zmat_minima[isomer]
-        zmat_reals, logdetjacs_angle = self.angles_mappings.rads_to_reals(zmats)
-        logdetjacs += logdetjacs_angle
-
-        if energies is not None:
-            energies = energies - (self.kb * temperature) * logdetjacs_angle
-            return zmat_reals, logdetjacs, energies
-
-        return zmat_reals, logdetjacs
-    
 
     def get_internal_from_trajectory(self, trajectory, add_logdetjac=True, 
                                      add_potential_energy=True, temperature=None,
@@ -259,6 +236,32 @@ class Coordinates_mapping():
                     break
 
         return torch.stack(xs)
+    
+    def get_real_centered_from_internal(self, zmats, logdetjacs, isomer, 
+                                        temperature=300, energies=None):
+        """    
+        Centers the internal coordinates and takes in real space from raw zmat
+
+        Args:
+            zmats (torch.tensor - (nsamples, dims)): zmat tensor
+            logdetjacs (torch.tensor) - (nsamples): logdetjac tensor from xyz -> zmat
+            isomer (str): isomer name '0' or '1'
+            temperature (float): temperature value
+            energies (torch.tensor - (nsamples)): potential energy tensor
+        
+        Returns:
+            zmat_reals (torch.tensor - (nsamples, dims)): zmat tensor in real space
+            logdetjacs (torch.tensor - (nsamples)): logdetjac tensor from xyz -> zmat in real space (angles mapped)
+        """
+        zmats = zmats - self.zmat_minima[isomer]
+        zmat_reals, logdetjacs_angle = self.angles_mappings.rads_to_reals(zmats)
+        logdetjacs += logdetjacs_angle
+
+        if energies is not None:
+            energies = energies - (self.kb * temperature) * logdetjacs_angle
+            return zmat_reals, logdetjacs, energies
+
+        return zmat_reals, logdetjacs
     
 
 def get_labels_from_construction_table(construction_table, all_labels=False):
