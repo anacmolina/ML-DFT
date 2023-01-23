@@ -5,9 +5,13 @@ import torch
 from flonacomldft.train_flow_from_data import train_flow
 from flonacomldft.sampling import run_metropolis
 from flonacomldft.models.mixture import Mixture, get_models
+from flonacomldft.utils.data_processing import centering_in_radian
 
 def Transpose(x):
     return x.permute(*torch.arange(x.ndim - 1, -1, -1))
+
+
+#TODO: make sure data passed is real-centered
 
 def adaptative_sampling(
     xs_md_init_train,
@@ -62,7 +66,7 @@ def adaptative_sampling(
     dict_flows_training = [dict_flows_init, ]
     dict_mlps_training = [dict_mlps_init, ]
 
-    mcmc = []
+    mcmc_runs = []
 
     xs = []
     us = []
@@ -91,7 +95,7 @@ def adaptative_sampling(
         mixture=True,
         )
         
-        mcmc.append(mcmc_run)
+        mcmc_runs.append(mcmc_run)
 
         xs.append(mcmc_run["xs"])
         us.append(mcmc_run["us"])
@@ -122,8 +126,6 @@ def adaptative_sampling(
                 (xs_for_flows_train_is1, is1_from_chains)
             )
 
-            from flonacomldft.utils.data_processing import centering_in_radian
-            
             x_rad_center = dict_flows_training[i][0]['model'].centering_args['mean_out']
 
             xs_train_ = centering_in_radian(xs_for_flows_train_is1.clone(), x_rad_center, return_centering_args=False)
@@ -146,8 +148,6 @@ def adaptative_sampling(
             xs_for_flows_train_is2 = torch.cat(
                 (xs_for_flows_train_is2, is2_from_chains)
             )  
-
-            from flonacomldft.utils.data_processing import centering_in_radian
             
             x_rad_center = dict_flows_training[i][1]['model'].centering_args['mean_out']
 
@@ -212,7 +212,7 @@ def adaptative_sampling(
         dict_flows_training.append([dict_new_flow_is1, dict_new_flow_is2])
 
     results = {
-        'mcmc': mcmc,
+        'mcmc': mcmc_runs,
         'xs': xs,
         'us': us,
         'accs': accs,

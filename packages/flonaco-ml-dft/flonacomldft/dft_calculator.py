@@ -6,8 +6,6 @@ from ase.md.velocitydistribution import (MaxwellBoltzmannDistribution,
                                          Stationary, ZeroRotation)
 #from ase.parallel import parprint as print
 
-from flonacomldft.internal_coordinates import get_internal_coordinates_from_trajectory
-
 from gpaw import GPAW
 import gpaw.mpi as mpi
 
@@ -104,5 +102,5 @@ class DFTCalculator:
 #     dft_calculator.initialize_calculator(filename=filename)
 #     md_traj = dft_calculator.run_molecular_dynamics(molecule, iterations,
 #                                                 filename, starting)
-#     zmat = get_internal_coordinates_from_trajectory(md_traj).detach()
+#     zmat = coord_maps.get_internal_from_trajectory(md_traj).detach()
 #     return zmat

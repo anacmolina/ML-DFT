@@ -15,11 +15,11 @@ def plot_losses(losses_train, losses_test, title='losses', figsize=(8, 6), log_y
 def plot_sample(x, title, figsize=(8, 6)):
 
    from ase.visualize.plot import plot_atoms
-   from flonacomldft.internal_coordinates import Structure
+   from flonacomldft.internal_coordinates import Coordinates_mapping
    
    fig, ax = plt.subplots(1, 1, figsize=figsize)
-   ag6 = Structure()
-   plot_atoms(ag6.build_molecule(x), ax)
+   ag6 = Coordinates_mapping()
+   plot_atoms(ag6.get_molecule_from_internal(x), ax)
    ax.set_title(title)
    ax.set_xlabel('x coordinate')
    ax.set_ylabel('y coordinate')

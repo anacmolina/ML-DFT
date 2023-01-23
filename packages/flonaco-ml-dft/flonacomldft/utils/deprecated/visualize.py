@@ -5,15 +5,15 @@ import pandas as pd
 
 from ase.visualize.plot import plot_atoms
 
-from flonacomldft.internal_coordinates import Structure
+from flonacomldft.internal_coordinates import Coordinates_mapping
 from flonacomldft.FES.plotter2 import Plotter
 from flonacomldft.utils.data_utils import get_path
 from flonacomldft.collective_variables import get_CVs
 
 def plot_sample(x):
    fig, ax = plt.subplots()
-   ag6 = Structure()
-   plot_atoms(ag6.build_molecule(x), ax)
+   ag6 = Coordinates_mapping()
+   plot_atoms(ag6.get_molecule_from_internal(x), ax)
 
 def plotting_fes_db(train_data=None):
       
