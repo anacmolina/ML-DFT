@@ -6,10 +6,11 @@ import chemcoord as cc
 from flonacomldft.utils.io_utils import get_path
 from flonacomldft.utils.silver_isomers_utils import get_construction_table, get_molecule_isomer_minima 
 
+# add a phase for some internal coordinates angles
 def add_phase(tensor, phase = 2 * torch.pi):
     return tensor - phase
 
-# TODO:
+# map from radians to reals with tan function
 class Angles_mapping():
     """
     Class to get the forward and backward mapping of the angles.
