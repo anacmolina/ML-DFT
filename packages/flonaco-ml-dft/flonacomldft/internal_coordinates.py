@@ -263,6 +263,20 @@ class Coordinates_mapping():
             return zmat_reals, logdetjacs, energies
 
         return zmat_reals, logdetjacs
+
+    def get_internal_from_real_centered(self, reals, logdetjacs, isomer, 
+                                        temperature=300, energies=None):
+        
+        zmats, logdetjacs_angle = self.angles_mappings.reals_to_rads(reals)
+        logdetjacs += logdetjacs_angle
+
+        zmats = reals + self.zmat_minima[isomer]
+
+        if energies is not None:
+            energies = energies - (self.kb * temperature) * logdetjacs_angle
+            return zmats, logdetjacs, energies
+
+        return zmats, logdetjacs
     
 
 def get_labels_from_construction_table(construction_table, all_labels=False):
