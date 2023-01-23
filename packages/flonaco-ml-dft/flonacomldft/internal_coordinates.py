@@ -9,7 +9,7 @@ from flonacomldft.utils.silver_isomers_utils import get_construction_table, get_
 def add_phase(tensor, phase = 2 * torch.pi):
     return tensor - phase
 
-
+# TODO:
 class Angles_mapping():
     """
     Class to get the forward and backward mapping of the angles.
