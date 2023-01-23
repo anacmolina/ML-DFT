@@ -56,7 +56,7 @@ def run_metropolis(
         # mlp_dft = False
         use_dft = False
 
-    print("Use DFT: ", use_dft)
+    #print("Use DFT: ", use_dft)
 
 
     if "mlp" in energy_type:
@@ -138,7 +138,7 @@ def run_metropolis(
                             filename='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out'
                                             )
                         u_new[i] = u_ - logdetjac_to_xyz(x_new[i]) / beta
-                        #u_new[i] = (-6.3*(1+np.random.rand()*0.1))
+                        #u_new[i] = torch.tensor(-6.3*(1+np.random.rand()*0.1))
 
                         xs_dft.append(x_new[i])
                         #us_dft.append(u_) #TODO: ALERT! Possible BUG, ALERT
@@ -160,6 +160,7 @@ def run_metropolis(
                 acc[ind_not_computed.bool()] = torch.full((1, len(ind_not_computed)), False)
 
             ind_dft[~acc] = 0
+            inds_dft.append(ind_dft.float().clone())
 
         x_new[~acc] = x_init[~acc]
         u_new[~acc] = u_init[~acc]
@@ -169,7 +170,7 @@ def run_metropolis(
         else:
             isomer_new = isomer_init
 
-        print('accs: {:2f}'.format(acc.float().mean()))
+        #print('accs: {:2f}'.format(acc.float().mean()))
         
         xs.append(x_new.float().clone())
         us.append(u_new.float().clone())
@@ -177,8 +178,8 @@ def run_metropolis(
         nlls.append(nll_x.float().clone())
         isomers.append(isomer_new.float().clone())
         
-        if use_dft:
-            inds_dft.append(ind_dft.float().clone())
+        #if use_dft:
+        #    inds_dft.append(ind_dft.float().clone())
 
         x_init = x_new.clone().detach()
         u_init = u_new.clone().detach()
@@ -188,7 +189,7 @@ def run_metropolis(
             pbar.set_description(f'acc: {acc.float().mean():.2f}')
 
 
-        print("acc: {:0.2f}".format(acc.float().mean()))
+        #print("acc: {:0.2f}".format(acc.float().mean()))
 
     to_return = {
         "xs": torch.stack(xs),

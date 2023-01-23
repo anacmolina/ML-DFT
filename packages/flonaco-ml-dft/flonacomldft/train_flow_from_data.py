@@ -52,6 +52,9 @@ def train_flow(
             optimizer, step_size=step_schedule, gamma=0.5
         )
 
+    from flonacomldft.utils.io_utils import load_pickle_file 
+    mlp = load_pickle_file("models/is{:d}_mlp_dic_training.pkl".format(isomer+1))['model']
+
     # logs
     losses_train = []
     losses_test = []
@@ -82,6 +85,30 @@ def train_flow(
         losses_train.append(loss.item())
         losses_test.append(loss_func(x_test).item())
 
+        #TODO: COMPUTE WITH DFT OR MLP (ALTERNATE), DON'T COMPUTE FOR ALL CASES?
+        n_chains = 50
+        n_steps = 50
+        x_samp = x_train.clone()[:n_chains] + model.centering_args['mean_out']
+        u_samp = u_test.clone()[:n_chains]
+
+        _ = run_metropolis(model=model,
+                    x_init=x_samp,
+                    u_init=u_samp,
+                    isomer_init=torch.full((n_chains, 1), isomer),
+                    n_chains=n_chains,
+                    n_steps=n_steps,
+                    n_run="",
+                    energy_type='mlp', #'dft',
+                    frac_dft=None,
+                    mlp_models=mlp,
+                    mixture=False,
+                    T=300,
+                    with_tqdm=False,
+                )
+
+        acc_rate = (_['accs'].cpu().numpy() * 1).mean()
+        acc_rates.append(acc_rate)
+
         if with_tqdm:
             pbar.set_description(f"Loss: {losses_train[-1]:.4f}")
 
@@ -96,33 +123,6 @@ def train_flow(
         if use_scheduler:
             scheduler.step()
 
-        #TODO: ADD CONDITION TO START COMPUTING DFT OR MLP (ALTERNATE BETWEEN THE TWO STATES), DONT COMPUTE FOR ALL CASES WITH DFT, IMPOSSIBLE
-        n_chains = 5
-        x_samp = x_train.clone()[:n_chains]
-        u_samp = u_test.clone()[:n_chains]
-
-        _ = run_metropolis(
-        model=model,
-        x_init=x_samp,
-        u_init=u_samp,
-        isomer_init=torch.full((n_chains, 1), isomer),
-        n_chains=n_chains,
-        n_steps=1,
-        n_run="",
-        energy_type='dft',
-        frac_dft=None,
-        mlp_models=None,
-        mixture=False,
-        T=300,
-        with_tqdm=False,
-)
-        
-        acc = _['accs']
-        #print(acc)
-        acc_rate = (acc.cpu().numpy() * 1).mean()
-        print('acc_rates: ', acc_rates)
-        acc_rates.append(acc_rate)
-
         if t % (n_iter / save_splits) == 0 or n_iter <= save_splits:
             models.append(copy.deepcopy(model))
 
@@ -131,6 +131,8 @@ def train_flow(
             print(
                 "t={:0.1e}".format(t), "Loss: {:3.2f}".format(loss.item()), end="  \t"
             )
+
+            print("accs: {:.3f}".format(acc_rate), end="\t")
 
             print("Gd: {:0.0e}".format(total_norm), end="\t")
 
@@ -144,6 +146,7 @@ def train_flow(
     to_return = {
         "model": model,
         "losses": (losses_train, losses_test),
+        "acc_rates": acc_rates,
         "models": models,
         "grad_norms": grad_norms,
     }

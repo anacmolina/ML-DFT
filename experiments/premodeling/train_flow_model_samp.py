@@ -12,9 +12,9 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # for flows
 
-n_iter = 10000
-lr = 1e-4
-mode_label = 2 # or 2
+n_iter = 1500 #10000  
+lr = 1e-3 #1e-4
+mode_label = 1 # or 2
 
 torch.manual_seed(100)
 
@@ -30,12 +30,12 @@ xs_rad_train, centering_args = centering_in_radian(xs_train)
 xs_rad_test = centering_in_radian(xs_test, xs_train_mean, return_centering_args=False)
 
 model = RealNVP_MLP(12,
-                    n_blocks=12,
+                    n_blocks=8, #12,
                     block_depth=1,
                     init_weight_scale=1e-3,
                     centering_args=centering_args,
                     hidden_dim=32,  #128 #32
-                    hidden_depth=8,  #4   #8
+                    hidden_depth=4,  #4   #8
                     device=device,
                     )
 
@@ -44,7 +44,7 @@ out = train_flow(
     xs_rad_train,
     xs_rad_test,
     us_test,
-    isomer=mode_label,
+    isomer=mode_label-1,
     n_iter=n_iter,
     lr=lr,
     use_scheduler=False,
@@ -59,6 +59,13 @@ from flonacomldft.utils.plots import plotting_fes_db, plot_losses
 import matplotlib.pyplot as plt
 plot_losses(out['losses'][0], out['losses'][1])
 plt.show()
+
+plt.figure()
+plt.plot(out['acc_rates'])
+plt.xlabel('iters')
+plt.ylabel('acc_rates')
+plt.show()
+
 xs_sample = out['model'].sample(100)
 x_sample_cv = np.array(get_CVs(xs_sample)).T
 x_cv = np.array(get_CVs(xs_train[:50])).T
