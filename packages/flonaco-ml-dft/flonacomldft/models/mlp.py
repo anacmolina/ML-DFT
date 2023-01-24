@@ -32,20 +32,5 @@ class MLP(nn.Module):
         y = layers[-1][1](x)
         return y
 
-    def predict(self, x, logdetjac, isomer, temperature=300):
-        """"
-        Predicts the uncentered y value for a given the uncentered x value
-        """
-
-        kb = 8.617333262e-5 # eV/K
-
-        coord_mapping = Coordinates_mapping()
-        z, logdetjac_angle = coord_mapping.get_real_centered_from_internal(x, logdetjac, isomer)
-        
-        y = self.forward(z).flatten() #- (kb * temperature) * logdetjac_angle
-
-        print(self.forward(z).shape, logdetjac_angle.shape, y.shape)
-
-        return y
 
 

@@ -31,13 +31,13 @@ def train_mlp(
             optimizer, step_size=step_schedule, gamma=0.5
         )
 
-    zs_train, logdetjac_train, us_train = train[:, :12], train[:, 12], train[:, 13]
-    zs_test, logdetjac_test, us_test = train[:, :12], train[:, 12], train[:, 13]  
+    zs_train, logdetjac_train, us_train = train[:, :12], train[:, 12].T, train[:, 13].T
+    zs_test, logdetjac_test, us_test = test[:, :12], test[:, 12].T, test[:, 13].T
 
-    coord_mapping = Coordinates_mapping()
+    #coord_mapping = Coordinates_mapping()
 
-    zs_train, logdetjac_train, us_train = coord_mapping.get_real_centered_from_internal(zs_train, logdetjac_train, isomer=isomer, energies=us_train)
-    zs_test, logdetjac_test, us_test = coord_mapping.get_real_centered_from_internal(zs_test, logdetjac_test, isomer=isomer, energies=us_test)
+    #zs_train, logdetjac_train, us_train = coord_mapping.get_real_centered_from_internal(zs_train, logdetjac_train, isomer=isomer, energies=us_train)
+    #zs_test, logdetjac_test, us_test = coord_mapping.get_real_centered_from_internal(zs_test, logdetjac_test, isomer=isomer, energies=us_test)
 
     if with_tqdm:
         pbar = tqdm.tqdm(range(n_iter))

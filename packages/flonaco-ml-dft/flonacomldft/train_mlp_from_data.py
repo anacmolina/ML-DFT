@@ -4,7 +4,7 @@ import torch
 from torch.nn.utils import clip_grad_norm_
 import torch.optim as optim
 
-from flonacomldft.models.mlp import  center_values
+from flonacomldft.models.mlp_copy import  center_values
 
 
 def train_mlp(

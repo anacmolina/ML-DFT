@@ -2,7 +2,7 @@ import torch
 
 from flonacomldft.utils.io_utils import load_csv_file
 
-from flonacomldft.models.mlp import MLP
+from flonacomldft.models.mlp_copy import MLP
 from flonacomldft.train_mlp_from_data import train_mlp
 
 from flonacomldft.utils.io_utils import save_pickle_file

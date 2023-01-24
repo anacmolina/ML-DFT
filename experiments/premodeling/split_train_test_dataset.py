@@ -10,15 +10,16 @@ from flonacomldft.internal_coordinates import (
 train_size = 0.8
 sk_seed = 42
 
-mode_labels = [1, 2]
+mode_labels = [0, 1]
 
-for mode_label, isomer_val in zip(mode_labels, [0, 1]):
+for mode_label in mode_labels:
 
     xs_md = load_csv_file("int_coords/is{:d}_lcao_zmat.csv".format(mode_label))
     xs_flow = load_csv_file("int_coords/is{:d}_flow_zmat.csv".format(mode_label))
 
-    xs_md = torch.cat( (xs_md, torch.full((xs_md.shape[0], 1), isomer_val) ), dim=1 )
-    xs_flow = torch.cat( (xs_flow, torch.full((xs_flow.shape[0], 1), isomer_val) ), dim=1 )
+    #TODO: Move this to the general database
+    xs_md = torch.cat( (xs_md, torch.full((xs_md.shape[0], 1), mode_label) ), dim=1 )
+    xs_flow = torch.cat( (xs_flow, torch.full((xs_flow.shape[0], 1), mode_label) ), dim=1 )
 
     x_md_train, x_md_test = split_data_from_dataframe(xs_md, train_size, sk_seed)
     x_flow_train, x_flow_test = split_data_from_dataframe(xs_flow, train_size, sk_seed)

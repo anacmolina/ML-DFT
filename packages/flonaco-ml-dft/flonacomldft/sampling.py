@@ -136,6 +136,7 @@ def run_metropolis(
                             coord_maps.get_molecule_from_internal(x_new[i]), 
                             filename='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out'
                                             )
+                        #TODO: Solve this for the new Coordinates mapping BUG
                         u_new[i] = u_ - logdetjac_to_xyz(x_new[i]) / beta
                         #u_new[i] = torch.tensor(-6.3*(1+np.random.rand()*0.1))
 
