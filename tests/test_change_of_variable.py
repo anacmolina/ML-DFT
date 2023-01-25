@@ -8,12 +8,12 @@ from flonacomldft.internal_coordinates import Coordinates_mapping
 
 from flonacomldft.utils.io_utils import load_csv_file
 
-data = load_csv_file("datasets/is1_md_train.csv")
+data = load_csv_file("datasets/is0_md_train.csv")
 coord_mapping = Coordinates_mapping()
 
 n = 1
 
-# int coords
+# int_coords
 zs = data.clone()[:, :12][:n]
 logdetjac = data.clone()[:, 12][:n] 
 energies = data.clone()[:, 13][:n]
@@ -21,14 +21,16 @@ energies = data.clone()[:, 13][:n]
 print('\n')
 print(zs, logdetjac, energies)
 
-# centering around and reals
+# centering around minima and real space (tan)
 zs_reals, logdetjac_reals, energies_reals = coord_mapping.get_real_centered_from_internal(zs, logdetjac, isomer=0, energies=energies)
 
 print('\n')
 print(zs_reals, logdetjac_reals, energies_reals)
 
+# back to internal coords
 xs_back, logdetjac_back, energies_back = coord_mapping.get_internal_from_real_centered(zs_reals, logdetjac_reals, isomer=0, energies=energies_reals)
 
 print('\n')
 print(xs_back, logdetjac_back, energies_back)
 
+# from real_centered to cartesian
