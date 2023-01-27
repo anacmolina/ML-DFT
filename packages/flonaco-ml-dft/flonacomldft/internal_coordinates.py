@@ -38,7 +38,7 @@ class Angles_mapping():
         log_det_jac -= torch.log(1 + x_reals[:, self.idx_first_angle:]**2).sum(-1)
         return x_rads, log_det_jac
 
-
+# class for mapping in all frame
 class Coordinates_mapping():
     """
     Coordinates_mapping (Object)
@@ -61,61 +61,37 @@ class Coordinates_mapping():
         self.Natoms = len(self.symbols) 
         self.angles_mappings = Angles_mapping()    
         self.zmat_minima = {
-            0: self.get_internal_from_molecule(get_molecule_isomer_minima('ag6_planar')),
-            1: self.get_internal_from_molecule(get_molecule_isomer_minima('ag6_3d'))
+            0: self.get_internal_from_molecule(get_molecule_isomer_minima('ag6_planar'))[0],
+            1: self.get_internal_from_molecule(get_molecule_isomer_minima('ag6_3d'))[0]
         } 
         self.kb = 8.617333262e-5 # eV/K
 
     # TODO: Add description
-    def _get_xyz_from_molecule(self, molecule): #NOTE: It's working
+    def _get_xyz_from_molecule(self, molecule): 
         return cc.Cartesian.from_ase_atoms(molecule)
     
     # TODO: Add description
-    def _get_zmat_matrix_from_xyz(self, xyz): #NOTE: It's working
+    def _get_zmat_matrix_from_xyz(self, xyz): 
         return xyz.get_zmat(self.construction_table.copy())
     
     # TODO: Add description
-    def _get_zmat_matrix_from_molecule(self, molecule): #NOTE: It's working
-        xyz = self._get_xyz_from_molecule(molecule)
-        return self._get_zmat_matrix_from_xyz(xyz)
+    def _get_zmat_from_zmat_matrix(self, zmat_matrix):
 
-    # TODO: add new function
-    #def get_zmat_from_zmat_matrix()
-
-    def _get_zmat_from_xyz(self, xyz): # NOTE: It's working
-        """
-        Args:
-            xyz: chemcoord Cartesian object
-
-        Returns:
-            zmat: flat tensor with internal coords
-        """
-
-        zmat_matrix = xyz.get_zmat(self.construction_table.copy())
         zmat_matrix = zmat_matrix.minimize_dihedrals()
         zmat = zmat_matrix.loc[:, ['bond', 'angle', 'dihedral']]
         zmat.loc[:, ['angle', 'dihedral']] = zmat.loc[:, ['angle', 'dihedral']].apply(np.deg2rad)
         zmat = zmat.to_numpy()[1:, :]
         zmat = np.concatenate((zmat[:, 0], zmat[1:, 1], zmat[2:, 2]))
 
-        return zmat
-
-    def _get_zmat_from_molecule(self, molecule):
+        return torch.tensor(zmat).float()
+    
+    # TODO: Is this function important?
+    def get_zmat_from_molecule(self, molecule):
         xyz = self._get_xyz_from_molecule(molecule)
-        return self._get_zmat_from_xyz(xyz)
-
-    def _build_oriented_and_centered_molecule(self, molecule): #NOTE: It's working
-        """
-        Args:
-            molecule: ase atoms (molecule) object
-        Returns:
-            xyz: chemcoord Cartesian object
-        """
-
-        zmat = self._get_zmat_from_molecule(molecule)
-        xyz_rebuilt = self._build_zmat_matrix_from_zmat(zmat).get_cartesian()
-
-        return xyz_rebuilt
+        zmat = self._get_zmat_from_zmat_matrix(
+            self._get_zmat_matrix_from_xyz(xyz)
+        )
+        return zmat
       
     def _build_zmat_matrix_from_zmat(self, zmat): #NOTE: It's working
         # TODO: Rebuild this using read_xyz from chemcoord  
@@ -172,33 +148,61 @@ class Coordinates_mapping():
       
         return zmat_matrix
 
-    #def _build_oriented_and_centered_xyz(self, xyz):
-    #    """
-    #    Args:
-    #        molecule: ase atoms (molecule) object
-    #    Returns:
-    #        xyz: chemcoord Cartesian object
-    #    """
-    #    zmat = self._get_zmat_matrix_from_molecule(molecule)
-    #    xyz_rebuilt = self._build_zmat_matrix_from_zmat(zmat).get_cartesian()
-#
-    #    return xyz_rebuilt
+    def _build_xyz_from_zmat_matrix(self, zmat_matrix):
+        return zmat_matrix.get_cartesian()
 
+    def _build_molecule_from_xyz(self, xyz):
+        return xyz.get_ase_atoms()
 
-    # TODO: Build the function orient and center
-    def get_oriented_and_centered_molecule(self, molecule): #NOTE: It's working
+    #TODO: It's this function important?
+    def build_molecule_from_zmat(self, zmat):
+        """"
+        Build the ase molecule to feed in the DFT calculator from the zmat values 
+        (only the internal coordinates with angles in radians).
+        
+        Args:
+            zmat_values: array with the values of the internal coordinates of one only
+            configuration (12 inputs)
+        
+        Returns:  
+            molecule: ase object
+        """
+
+        xyz = self._build_xyz_from_zmat_matrix(
+            self._build_zmat_matrix_from_zmat(zmat)
+        )
+        
+        return xyz.get_ase_atoms()
+
+    def _orient_and_center_xyz(self, xyz):
+        """
+        Args:
+            xyz: chemcoord Cartesian object
+        Returns:
+            xyz: chemcoord Cartesian object
+        """
+
+        zmat = self._get_zmat_from_zmat_matrix(
+            self._get_zmat_matrix_from_xyz(xyz)
+        )
+        xyz_rebuilt = self._build_zmat_matrix_from_zmat(zmat).get_cartesian()
+
+        return xyz_rebuilt
+
+    def reorient_and_center_molecule(self, molecule): #NOTE: It's working
         """
         Args:
             molecule: ase atoms (molecule) object
         Returns:
-            molecule: ase atoms (molecule) object - oriented 
-            and centered molecule
+            xyz: chemcoord Cartesian object
         """
-        xyz = self._build_oriented_and_centered_molecule(molecule)
 
-        return xyz.get_ase_atoms()
+        xyz = self._get_xyz_from_molecule(molecule)
+        xyz_rebuilt = self._orient_and_center_xyz(xyz)
 
-    def get_logdetjac_internal_to_cartesian(self, zmat): 
+        return xyz_rebuilt.get_ase_atoms()
+
+    def logdetjac_zmat_to_xyz(self, zmat): 
         """"
         Args:
             zmat_values: array of internal coordinates for a single configuration (12,)
@@ -213,7 +217,7 @@ class Coordinates_mapping():
         
         return np.linalg.slogdet(det)
 
-    def get_logdetjac_cartesian_to_internal(self, molecule, use_oriented_centered_molecule=False):
+    def logdetjac_xyz_to_zmat(self, xyz):
 
         """"
         Args:
@@ -223,70 +227,58 @@ class Coordinates_mapping():
             s, logdetjac: sign and absolute value of log of the determinant of the jacobian of 
                           the transformation from internal to cartesian coordinates
         """
-        if use_oriented_centered_molecule:
-            xyz = self._build_oriented_and_centered_molecule(molecule)
+        xyz = self._orient_and_center_xyz(xyz)
         
-        det = xyz.get_grad_zmat(self.construction_table, as_function=False)
+        det = xyz.get_grad_zmat(self.construction_table.copy(), as_function=False)
         det = det.reshape(self.Natoms * 3, self.Natoms * 3)
         
         return np.linalg.slogdet(det)
 
-    def get_internal_from_cartesian(self, xyz, return_logdetjac=False):
-
-        zmat = self._get_zmat_from_xyz(xyz)
-
-        if return_logdetjac:
-            logdetjac_zmat_to_xyz = self.get_logdetjac_internal_to_cartesian(zmat)
-
-            return zmat, logdetjac_zmat_to_xyz
-
-        return zmat
-
-    #def get_internal_from_cartesian(self, xyz, return_logdetjac=True):
-#
-    #    # zmat_matrix = xyz.get_zmat(self.construction_table.copy())
-    #    # zmat_matrix = zmat_matrix.minimize_dihedrals()
-    #    # zmat_values = zmat_matrix.loc[:, ['bond', 'angle', 'dihedral']]
-    #    # zmat_values.loc[:, ['angle', 'dihedral']] = zmat_values.loc[:, ['angle', 'dihedral']].apply(np.deg2rad)
-    #    # zmat_values = zmat_values.to_numpy()[1:, :]
-    #    # zmat_flatten = np.concatenate((zmat_values[:, 0], zmat_values[1:, 1], zmat_values[2:, 2]))
-#
-    #    if return_logdetjac:
-    #        logdetjac = torch.tensor([self.logdetjac_internal_to_xyz(zmat_flatten)[1]]).float()
-    #    
-    #    return torch.tensor(zmat_flatten).float()
-
-    # TODO: get cartesian from internal
-    def get_cartesian_from_internal(self, zmat, logdetjac, isomer, 
-                                    temperature=300, energies=None):
-        
-        return 0 
-
-    def get_molecule_from_internal(self, zmat_values):
-        """"
-        Build the ase molecule to feed in the DFT calculator from the zmat values 
-        (only the internal coordinates with angles in radians).
-        
+    def get_internal_from_cartesian(self, xyz, logdetjac=None,
+                                   requires_grad=False): 
+        """
         Args:
-            zmat_values: array with the values of the internal coordinates of one only
-            configuration (12 inputs)
-        
-        Returns:  
-            molecule: ase object
+            xyz: chemcoord Cartesian object
+        Returns:
+            zmat: tensor
         """
 
-        zmat_matrix = self._build_zmat_matrix(zmat_values)
-        molecule = zmat_matrix.get_cartesian().get_ase_atoms()
+        zmat_matrix = self._get_zmat_matrix_from_xyz(xyz)
+        zmat = self._get_zmat_from_zmat_matrix(
+            zmat_matrix
+            ).float()
 
-        return molecule 
+        if requires_grad:
+            zmat.requires_grad_()
 
-    
+        if logdetjac is None:
+            logdetjac = 0
 
-    
+        logdetjac_to_xyz = torch.tensor([self.logdetjac_zmat_to_xyz(zmat)[1]]).float()
+        logdetjac += logdetjac_to_xyz
+        
+        return zmat, logdetjac
+        
+    def get_cartesian_from_internal(self, zmat, logdetjac=None):
+        
+        xyz = self._build_xyz_from_zmat_matrix(
+            self._build_zmat_matrix_from_zmat(zmat)
+            )
 
-    def get_internal_from_molecule(self, molecule, return_logdetjac=False,
-                                   return_potential_energy=False, temperature=None,
-                                   requires_grad=False):
+        if logdetjac is None:
+            logdetjac = 0
+        
+        logdetjac_to_zmat = torch.tensor([self.logdetjac_xyz_to_zmat(xyz)[1]]).float()
+        logdetjac += logdetjac_to_zmat
+        
+        return xyz, logdetjac
+
+    def compute_energy_in_new_frame(self, energy, logdetjac, temperature=300):
+        return energy - (self.kb * temperature) * logdetjac
+
+
+    def get_internal_from_molecule(self, molecule, return_potential_energy=False,
+                                temperature=300, requires_grad=False):
         """"
         Computes the internal coordinate tensor from a molecule and a construction table.
         If return_logdetjac is True, the logdetjac is also computed.
@@ -301,27 +293,26 @@ class Coordinates_mapping():
             (opt) potential_energy (array): potential energy tensor
         """
         
-        xyz = cc.Cartesian.from_ase_atoms(molecule)
-        zmat = self.get_internal_from_cartesian(xyz)
+        xyz = self._get_xyz_from_molecule(molecule)
+        zmat, logdetjac_to_xyz = self.get_internal_from_cartesian(xyz)
     
-        if return_logdetjac:
-            logdetjac = torch.tensor([self.logdetjac_internal_to_xyz(zmat)[1]]).float()
-
-            if return_potential_energy:
-                if temperature is None:
-                    raise RuntimeError('Include temperature value and ask for logdetjac computation')
-                else:    
-                    potential_energy = molecule.get_potential_energy() - (self.kb * temperature) * logdetjac
+        
+        if return_potential_energy:
+            if temperature is None:
+                raise RuntimeError('Include temperature value and ask for logdetjac computation')
+            else:    
+                potential_energy = self.compute_energy_in_new_frame(molecule.get_potential_energy(),
+                                                        logdetjac_to_xyz, 
+                                                        temperature)
         
         if requires_grad:
             zmat.requires_grad_()
 
-        if return_logdetjac and return_potential_energy:
-            return zmat, logdetjac, potential_energy
-        if return_logdetjac and not return_potential_energy:
-            return zmat, logdetjac
+        if return_potential_energy:
+            return zmat, logdetjac_to_xyz, potential_energy
         else:
-            return zmat
+            return zmat, logdetjac_to_xyz
+            
 
     def get_internal_from_trajectory(self, trajectory, add_logdetjac=True, 
                                      add_potential_energy=True, temperature=None,
@@ -398,21 +389,7 @@ class Coordinates_mapping():
             return zmats, logdetjacs, energies
 
         return zmats, logdetjacs
-    
-    # TODO: Get cartesian from real_centered
-    def get_cartesian_from_real_centered(self, reals, logdetjacs, isomer,
-                                         temperature=300, energies=None):
-
-        if energies is not None:
-            zmats, logdetjacs, energies = self.get_internal_from_real_centered(reals, 
-                                                logdetjacs, isomer, temperature, energies)
-            #xyzs =
-        else:
-            zmats, logdetjacs = self.get_internal_from_real_centered(reals, 
-                                                logdetjacs, isomer, temperature)
-
-        return
-    
+        
 
 def get_labels_from_construction_table(construction_table, all_labels=False):
 
@@ -451,3 +428,67 @@ def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_ener
         df = pd.DataFrame(xs.detach().numpy())
         df.columns=labels
         df.to_csv(path + '/' + filename, index=False)
+
+
+    #def get_internal_from_cartesian(self, xyz, return_logdetjac=True):
+#
+    #    # zmat_matrix = xyz.get_zmat(self.construction_table.copy())
+    #    # zmat_matrix = zmat_matrix.minimize_dihedrals()
+    #    # zmat_values = zmat_matrix.loc[:, ['bond', 'angle', 'dihedral']]
+    #    # zmat_values.loc[:, ['angle', 'dihedral']] = zmat_values.loc[:, ['angle', 'dihedral']].apply(np.deg2rad)
+    #    # zmat_values = zmat_values.to_numpy()[1:, :]
+    #    # zmat_flatten = np.concatenate((zmat_values[:, 0], zmat_values[1:, 1], zmat_values[2:, 2]))
+#
+    #    if return_logdetjac:
+    #        logdetjac = torch.tensor([self.logdetjac_internal_to_xyz(zmat_flatten)[1]]).float()
+    #    
+    #    return torch.tensor(zmat_flatten).float()
+
+
+#    def get_internal_from_molecule(self, molecule, return_logdetjac=False,
+#                                   return_potential_energy=False, temperature=None,
+#                                   requires_grad=False):
+#        """"
+#        Computes the internal coordinate tensor from a molecule and a construction table.
+#        If return_logdetjac is True, the logdetjac is also computed.
+#        If return_potential_energy is True, the potential energy is also computed.
+#
+#        Args:
+#            molecule (ase.Atoms): molecule single configuration in ASE format
+#        
+#        Returns:
+#            zmat (torch.tensor): flattened zmat tensor
+#            (opt) logdetjac (torch.tensor): logdetjac tensor
+#            (opt) potential_energy (array): potential energy tensor
+#        """
+#        
+#        xyz = cc.Cartesian.from_ase_atoms(molecule)
+#        zmat = self.get_internal_from_cartesian(xyz)
+#    
+#        if return_logdetjac:
+#            logdetjac = torch.tensor([self.logdetjac_internal_to_xyz(zmat)[1]]).float()
+#
+#            if return_potential_energy:
+#                if temperature is None:
+#                    raise RuntimeError('Include temperature value and ask for logdetjac computation')
+#                else:    
+#                    potential_energy = molecule.get_potential_energy() - (self.kb * temperature) * logdetjac
+#        
+#        if requires_grad:
+#            zmat.requires_grad_()
+#
+#        if return_logdetjac and return_potential_energy:
+#            return zmat, logdetjac, potential_energy
+#        if return_logdetjac and not return_potential_energy:
+#            return zmat, logdetjac
+#        else:
+#            return zmat
+
+
+    #def get_molecule_from_internal(self, zmat):
+    #    
+#
+    #    zmat_matrix = self._build_zmat_matrix_from_zmat(zmat)
+    #    molecule = zmat_matrix.get_cartesian().get_ase_atoms()
+#
+    #    return molecule 
