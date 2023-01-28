@@ -1,7 +1,9 @@
+# TODO: Move funtion to another file, dataprocessing folder in experiments
+
 import torch
 import pandas as pd
-import sklearn.model_selection
-from flonacomldft.models.real_nvp import Angles_mapping
+#import sklearn.model_selection
+#from flonacomldft.internal_coordinates import Angles_mapping
 
 # TODO: Avoid using sklearn
 

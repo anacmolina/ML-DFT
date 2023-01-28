@@ -68,7 +68,7 @@ class Coordinates_mapping():
 
     # TODO: Add description
     def _get_xyz_from_molecule(self, molecule): 
-        return cc.Cartesian.from_ase_atoms(molecule)
+        return cc.Cartesian.from_ase_atoms(molecule)#.set_index(self.construction_table.index)
     
     # TODO: Add description
     def _get_zmat_matrix_from_xyz(self, xyz): 
@@ -83,7 +83,7 @@ class Coordinates_mapping():
         zmat = zmat.to_numpy()[1:, :]
         zmat = np.concatenate((zmat[:, 0], zmat[1:, 1], zmat[2:, 2]))
 
-        return torch.tensor(zmat).float()
+        return torch.tensor(zmat)
     
     # TODO: Is this function important?
     def get_zmat_from_molecule(self, molecule):
@@ -149,7 +149,7 @@ class Coordinates_mapping():
         return zmat_matrix
 
     def _build_xyz_from_zmat_matrix(self, zmat_matrix):
-        return zmat_matrix.get_cartesian()
+        return zmat_matrix.get_cartesian()#.set_index(self.construction_table.index)
 
     def _build_molecule_from_xyz(self, xyz):
         return xyz.get_ase_atoms()
@@ -246,7 +246,7 @@ class Coordinates_mapping():
         zmat_matrix = self._get_zmat_matrix_from_xyz(xyz)
         zmat = self._get_zmat_from_zmat_matrix(
             zmat_matrix
-            ).float()
+            )
 
         if requires_grad:
             zmat.requires_grad_()
@@ -254,7 +254,7 @@ class Coordinates_mapping():
         if logdetjac is None:
             logdetjac = 0
 
-        logdetjac_to_xyz = torch.tensor([self.logdetjac_zmat_to_xyz(zmat)[1]]).float()
+        logdetjac_to_xyz = torch.tensor([self.logdetjac_zmat_to_xyz(zmat)[1]])
         logdetjac += logdetjac_to_xyz
         
         return zmat, logdetjac
@@ -268,7 +268,7 @@ class Coordinates_mapping():
         if logdetjac is None:
             logdetjac = 0
         
-        logdetjac_to_zmat = torch.tensor([self.logdetjac_xyz_to_zmat(xyz)[1]]).float()
+        logdetjac_to_zmat = torch.tensor([self.logdetjac_xyz_to_zmat(xyz)[1]])
         logdetjac += logdetjac_to_zmat
         
         return xyz, logdetjac
@@ -314,41 +314,40 @@ class Coordinates_mapping():
             return zmat, logdetjac_to_xyz
             
 
-    def get_internal_from_trajectory(self, trajectory, add_logdetjac=True, 
+    def get_internal_from_trajectory(self, trajectory, isomer=None,
                                      add_potential_energy=True, temperature=None,
                                      max_samples=None):
         """
         Loops over the previous function to compute the internal coordinates for a whole trajectory.
         """
 
-        xs = []
-        for m,molecule_configuration in enumerate(trajectory):
+        zmats = []
+        for m, molecule_configuration in enumerate(trajectory):
     
-            if add_logdetjac and add_potential_energy:
-                x, logdetjac, potential_energy = self.get_internal_from_molecule(molecule_configuration, 
-                                                            return_logdetjac=True, 
+            if add_potential_energy:
+                zmat, logdetjac, potential_energy = self.get_internal_from_molecule(molecule_configuration, 
                                                             return_potential_energy=True,
                                                             temperature=temperature)
-            
-                x = torch.cat((x, logdetjac, potential_energy), dim=-1)
+                zmat = torch.cat((zmat, logdetjac, potential_energy), dim=-1)
 
-            if add_logdetjac==True and add_potential_energy==False:
-                x, logdetjac = self.get_internal_from_molecule(molecule_configuration, 
-                                                            return_logdetjac=True, 
+            else:
+                zmat, logdetjac = self.get_internal_from_molecule(molecule_configuration, 
                                                             return_potential_energy=False)
-                x = torch.cat((x, logdetjac), dim=-1)
+                zmat = torch.cat((zmat, logdetjac), dim=-1)
 
-            if add_logdetjac==False and add_potential_energy==False:
-                x = self.get_internal_from_molecule(molecule_configuration, 
-                                                      return_logdetjac=False)
+            if isomer is not None:
+                print(isomer)
+                isomer = torch.tensor([isomer])
+                zmat = torch.cat((zmat, isomer), dim=-1 )
+
             
-            xs.append(x)
+            zmats.append(zmat)
             
             if max_samples is not None:
                 if m >= max_samples:
                     break
 
-        return torch.stack(xs)
+        return torch.stack(zmats)
     
     def get_real_centered_from_internal(self, zmats, logdetjacs, isomer, 
                                         temperature=300, energies=None):
@@ -367,14 +366,14 @@ class Coordinates_mapping():
             logdetjacs (torch.tensor - (nsamples)): logdetjac tensor from xyz -> zmat in real space (angles mapped)
         """
         zmats = zmats - self.zmat_minima[isomer]
-        zmat_reals, logdetjacs_angle = self.angles_mappings.rads_to_reals(zmats)
+        reals, logdetjacs_angle = self.angles_mappings.rads_to_reals(zmats)
         logdetjacs += logdetjacs_angle
 
         if energies is not None:
             energies = energies - (self.kb * temperature) * logdetjacs_angle
-            return zmat_reals, logdetjacs, energies
+            return reals, logdetjacs, energies
 
-        return zmat_reals, logdetjacs
+        return reals, logdetjacs
 
     def get_internal_from_real_centered(self, reals, logdetjacs, isomer, 
                                         temperature=300, energies=None):
@@ -412,7 +411,7 @@ def get_labels_from_construction_table(construction_table, all_labels=False):
 
         return labels
 
-def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_energy=True, add_logdetjac=True, add_isomer=False, filename='traj.csv', path=get_path()):
+def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_energy=True, add_logdetjac=True, add_isomer=True, filename='traj.csv', path=get_path()):
 
         labels = get_labels_from_construction_table(construction_table)
         

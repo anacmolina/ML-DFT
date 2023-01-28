@@ -14,17 +14,13 @@ mode_labels = [0, 1]
 
 for mode_label in mode_labels:
 
-    xs_md = load_csv_file("int_coords/is{:d}_lcao_zmat.csv".format(mode_label))
-    xs_flow = load_csv_file("int_coords/is{:d}_flow_zmat.csv".format(mode_label))
+    zmats_md = load_csv_file("int_coords/is{:d}_md_zmat.csv".format(mode_label))
+    zmats_flow = load_csv_file("int_coords/is{:d}_flow_zmat.csv".format(mode_label))
 
-    #TODO: Move this to the general database
-    xs_md = torch.cat( (xs_md, torch.full((xs_md.shape[0], 1), mode_label) ), dim=1 )
-    xs_flow = torch.cat( (xs_flow, torch.full((xs_flow.shape[0], 1), mode_label) ), dim=1 )
+    zmats_md_train, zmats_md_test = split_data_from_dataframe(zmats_md, train_size, sk_seed)
+    zmats_flow_train, zmats_flow_test = split_data_from_dataframe(zmats_flow, train_size, sk_seed)
 
-    x_md_train, x_md_test = split_data_from_dataframe(xs_md, train_size, sk_seed)
-    x_flow_train, x_flow_test = split_data_from_dataframe(xs_flow, train_size, sk_seed)
-
-    datasets = [[x_md_train, x_flow_train], [x_md_test, x_flow_test]]
+    datasets = [[zmats_md_train, zmats_flow_train], [zmats_md_test, zmats_flow_test]]
 
     for xs, data_type in zip(datasets, ['train', 'test']):
         for xs_, data_origin in zip(xs, ['md','flow']):

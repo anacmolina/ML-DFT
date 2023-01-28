@@ -1,3 +1,4 @@
+#TODO: Run in the cluster
 import torch
 
 from flonacomldft.utils.io_utils import (
@@ -12,7 +13,7 @@ from flonacomldft.internal_coordinates import (
     save_internal_coordinates_to_csv
 )
 
-mode_label = 1 # or 2
+mode_label = 0 # or 1
 
 torch.manual_seed(42)
 
@@ -35,7 +36,7 @@ for i, x_sample in enumerate(xs_samples):
 
     flow_configurations.append(molecule)
 
-xs_internal_coordinates = coord_maps.get_internal_from_trajectory(flow_configurations, temperature=300)
+xs_internal_coordinates = coord_maps.get_internal_from_trajectory(flow_configurations, isomer=mode_label, temperature=300)
 
 save_internal_coordinates_to_csv(xs_internal_coordinates,
             get_construction_table(), 
