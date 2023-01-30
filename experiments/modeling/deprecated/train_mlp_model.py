@@ -9,7 +9,7 @@ from flonacomldft.train_mlp import train_mlp
 from flonacomldft.utils.io_utils import save_pickle_file
 import matplotlib.pyplot as plt
 
-mode_label = 1 #or 2
+mode_label = 0 #or 1
 
 xs_md_train = load_csv_file("datasets/is{:d}_md_train.csv".format(mode_label))
 xs_flow_train = load_csv_file("datasets/is{:d}_flow_test.csv".format(mode_label))
@@ -38,7 +38,7 @@ mlp_hyperparams = {'n_iter': 1000,
 }
 
 #TODO: Fix mode label convention
-out = train_mlp(model, train, test, mode_label-1, **mlp_hyperparams, 
+out = train_mlp(model, train, test, mode_label, **mlp_hyperparams, 
               with_tqdm=True)
 
 import matplotlib.pyplot as plt
@@ -60,9 +60,9 @@ zs_test, logdetjac_test, us_test = coord_mapping.get_real_centered_from_internal
 
 plot_correlation_target_and_predict_value(
     us_train,
-    out['model'](zs_train),
+    out['model'](zs_train.float()),
     us_test,
-    out['model'](zs_test),
+    out['model'](zs_test.float()),
     title='MLP mode {:d}'.format(mode_label)
 )
 plt.show()

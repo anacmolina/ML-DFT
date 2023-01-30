@@ -56,9 +56,9 @@ def save_pickle_file(data, filename, path=get_path()):
     outfile.close()
 
 # function that load csv data 
-def load_csv_file(filename, path=get_path()):
+def load_csv_file(filename, path=get_path(), dtype=torch.float32):
     path =  path + filename
-    zmat = torch.tensor(pd.read_csv(path).to_numpy()).float()
+    zmat = torch.tensor(pd.read_csv(path).to_numpy()).to(dtype)
     return zmat
 
 # function that saves data to csv

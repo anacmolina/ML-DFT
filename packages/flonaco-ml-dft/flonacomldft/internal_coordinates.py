@@ -394,6 +394,8 @@ class Coordinates_mapping():
             return zmats, logdetjacs, energies
 
         return zmats, logdetjacs
+
+    #    TODO: get molecule from real_centered
         
 
 def get_labels_from_construction_table(construction_table, all_labels=False):

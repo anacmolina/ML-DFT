@@ -4,6 +4,8 @@ import torch
 from torch.nn.utils import clip_grad_norm_
 import torch.optim as optim
 
+from ase.visualize import view
+
 from flonacomldft.internal_coordinates import Coordinates_mapping
 
 from flonacomldft.utils.io_utils import load_csv_file
@@ -17,6 +19,10 @@ n = 1
 zs = data.clone()[:, :12][:n]
 logdetjac = data.clone()[:, 12][:n] 
 energies = data.clone()[:, 13][:n]
+
+ag6 = coord_mapping.build_molecule_from_zmat(zs[0])
+
+view(ag6)
 
 print('\n')
 print(zs, logdetjac, energies)
@@ -34,3 +40,7 @@ print('\n')
 print(xs_back, logdetjac_back, energies_back)
 
 # from real_centered to cartesian
+
+ag6_back = coord_mapping.build_molecule_from_zmat(xs_back[0])
+
+view(ag6_back)

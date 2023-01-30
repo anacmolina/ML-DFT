@@ -3,7 +3,7 @@
 import torch
 import pandas as pd
 #import sklearn.model_selection
-#from flonacomldft.internal_coordinates import Angles_mapping
+from flonacomldft.internal_coordinates import Angles_mapping
 
 # TODO: Avoid using sklearn
 
@@ -48,26 +48,22 @@ def split_data_from_dataframe(dataset, train_size, sk_seed):
 
 # centering data in radians
 # DEPRECATED
-# def centering_in_radian(xs, x_rad_center=None, return_centering_args=True):
-
-#     # centering in radian
-#     if x_rad_center is None:
-#         x_rad_center = xs.mean(dim=0)
-#     else:
-#         x_rad_center=x_rad_center
-
-#     x_rad_centered = xs - x_rad_center
-
-#     # computing the tanh in order to estimate the covariance for the flow base distribution 
-#     x_real_centered, _ = Angles_mapping().rads_to_reals(x_rad_centered)
-    
-#     if return_centering_args:
-#         cov_real = torch.cov(x_real_centered.T)
-#         centering_args = {"cov_base": cov_real, "mean_out": x_rad_center}
-
-#         return x_real_centered, centering_args
-#     else:
-#         return x_real_centered
+def centering_in_radian(xs, x_rad_center=None, return_centering_args=True):
+    # centering in radian
+    if x_rad_center is None:
+        x_rad_center = xs.mean(dim=0)
+    else:
+        x_rad_center=x_rad_center
+    x_rad_centered = xs - x_rad_center
+    # computing the tanh in order to estimate the covariance for the flow base distribution 
+    x_real_centered, _ = Angles_mapping().rads_to_reals(x_rad_centered)
+  
+    if return_centering_args:
+        cov_real = torch.cov(x_real_centered.T)
+        centering_args = {"cov_base": cov_real, "mean_out": x_rad_center}
+        return x_real_centered, centering_args
+    else:
+        return x_real_centered
 
 
  # TODO: delete get mix, add new function

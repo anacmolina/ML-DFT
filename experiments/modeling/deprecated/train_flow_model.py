@@ -1,8 +1,10 @@
+# NOTE: Works, use a guide for the new ref frame
+
 import torch
 
 from flonacomldft.utils.data_processing import centering_in_radian
-from flonacomldft.models.real_nvp import RealNVP_MLP
-from flonacomldft.train_flow_from_data import train_flow
+from flonacomldft.models.real_nvp_copy import RealNVP_MLP
+from flonacomldft.train_flow_from_data_copy import train_flow
 from flonacomldft.utils.io_utils import (
     load_csv_file,
     save_pickle_file
@@ -12,9 +14,9 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # for flows
 
-n_iter = 10000
+n_iter = 1000
 lr = 1e-4
-mode_label = 2 # or 2
+mode_label = 0 # or 2
 
 torch.manual_seed(100)
 
@@ -50,24 +52,20 @@ out = train_flow(
     grad_clip=1e4,
 )
 
-#import numpy as np
-#from flonacomldft.collective_variables import get_CVs 
-#from flonacomldft.utils.plots import plotting_fes_db, plot_losses
-#import matplotlib.pyplot as plt
+import numpy as np
+from flonacomldft.collective_variables import get_CVs 
+from flonacomldft.utils.plots import plotting_fes_db, plot_losses
+import matplotlib.pyplot as plt
+plot_losses(out['losses'][0], out['losses'][1])
+plt.show()
+xs_sample = out['model'].sample(100)
+x_sample_cv = np.array(get_CVs(xs_sample)).T
+x_cv = np.array(get_CVs(xs_train[:50])).T
+fig, ax = plotting_fes_db()
+ax.scatter(x_sample_cv[:, 0], x_sample_cv[:, 1], label="mode {:d} - realnvp init".format(mode_label), c='C{:d}'.format(mode_label))#, alpha=0.5)
+ax.scatter(x_cv[:, 0], x_cv[:, 1], marker='x', c='C{:d}'.format(mode_label), label="mode {:d} - data".format(mode_label), alpha=0.5)
+ax.legend()
+plt.show()
 
-#plot_losses(out['losses'][0], out['losses'][1])
-#plt.show()
-
-#xs_sample = out['model'].sample(100)
-
-#x_sample_cv = np.array(get_CVs(xs_sample)).T
-#x_cv = np.array(get_CVs(xs_train[:50])).T
-
-#fig, ax = plotting_fes_db()
-#ax.scatter(x_sample_cv[:, 0], x_sample_cv[:, 1], label="mode {:d} - realnvp init".format(mode_label), c='C{:d}'.format(mode_label))#, alpha=0.5)
-#ax.scatter(x_cv[:, 0], x_cv[:, 1], marker='x', c='C{:d}'.format(mode_label), label="mode {:d} - data".format(mode_label), alpha=0.5)
-#ax.legend()
-#plt.show()
-
-f = "models/is{:d}_flow_dic_training.pkl".format(mode_label)
-save_pickle_file(out, f)
+#f = "models/is{:d}_flow_dic_training.pkl".format(mode_label)
+#save_pickle_file(out, f)

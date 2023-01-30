@@ -31,8 +31,8 @@ def train_mlp(
             optimizer, step_size=step_schedule, gamma=0.5
         )
 
-    zs_train, logdetjac_train, us_train = train[:, :12], train[:, 12].T, train[:, 13].T
-    zs_test, logdetjac_test, us_test = test[:, :12], test[:, 12].T, test[:, 13].T
+    zs_train, us_train = train[:, :12], train[:, 13].T
+    zs_test, us_test = test[:, :12], test[:, 13].T
 
     #coord_mapping = Coordinates_mapping()
 

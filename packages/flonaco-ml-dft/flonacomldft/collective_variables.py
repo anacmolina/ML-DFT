@@ -38,7 +38,7 @@ def get_CVs(data):
    for x in data:
    
       coord_maps = Coordinates_mapping()
-      molecule = coord_maps.get_molecule_from_internal(x)
+      molecule = coord_maps.build_molecule_from_zmat(x)
                                                                                
       C_vals.append(compute_C(molecule))
       R_vals.append(compute_R(molecule))

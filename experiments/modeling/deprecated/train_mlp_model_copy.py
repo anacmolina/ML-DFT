@@ -1,3 +1,5 @@
+# NOTE: Works, use a guide for the new ref frame
+
 import torch
 
 from flonacomldft.utils.io_utils import load_csv_file
@@ -8,7 +10,7 @@ from flonacomldft.train_mlp_from_data import train_mlp
 from flonacomldft.utils.io_utils import save_pickle_file
 import matplotlib.pyplot as plt
 
-mode_label = 2 #or 2
+mode_label = 0 #or 2
 
 xs_md_train = load_csv_file("datasets/is{:d}_md_train.csv".format(mode_label))
 xs_flow_train = load_csv_file("datasets/is{:d}_flow_test.csv".format(mode_label))
@@ -57,5 +59,5 @@ plot_correlation_target_and_predict_value(
 )
 plt.show()
 
-f = "is{:d}_mlp_dic_training.pkl".format(mode_label)
-save_pickle_file(out, f)
+#f = "is{:d}_mlp_dic_training.pkl".format(mode_label)
+#save_pickle_file(out, f)

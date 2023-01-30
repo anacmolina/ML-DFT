@@ -9,8 +9,8 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # for flows
 
-n_iter = 8000
-lr = 1e-3
+n_iter = 10000
+lr = 1e-5
 mode_label = 0 # or 1
 
 torch.manual_seed(100)
@@ -39,20 +39,22 @@ xs_test, logdetjacs_test, energies_test = coord_mapping.get_real_centered_from_i
                                     energies=zmat_test[:, 13]
                                     )
 
+xs_train = xs_train.to(torch.float32)
+xs_test = xs_test.to(torch.float32)
 
 model = RealNVP_MLP(12,
-                    n_blocks=12, #12,
+                    n_blocks=8, #12,
                     block_depth=1,
                     init_weight_scale=1e-3,
-                    hidden_dim=16,  #128 #32
+                    hidden_dim=128,  #128 #32
                     hidden_depth=4,  #4   #8
                     device=device,
                     )
 
-_ = train_flow(
+out = train_flow(
     model,
-    xs_train.float(),
-    xs_test.float(),
+    xs_train,
+    xs_test,
     isomer=mode_label,
     n_iter=n_iter,
     lr=lr,
@@ -62,21 +64,49 @@ _ = train_flow(
     grad_clip=1e4,
 )
 
-xs_sample = _['model'].sample(1)
+# xs_sample = _['model'].sample(1)
+# 
+# print(xs_sample)
+# 
+# zmat_sample, logdetjac_sample = coord_mapping.get_internal_from_real_centered(xs_sample, isomer=mode_label)
+# 
+# print(xs_sample[0] + coord_mapping.zmat_minima[mode_label])
+# 
+# print(zmat_sample[0])
+# 
+# xyz = coord_mapping.get_cartesian_from_internal(zmat_sample[0])#zmat_sample[0])
+# print(xyz)
+# 
+# #ag6_back = coord_mapping.build_molecule_from_zmat(zmat_sample[0])
+# 
+# from ase.visualize import view
+# view(ag6_back)
 
-print(xs_sample)
 
-zmat_sample, logdetjac_sample = coord_mapping.get_internal_from_real_centered(xs_sample, isomer=mode_label)
-
-print(xs_sample[0] + coord_mapping.zmat_minima[mode_label])
-
-print(zmat_sample[0])
-
-xyz = coord_mapping.get_cartesian_from_internal(zmat_sample[0])
-print(xyz)
-
-from ase.visualize.plot import plot_atoms
+import numpy as np
+from flonacomldft.collective_variables import get_CVs 
+from flonacomldft.utils.plots import plotting_fes_db, plot_losses
 import matplotlib.pyplot as plt
-plot_atoms(xyz[0].get_ase_atoms())
+plot_losses(out['losses'][0], out['losses'][1])
+plt.show()
+
+xs_sample = out['model'].sample(100)
+
+coord_mapping = Coordinates_mapping()
+
+zs_sample, logdetjac_sample = coord_mapping.get_internal_from_real_centered(xs_sample, isomer=mode_label)
+
+from ase.visualize import view
+view(coord_mapping.build_molecule_from_zmat(zs_sample[0])
+)
+
+x_sample_cv = np.array(get_CVs(zs_sample)).T
+
+
+x_cv = np.array(get_CVs(zmat_train[:50, :12])).T
+fig, ax = plotting_fes_db()
+ax.scatter(x_sample_cv[:, 0], x_sample_cv[:, 1], label="mode {:d} - realnvp init".format(mode_label), c='C{:d}'.format(mode_label))#, alpha=0.5)
+ax.scatter(x_cv[:, 0], x_cv[:, 1], marker='x', c='C{:d}'.format(mode_label), label="mode {:d} - data".format(mode_label), alpha=0.5)
+ax.legend()
 plt.show()
 
