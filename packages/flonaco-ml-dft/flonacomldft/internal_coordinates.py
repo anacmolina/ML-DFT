@@ -349,7 +349,7 @@ class Coordinates_mapping():
 
         return torch.stack(zmats)
     
-    def get_real_centered_from_internal(self, zmats, logdetjacs, isomer, 
+    def get_real_centered_from_internal(self, zmats, logdetjacs=None, isomer=None, 
                                         temperature=300, energies=None):
         """    
         Centers the internal coordinates and takes in real space from raw zmat
@@ -365,6 +365,9 @@ class Coordinates_mapping():
             zmat_reals (torch.tensor - (nsamples, dims)): zmat tensor in real space
             logdetjacs (torch.tensor - (nsamples)): logdetjac tensor from xyz -> zmat in real space (angles mapped)
         """
+        if logdetjacs is None:
+            logdetjacs = 0
+
         zmats = zmats - self.zmat_minima[isomer]
         reals, logdetjacs_angle = self.angles_mappings.rads_to_reals(zmats)
         logdetjacs += logdetjacs_angle
@@ -375,9 +378,12 @@ class Coordinates_mapping():
 
         return reals, logdetjacs
 
-    def get_internal_from_real_centered(self, reals, logdetjacs, isomer, 
+    def get_internal_from_real_centered(self, reals, logdetjacs=None, isomer=None, 
                                         temperature=300, energies=None):
         
+        if logdetjacs is None:
+            logdetjacs = 0
+
         zmats, logdetjacs_angle = self.angles_mappings.reals_to_rads(reals)
         logdetjacs += logdetjacs_angle
 

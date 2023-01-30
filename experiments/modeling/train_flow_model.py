@@ -9,8 +9,8 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # for flows
 
-n_iter = 100
-lr = 1e-2
+n_iter = 8000
+lr = 1e-3
 mode_label = 0 # or 1
 
 torch.manual_seed(100)
@@ -41,11 +41,11 @@ xs_test, logdetjacs_test, energies_test = coord_mapping.get_real_centered_from_i
 
 
 model = RealNVP_MLP(12,
-                    n_blocks=12,
+                    n_blocks=12, #12,
                     block_depth=1,
                     init_weight_scale=1e-3,
-                    hidden_dim=32,  #128 #32
-                    hidden_depth=8,  #4   #8
+                    hidden_dim=16,  #128 #32
+                    hidden_depth=4,  #4   #8
                     device=device,
                     )
 
@@ -62,4 +62,21 @@ _ = train_flow(
     grad_clip=1e4,
 )
 
-# TODO: Add 
+xs_sample = _['model'].sample(1)
+
+print(xs_sample)
+
+zmat_sample, logdetjac_sample = coord_mapping.get_internal_from_real_centered(xs_sample, isomer=mode_label)
+
+print(xs_sample[0] + coord_mapping.zmat_minima[mode_label])
+
+print(zmat_sample[0])
+
+xyz = coord_mapping.get_cartesian_from_internal(zmat_sample[0])
+print(xyz)
+
+from ase.visualize.plot import plot_atoms
+import matplotlib.pyplot as plt
+plot_atoms(xyz[0].get_ase_atoms())
+plt.show()
+
