@@ -40,12 +40,12 @@ xs_test, logdetjacs_test, energies_test = coord_mapping.get_real_centered_from_i
                                     )
 
 
-n_hidden = 32
+n_hidden = 128
 n_layers = 32
 model = MLP([xs_train.shape[1]] +  [n_hidden] * n_layers + [1])
 
-mlp_hyperparams = {'n_iter': 500,
-    'lr': 1e-5,
+mlp_hyperparams = {'n_iter': 1500,
+    'lr': 1e-4,
     'use_scheduler': False,
     'step_schedule': 100,
 }
@@ -53,6 +53,7 @@ mlp_hyperparams = {'n_iter': 500,
 train = torch.cat((xs_train, logdetjacs_train.reshape(-1, 1), energies_train.reshape(-1, 1)), dim=1).to(torch.float32)
 test = torch.cat((xs_test, logdetjacs_test.reshape(-1, 1), energies_test.reshape(-1, 1)), dim=1).to(torch.float32)
 
+print(test)
 
 out = train_mlp(model, train, test, mode_label, **mlp_hyperparams, 
               with_tqdm=True)

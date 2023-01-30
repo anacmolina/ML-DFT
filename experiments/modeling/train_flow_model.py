@@ -9,15 +9,14 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # for flows
 
-n_iter = 10000
-lr = 1e-5
-mode_label = 0 # or 1
+n_iter = 500
+lr = 1e-4
 
 torch.manual_seed(100)
 
 # load data
 
-mode_label = 0 #1
+mode_label = 1 #or 1 
 
 zmat_train = load_csv_file("datasets/is{:d}_md_train.csv".format(mode_label))
 zmat_test = load_csv_file("datasets/is{:d}_md_test.csv".format(mode_label))
@@ -46,6 +45,7 @@ model = RealNVP_MLP(12,
                     n_blocks=8, #12,
                     block_depth=1,
                     init_weight_scale=1e-3,
+                    base_cov=torch.cov(xs_train.T),
                     hidden_dim=128,  #128 #32
                     hidden_depth=4,  #4   #8
                     device=device,

@@ -4,6 +4,8 @@ import torch
 from torch.nn.utils import clip_grad_norm_
 import torch.optim as optim
 
+# TODO: rename variables
+
 from flonacomldft.internal_coordinates import Coordinates_mapping
 
 def train_mlp(
@@ -31,8 +33,10 @@ def train_mlp(
             optimizer, step_size=step_schedule, gamma=0.5
         )
 
-    zs_train, us_train = train[:, :12], train[:, 13].T
-    zs_test, us_test = test[:, :12], test[:, 13].T
+    zs_train, us_train = train[:, :12], train[:, 13]
+    zs_test, us_test = test[:, :12], test[:, 13]
+
+    print(zs_train.shape, us_train.shape)
 
     #coord_mapping = Coordinates_mapping()
 
@@ -60,7 +64,7 @@ def train_mlp(
             print("Stopped because loss became inf!")
             return model, losses_train
 
-        loss.backward(retain_graph=True)
+        loss.backward()
         optimizer.step()
 
         losses_train.append(loss.item())

@@ -70,6 +70,8 @@ def train_mlp(
 
         model.set_center_values(means, stds)
 
+    print(x_train_centered.shape, y_train_centered.shape)
+
     if with_tqdm:
         pbar = tqdm.tqdm(range(n_iter))
     else:

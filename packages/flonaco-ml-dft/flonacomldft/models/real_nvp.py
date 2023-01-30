@@ -93,6 +93,7 @@ class RealNVP_MLP(nn.Module):
         self.hidden_bias = hidden_bias
         self.hidden_activation = hidden_activation
         self.init_scale_in_coupling = init_weight_scale
+        self.base_cov = base_cov
 
         mask = torch.ones(dim, device=self.device)
         if mask_type == 'half':
