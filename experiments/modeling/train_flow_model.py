@@ -1,6 +1,6 @@
 import torch
 
-from flonacomldft.utils.io_utils import load_csv_file
+from flonacomldft.utils.io_utils import load_csv_file, save_pickle_file
 from flonacomldft.internal_coordinates import Coordinates_mapping
 from flonacomldft.models.real_nvp import RealNVP_MLP
 from flonacomldft.train_flow import train_flow
@@ -64,25 +64,6 @@ out = train_flow(
     grad_clip=1e4,
 )
 
-# xs_sample = _['model'].sample(1)
-# 
-# print(xs_sample)
-# 
-# zmat_sample, logdetjac_sample = coord_mapping.get_internal_from_real_centered(xs_sample, isomer=mode_label)
-# 
-# print(xs_sample[0] + coord_mapping.zmat_minima[mode_label])
-# 
-# print(zmat_sample[0])
-# 
-# xyz = coord_mapping.get_cartesian_from_internal(zmat_sample[0])#zmat_sample[0])
-# print(xyz)
-# 
-# #ag6_back = coord_mapping.build_molecule_from_zmat(zmat_sample[0])
-# 
-# from ase.visualize import view
-# view(ag6_back)
-
-
 import numpy as np
 from flonacomldft.collective_variables import get_CVs 
 from flonacomldft.utils.plots import plotting_fes_db, plot_losses
@@ -109,4 +90,7 @@ ax.scatter(x_sample_cv[:, 0], x_sample_cv[:, 1], label="mode {:d} - realnvp init
 ax.scatter(x_cv[:, 0], x_cv[:, 1], marker='x', c='C{:d}'.format(mode_label), label="mode {:d} - data".format(mode_label), alpha=0.5)
 ax.legend()
 plt.show()
+
+f = "models/is{:d}_flow_dic_training.pkl".format(mode_label)
+save_pickle_file(out, f)
 

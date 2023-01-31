@@ -14,7 +14,9 @@ kb = 8.617333262e-5
 
 def run_metropolis(
     model,
-    init,
+    x_init,
+    u_init,
+    isomer_init,
     n_chains,
     n_steps,
     n_run="",
@@ -26,13 +28,9 @@ def run_metropolis(
     with_tqdm=False,
 ):
 
-    assert init.shape[0] == n_chains
-    #assert x_init.shape[0] == n_chains
-    #assert isomer_init.shape[0] == n_chains
-
-    x_init = init[:, :12]
-    u_init = init[:, 13]
-    isomer_init = init[:, 14]
+    assert u_init.shape[0] == n_chains
+    assert x_init.shape[0] == n_chains
+    assert isomer_init.shape[0] == n_chains
 
     # print(u_init.shape, x_init.shape, isomer_init.shape)
     # print('assert pass')
@@ -93,8 +91,8 @@ def run_metropolis(
         x_new = x_new.clone().detach().float()
         isomer_new = isomer_new.clone().detach().float()
 
-        nll_x = model.nll(x_new)
-        nll_x_init = model.nll(x_init)
+        nll_x = model.nll(model.rad_center(x_new, isomer_new))
+        nll_x_init = model.nll(model.rad_center(x_init, isomer_init))
        
         if "mlp" in energy_type:
             u_new = torch.zeros((n_chains, 1))
@@ -110,9 +108,9 @@ def run_metropolis(
                 u_new[isomer_new.bool()] = model_mlp_is2.predict(x_new[isomer_new.bool()])
             else:
                 if(isomer_new.sum()==0):
-                    u_new = model_mlp_is1(x_new)
+                    u_new = model_mlp_is1.predict(x_new)
                 else:
-                    u_new = model_mlp_is2(x_new)
+                    u_new = model_mlp_is2.predict(x_new)
 
             u_new = u_new.squeeze().float()
 
@@ -132,37 +130,24 @@ def run_metropolis(
             # TODO: type of isomer_dft
             for i,flag_dft in enumerate(ind_dft):
                 if flag_dft:
-#                    try:
-                    #TODO: FIX SHAPES OF XS, ZMAT
-                    print('prop',x_new[i], isomer_new[i].item())
-                    zmat, logdetjac = coord_maps.get_internal_from_real_centered(x_new[i].reshape(1, -1), isomer=isomer_new[i].item())
-                    print('zmat', zmat)
-                    xyz, logdetjac = coord_maps.get_cartesian_from_internal(zmat[0], logdetjac)
-                    molecule = coord_maps._build_molecule_from_xyz(xyz)
-                    # TODO: BUILD molecule from zmat, return logdet
-                    #molecule = coord_maps.build_molecule_from_zmat(zmat[0])
-                    from ase.visualize import view
-                    view(molecule)
-                    u_ = calculator.calculate_potential_energy(
-                        molecule, 
-                        filename='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out'
-                                        )
+                    try:
+                        #TODO: CHANGE THIS
+                        u_ = calculator.calculate_potential_energy(
+                            coord_maps.get_molecule_from_internal(x_new[i]), 
+                            filename='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out'
+                                            )
+                        #TODO: Solve this for the new Coordinates mapping BUG
+                        u_new[i] = u_ - logdetjac_to_xyz(x_new[i]) / beta
+                        #u_new[i] = torch.tensor(-6.3*(1+np.random.rand()*0.1))
 
-                    print('energy xyz: ', molecule.get_potential_energy(), u_)
+                        xs_dft.append(x_new[i])
+                        #us_dft.append(u_) #TODO: ALERT! Possible BUG, ALERT
+                        us_dft.append(u_new[i])
+                        isomers_dft.append(isomer_new[i])
+                    except:
+                        u_new[i] = 0.
+                        ind_not_computed[i] = 1
 
-                    #zmat, logdetjac_to_xyz, energy = coord_maps.get_internal_from_molecule(molecule, 
-                    #                                                                        return_potential_energy=True)
-                    u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
-                    print('energy xs: ', u_new[i])
-                    #u_new[i] = u_ - coord_maps.logdetjac_to_xyz(x_new[i]) / beta
-                    #u_new[i] = torch.tensor(-6.3*(1+np.random.rand()*0.1))
-                    xs_dft.append(x_new[i])
-                    #us_dft.append(u_) #TODO: ALERT! Possible BUG, ALERT
-                    us_dft.append(u_new[i])
-                    isomers_dft.append(isomer_new[i])
-#                    except:
-#                        u_new[i] = 0.
-#                        ind_not_computed[i] = 1
         ratio = -beta * u_new + nll_x
         ratio += beta * u_init - nll_x_init
         ratio = torch.exp(ratio)

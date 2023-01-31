@@ -1,23 +1,18 @@
 import torch
 
-from flonacomldft.utils.io_utils import load_csv_file
+from flonacomldft.utils.io_utils import load_csv_file, save_pickle_file
 from flonacomldft.internal_coordinates import Coordinates_mapping
 from flonacomldft.models.mlp import MLP
 from flonacomldft.train_mlp import train_mlp
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-# for flows
-
-#n_iter = 1000
-#lr = 1e-4
-#mode_label = 0 # or 1
 
 torch.manual_seed(100)
 
 # load data
 
-mode_label = 0 #1
+mode_label = 1 #1
 
 zmat_train = load_csv_file("datasets/is{:d}_md_train.csv".format(mode_label))
 zmat_test = load_csv_file("datasets/is{:d}_md_test.csv".format(mode_label))
@@ -67,14 +62,6 @@ from flonacomldft.utils.plots import (
 plot_losses(out['losses'][0], out['losses'][1])
 plt.show()
 
-# zs_train, logdetjac_train, us_train = train[:, :12], train[:, 12], train[:, 13]
-# zs_test, logdetjac_test, us_test = test[:, :12], test[:, 12], test[:, 13] 
-# 
-# coord_mapping = Coordinates_mapping()
-# 
-# zs_train, logdetjac_train, us_train = coord_mapping.get_real_centered_from_internal(zs_train, logdetjac_train, isomer=mode_label-1, energies=us_train)
-# zs_test, logdetjac_test, us_test = coord_mapping.get_real_centered_from_internal(zs_test, logdetjac_test, isomer=mode_label-1, energies=us_test)
-
 plot_correlation_target_and_predict_value(
     energies_train,
     out['model'](xs_train.float()),
@@ -83,3 +70,6 @@ plot_correlation_target_and_predict_value(
     title='MLP mode {:d}'.format(mode_label)
 )
 plt.show()
+
+f = "models/is{:d}_mlp_dic_training.pkl".format(mode_label)
+save_pickle_file(out, f)

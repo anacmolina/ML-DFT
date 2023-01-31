@@ -68,7 +68,7 @@ class Coordinates_mapping():
 
     # TODO: Add description
     def _get_xyz_from_molecule(self, molecule): 
-        return cc.Cartesian.from_ase_atoms(molecule)#.set_index(self.construction_table.index)
+        return cc.Cartesian.from_ase_atoms(molecule)
     
     # TODO: Add description
     def _get_zmat_matrix_from_xyz(self, xyz): 
@@ -149,7 +149,7 @@ class Coordinates_mapping():
         return zmat_matrix
 
     def _build_xyz_from_zmat_matrix(self, zmat_matrix):
-        return zmat_matrix.get_cartesian()#.set_index(self.construction_table.index)
+        return zmat_matrix.get_cartesian().sort_index()
 
     def _build_molecule_from_xyz(self, xyz):
         return xyz.get_ase_atoms()
@@ -187,7 +187,7 @@ class Coordinates_mapping():
         )
         xyz_rebuilt = self._build_zmat_matrix_from_zmat(zmat).get_cartesian()
 
-        return xyz_rebuilt
+        return xyz_rebuilt.sort_index()
 
     def reorient_and_center_molecule(self, molecule): #NOTE: It's working
         """
@@ -227,8 +227,8 @@ class Coordinates_mapping():
             s, logdetjac: sign and absolute value of log of the determinant of the jacobian of 
                           the transformation from internal to cartesian coordinates
         """
-        xyz = self._orient_and_center_xyz(xyz)
-        
+        xyz = self._orient_and_center_xyz(xyz.copy())
+        xyz = xyz.loc[self.construction_table.index]
         det = xyz.get_grad_zmat(self.construction_table.copy(), as_function=False)
         det = det.reshape(self.Natoms * 3, self.Natoms * 3)
         

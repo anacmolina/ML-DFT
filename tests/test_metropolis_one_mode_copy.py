@@ -7,10 +7,12 @@ from flonacomldft.utils.io_utils import (
     load_pickle_file,
     load_csv_file,
     save_pickle_file, 
+    get_project_path
 )
 
 from flonacomldft.sampling import run_metropolis
-from flonacomldft.internal_coordinates import Coordinates_mapping
+from flonacomldft.models.mixture import Mixture
+
 # set equal seed for all ranks for parallel computations
 
 ranks = np.arange(0, mpi.world.size)
@@ -31,31 +33,25 @@ torch.manual_seed(num_seed[0])
 mode_label = 1 #or 2
 # mcmc chains parameters
 
-n_chains = 5
-n_steps = 3
-energy_type = 'mlp-dft'
+n_chains = 50
+n_steps = 100
+energy_type = 'mlp'
 
-mode_label = 0 #or 1
-coord_mapping = Coordinates_mapping()
+if mode_label==1:
+    isomer = 0
+elif mode_label==2:
+    isomer = 1
 
-zmat_test = load_csv_file("datasets/is{:d}_md_test.csv".format(mode_label)) # remove energy and logdetjac values
 
-xs_test, logdetjacs_test, energies_test = coord_mapping.get_real_centered_from_internal(
-                                    zmat_test[:, :12],
-                                    zmat_test[:, 12],
-                                    isomer=mode_label,
-                                    energies=zmat_test[:, 13]
-                                    )
-
-xs = torch.cat((xs_test, logdetjacs_test.reshape(-1, 1), energies_test.reshape(-1, 1), zmat_test[:, 14].reshape(-1, 1)), dim=1).to(torch.float32)
+xs = load_csv_file("datasets/is{:d}_md_test.csv".format(mode_label)) # remove energy and logdetjac values
 xs = xs[torch.randperm(xs.size()[0])]
 xs = xs[:n_chains]
 
 # configs to initialize the chains
 
-#x_init = xs[:, :12]
-#u_init = xs[:, 13]
-#isomer_init = xs[:, 14]
+x_init = xs[:, :12]
+u_init = xs[:, 13]
+isomer_init = xs[:, 14]
 
 # flow models
 
@@ -70,7 +66,9 @@ mlp_model = load_pickle_file('models/is{:d}_mlp_dic_training.pkl'.format(mode_la
 
 out = run_metropolis(
     model=flow_model,
-    init=xs,
+    x_init=x_init,
+    u_init=u_init,
+    isomer_init=isomer_init,
     n_chains=n_chains,
     n_steps=n_steps,
     n_run="",
@@ -82,5 +80,5 @@ out = run_metropolis(
     with_tqdm=True,
 )
 
-#f = "experiments/mcmc_mode_{:d}_chains_{:d}_steps_{:d}.pkl".format(mode_label, n_chains, n_steps)
-#save_pickle_file(out, f, path=get_project_path())
+f = "experiments/mcmc_mode_{:d}_chains_{:d}_steps_{:d}.pkl".format(mode_label, n_chains, n_steps)
+save_pickle_file(out, f, path=get_project_path())
