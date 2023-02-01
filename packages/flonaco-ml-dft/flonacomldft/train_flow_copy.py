@@ -6,6 +6,7 @@ from torch.nn.utils import clip_grad_norm_
 from ray import tune
 
 from ase.parallel import parprint as print
+from flonacomldft.sampling import run_metropolis
 
 def train_flow(
     model,
@@ -43,6 +44,11 @@ def train_flow(
     models = [copy.deepcopy(model)]
     grad_norms = []
 
+    #TODO: add if compute acceptance rate
+    acc_rates = []
+    from flonacomldft.utils.io_utils import load_pickle_file 
+    mlp = load_pickle_file("models/is{:d}_mlp_dic_training.pkl".format(isomer))['model']
+
     x = x_train.detach().requires_grad_()
 
     if with_tqdm:
@@ -68,6 +74,25 @@ def train_flow(
 
         if with_tqdm:
             pbar.set_description(f"Loss: {losses_train[-1]:.4f}")
+
+        n_chains = 5
+        n_steps = 5
+
+        _ = run_metropolis(model=model,
+                    init=test[:n_chains],
+                    n_chains=n_chains,
+                    n_steps=n_steps,
+                    n_run="",
+                    energy_type='mlp', #'dft',
+                    frac_dft=None,
+                    mlp_models=mlp,
+                    mixture=False,
+                    T=300,
+                    with_tqdm=False,
+                )
+        acc_rate = (_['accs'].cpu().numpy() * 1).mean()
+        acc_rates.append(acc_rate)
+        print("acc_rate: ", acc_rate)
 
         if t % (n_iter / 100) == 0:
             total_norm = 0

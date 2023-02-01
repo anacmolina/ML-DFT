@@ -1,3 +1,4 @@
+# TODO: LOAD DATA EQUALLY EVERYWHERE
 import torch
 
 from flonacomldft.utils.io_utils import load_csv_file, save_pickle_file

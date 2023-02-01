@@ -16,7 +16,7 @@ torch.manual_seed(100)
 
 # load data
 
-mode_label = 1 #or 1 
+mode_label = 0 #or 1 
 
 zmat_train = load_csv_file("datasets/is{:d}_md_train.csv".format(mode_label))
 zmat_test = load_csv_file("datasets/is{:d}_md_test.csv".format(mode_label))
@@ -30,6 +30,8 @@ xs_train, logdetjacs_train, energies_train = coord_mapping.get_real_centered_fro
                                     isomer=mode_label,
                                     energies=zmat_train[:, 13]
                                     )
+xs_train = xs_train.to(torch.float32)
+
 
 xs_test, logdetjacs_test, energies_test = coord_mapping.get_real_centered_from_internal(
                                     zmat_test[:, :12],
@@ -37,9 +39,10 @@ xs_test, logdetjacs_test, energies_test = coord_mapping.get_real_centered_from_i
                                     isomer=mode_label,
                                     energies=zmat_test[:, 13]
                                     )
-
-xs_train = xs_train.to(torch.float32)
 xs_test = xs_test.to(torch.float32)
+
+train = torch.cat((xs_train, logdetjacs_train.reshape(-1, 1), energies_train.reshape(-1, 1), zmat_train[:, 14].reshape(-1, 1)), dim=1).to(torch.float32)
+test = torch.cat((xs_test, logdetjacs_test.reshape(-1, 1), energies_test.reshape(-1, 1), zmat_test[:, 14].reshape(-1, 1)), dim=1).to(torch.float32)
 
 model = RealNVP_MLP(12,
                     n_blocks=8, #12,
@@ -53,8 +56,8 @@ model = RealNVP_MLP(12,
 
 out = train_flow(
     model,
-    xs_train,
-    xs_test,
+    train,
+    test,
     isomer=mode_label,
     n_iter=n_iter,
     lr=lr,
@@ -91,6 +94,6 @@ ax.scatter(x_cv[:, 0], x_cv[:, 1], marker='x', c='C{:d}'.format(mode_label), lab
 ax.legend()
 plt.show()
 
-f = "models/is{:d}_flow_dic_training.pkl".format(mode_label)
-save_pickle_file(out, f)
+#f = "models/is{:d}_flow_dic_training.pkl".format(mode_label)
+#save_pickle_file(out, f)
 

@@ -1,3 +1,5 @@
+# TODO: LOAD DATA EQUALLY EVERYWHERE
+
 import copy
 import tqdm
 import torch
