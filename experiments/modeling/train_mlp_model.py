@@ -4,7 +4,7 @@ import torch
 from flonacomldft.utils.io_utils import load_csv_file, save_pickle_file
 from flonacomldft.internal_coordinates import Coordinates_mapping
 from flonacomldft.models.mlp import MLP
-from flonacomldft.train_mlp import train_mlp
+from flonacomldft.train_mlp_from_data import train_mlp
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
