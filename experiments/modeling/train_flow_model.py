@@ -9,14 +9,14 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # for flows
 
-n_iter = 500
+n_iter = 5000
 lr = 1e-4
 
 torch.manual_seed(100)
 
 # load data
 
-mode_label = 0 #or 1 
+mode_label = 1 #or 1 
 
 zmat_train = load_csv_file("datasets/is{:d}_md_train.csv".format(mode_label))
 zmat_test = load_csv_file("datasets/is{:d}_md_test.csv".format(mode_label))
@@ -45,7 +45,7 @@ train = torch.cat((xs_train, logdetjacs_train.reshape(-1, 1), energies_train.res
 test = torch.cat((xs_test, logdetjacs_test.reshape(-1, 1), energies_test.reshape(-1, 1), zmat_test[:, 14].reshape(-1, 1)), dim=1).to(torch.float32)
 
 model = RealNVP_MLP(12,
-                    n_blocks=8, #12,
+                    n_blocks=12,
                     block_depth=1,
                     init_weight_scale=1e-3,
                     base_cov=torch.cov(xs_train.T),
@@ -94,6 +94,6 @@ ax.scatter(x_cv[:, 0], x_cv[:, 1], marker='x', c='C{:d}'.format(mode_label), lab
 ax.legend()
 plt.show()
 
-#f = "models/is{:d}_flow_dic_training.pkl".format(mode_label)
-#save_pickle_file(out, f)
+f = "models/is{:d}_flow_dic_training.pkl".format(mode_label)
+save_pickle_file(out, f)
 

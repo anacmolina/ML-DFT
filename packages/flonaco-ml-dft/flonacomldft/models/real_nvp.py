@@ -204,8 +204,3 @@ class RealNVP_MLP(nn.Module):
         alias
         """
         return self.nll(x)
-
-    #TODO: Fix adding 2 inputs instead of 3
-    def rad_center(self, x, cs):
-        return x - self.centering_args["mean_out"]
-

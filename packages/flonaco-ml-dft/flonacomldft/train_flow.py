@@ -76,7 +76,8 @@ def train_flow(
             pbar.set_description(f"Loss: {losses_train[-1]:.4f}")
 
         
-        n_chains = 5
+        #ADD NEW PARAMETERS, T, chains
+        n_chains = 100
         n_steps = 1
 
         """
@@ -145,7 +146,7 @@ def train_flow(
                     mlp_model=mlp,
                     T=300,)
 
-        print('ratio: ', acc_rate, (acc_rate.cpu().detach().numpy() * 1).mean())
+        #print('ratio: ', acc_rate, (acc_rate.cpu().detach().numpy() * 1).mean())
         acc_rate = (acc_rate.cpu().detach().numpy() * 1).mean()
         acc_rates.append(acc_rate)
 
