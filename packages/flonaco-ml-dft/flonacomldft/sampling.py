@@ -106,8 +106,8 @@ def run_metropolis(
             # else:
 
             if mixture:
-                u_new[~(isomer_new.bool())] = model_mlp_is1.predict(x_new[~(isomer_new.bool())])
-                u_new[isomer_new.bool()] = model_mlp_is2.predict(x_new[isomer_new.bool()])
+                u_new[~(isomer_new.bool())] = model_mlp_is1(x_new[~(isomer_new.bool())])
+                u_new[isomer_new.bool()] = model_mlp_is2(x_new[isomer_new.bool()])
             else:
                 if(isomer_new.sum()==0):
                     u_new = model_mlp_is1(x_new)
@@ -139,10 +139,10 @@ def run_metropolis(
                     print('zmat', zmat)
                     xyz, logdetjac = coord_maps.get_cartesian_from_internal(zmat[0], logdetjac)
                     molecule = coord_maps._build_molecule_from_xyz(xyz)
-                    # TODO: BUILD molecule from zmat, return logdet
+                    # BUILD molecule from zmat, return logdet
                     #molecule = coord_maps.build_molecule_from_zmat(zmat[0])
-                    from ase.visualize import view
-                    view(molecule)
+                    #from ase.visualize import view
+                    #view(molecule)
                     u_ = calculator.calculate_potential_energy(
                         molecule, 
                         filename='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out'
@@ -214,7 +214,6 @@ def run_metropolis(
 
     }
     if use_dft:
-        #TODO: empty lists BUG
         to_return["inds_dft"] = torch.stack(inds_dft)
         to_return["xs_dft"] = torch.stack(xs_dft)
         to_return["us_dft"] = torch.tensor(us_dft).float().detach()

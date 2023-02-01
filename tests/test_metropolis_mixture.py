@@ -12,6 +12,7 @@ from flonacomldft.utils.io_utils import (
 
 from flonacomldft.sampling import run_metropolis
 from flonacomldft.models.mixture import Mixture
+from flonacomldft.internal_coordinates import Coordinates_mapping
 
 # set equal seed for all ranks for parallel computations
 
@@ -30,53 +31,53 @@ comm.broadcast(num_seed, 0)
 print(rank, num_seed)
 torch.manual_seed(num_seed[0])
 
+mode_labels = [0, 1]
+
 # mcmc chains parameters
 
-n_chains = 100
-n_steps = 150
+n_chains = 5
+n_steps = 3
 energy_type = 'mlp'
+
+coord_mapping = Coordinates_mapping()
 
 # load data
 
-xs_is1 = load_csv_file('datasets/is{:d}_md_test.csv'.format(1))
-xs_is2 = load_csv_file('datasets/is{:d}_md_test.csv'.format(2))
+zmats_test = [load_csv_file("datasets/is{:d}_md_test.csv".format(mode_label)) for mode_label in mode_labels] 
 
-xs = torch.cat((xs_is1, xs_is2))
-xs = xs[torch.randperm(xs.size()[0])]
+xs = [coord_mapping.get_real_centered_from_internal(
+                                    zmat_test[:, :12],
+                                    zmat_test[:, 12],
+                                    isomer=mode_label,
+                                    energies=zmat_test[:, 13]
+                                    ) for mode_label, zmat_test in zip(mode_labels, zmats_test)]
 
-xs = xs[:n_chains]
+xs = torch.stack([torch.cat((x[0], x[1].reshape(-1, 1), x[2].reshape(-1, 1), zmat_test[:, 14].reshape(-1, 1)), dim=1) for x, zmat_test in zip(xs, zmats_test)])
+xs = xs.flatten(start_dim=0, end_dim=1).to(torch.float32)
 
 # configs to initialize the chains
 
-x_init = xs[:, :12]
-u_init = xs[:, 13]
-isomer_init = xs[:, 14]
+xs = xs[torch.randperm(xs.size()[0])]
+xs = xs[:n_chains]
 
 # flow models
 
-flow_is1 = load_pickle_file('is1_flow_dic_training.pkl')
-flow_is2 = load_pickle_file('is2_flow_dic_training.pkl')
-
-flow_models = np.array([flow_is1['model'],
-                      flow_is2['model']])
+flows_dic = [load_pickle_file('models/is{:d}_flow_dic_training.pkl'.format(mode_label)) for mode_label in mode_labels]
+flow_models = np.array([flow_dic['model'] for flow_dic in flows_dic])
 
 mixture = Mixture(flow_models, torch.tensor([0.5, 0.5]).detach())
 
 # mlp models
 
-mlp_is1 = load_pickle_file('is1_mlp_dic_training.pkl')
-mlp_is2 = load_pickle_file('is2_mlp_dic_training.pkl')
+mlps_dic = [load_pickle_file('models/is{:d}_mlp_dic_training.pkl'.format(mode_label)) for mode_label in mode_labels]
+mlp_models = np.array([mlp_dic['model'] for mlp_dic in mlps_dic])
 
-mlp_models = np.array([mlp_is1['model'],
-                      mlp_is2['model']])
 
 # initialize metropolis simulation
 
 out = run_metropolis(
     model=mixture,
-    x_init=x_init,
-    u_init=u_init,
-    isomer_init=isomer_init,
+    init=xs,
     n_chains=n_chains,
     n_steps=n_steps,
     n_run="",
@@ -85,8 +86,8 @@ out = run_metropolis(
     mlp_models=mlp_models,
     mixture=True,
     T=300,
-    with_tqdm=False,
+    with_tqdm=True,
 )
 
-f = "experiments/mcmc_mixture_chains_{:d}_steps_{:d}.pkl".format(n_chains, n_steps)
-save_pickle_file(out, f, path=get_project_path())
+#f = "experiments/mcmc_mixture_chains_{:d}_steps_{:d}.pkl".format(n_chains, n_steps)
+#save_pickle_file(out, f, path=get_project_path())

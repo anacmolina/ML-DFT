@@ -6,7 +6,8 @@ import gpaw.mpi as mpi
 from flonacomldft.utils.io_utils import (
     load_pickle_file,
     load_csv_file,
-    save_pickle_file, 
+    save_pickle_file,
+    get_project_path 
 )
 
 from flonacomldft.sampling import run_metropolis
@@ -28,17 +29,17 @@ comm.broadcast(num_seed, 0)
 print(rank, num_seed)
 torch.manual_seed(num_seed[0])
 
-mode_label = 1 #or 2
-# mcmc chains parameters
-
-n_chains = 5
-n_steps = 3
-energy_type = 'mlp-dft'
-
 mode_label = 0 #or 1
+
+# mcmc chains parameters
+n_chains = 50
+n_steps = 1
+energy_type = 'mlp'
+
 coord_mapping = Coordinates_mapping()
 
-zmat_test = load_csv_file("datasets/is{:d}_md_test.csv".format(mode_label)) # remove energy and logdetjac values
+# loading data
+zmat_test = load_csv_file("datasets/is{:d}_md_test.csv".format(mode_label)) 
 
 xs_test, logdetjacs_test, energies_test = coord_mapping.get_real_centered_from_internal(
                                     zmat_test[:, :12],
@@ -48,21 +49,15 @@ xs_test, logdetjacs_test, energies_test = coord_mapping.get_real_centered_from_i
                                     )
 
 xs = torch.cat((xs_test, logdetjacs_test.reshape(-1, 1), energies_test.reshape(-1, 1), zmat_test[:, 14].reshape(-1, 1)), dim=1).to(torch.float32)
+
+# configs to initialize the chains
 xs = xs[torch.randperm(xs.size()[0])]
 xs = xs[:n_chains]
 
-# configs to initialize the chains
-
-#x_init = xs[:, :12]
-#u_init = xs[:, 13]
-#isomer_init = xs[:, 14]
-
 # flow models
-
 flow_model = load_pickle_file('models/is{:d}_flow_dic_training.pkl'.format(mode_label))['model']
 
 # mlp models
-
 mlp_model = load_pickle_file('models/is{:d}_mlp_dic_training.pkl'.format(mode_label))['model']
 
 
