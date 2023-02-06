@@ -51,7 +51,12 @@ def compute_TFP_logratio(n_prop, target_log_prob, mix_prop):
 
         prop = mix_prop[mode]
 
-        logr, logr_err = compute_TFP(n_prop, target_log_prob, prop)
+        if type(target_log_prob) == list:
+            target_log_p = target_log_prob[mode]
+        else:
+            target_log_p = target_log_prob
+
+        logr, logr_err = compute_TFP(n_prop, target_log_p, prop)
 
         logrs.append(logr)
         logr_errs.append(logr_err)
@@ -159,7 +164,12 @@ def compute_deepBAR_logratio(xs, cs, target_log_prob, mix_prop, n_prop=None):
         warnings.warn("Error estimation misses ESS estimation")
         ess = 1
 
-        logr, logr_err = compute_BAR(xs_mode, target_log_prob, prop, n_prop=n_prop,
+        if type(target_log_prob) == list:
+            target_log_p = target_log_prob[mode]
+        else:
+            target_log_p = target_log_prob
+
+        logr, logr_err = compute_BAR(xs_mode, target_log_p, prop, n_prop=n_prop,
                                      ess=ess)
 
         logrs.append(logr)
