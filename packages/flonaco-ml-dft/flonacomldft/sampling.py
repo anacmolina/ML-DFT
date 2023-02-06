@@ -17,7 +17,7 @@ def run_metropolis(
     init,
     n_chains,
     n_steps,
-    n_run="",
+    name_run="",
     energy_type=None,
     frac_dft=0.2,
     mlp_models=None,
@@ -133,7 +133,7 @@ def run_metropolis(
                     #view(molecule)
                     u_ = calculator.calculate_potential_energy(
                         molecule, 
-                        filename='ag6_'+str(n_run)+'_'+str(dt)+'_'+str(i)+'.out'
+                        filename='ag6_'+str(name_run)+'_'+str(dt)+'_'+str(i)+'.out'
                                         )
 
                     print('energy xyz: ', molecule.get_potential_energy(), u_)
