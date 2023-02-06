@@ -12,7 +12,6 @@ def train_flow(
     model,
     train,
     test,
-    isomer,
     n_iter=100,
     lr=5e-3,
     use_scheduler=False,
@@ -21,6 +20,9 @@ def train_flow(
     grad_clip=1e4,
     with_tqdm=False,
     use_tune=False,
+    compute_ratio_acc=True,
+    n_chains=100,
+    T=300,
 ):
 
     # setting up the loss
@@ -44,10 +46,14 @@ def train_flow(
     models = [copy.deepcopy(model)]
     grad_norms = []
 
-    #TODO: add if compute acceptance rate
-    acc_rates = []
-    from flonacomldft.utils.io_utils import load_pickle_file 
-    mlp = load_pickle_file("models/is{:d}_mlp_dic_training.pkl".format(isomer))['model']
+    if compute_ratio_acc:
+        isomer=train[0, 14].to(torch.int64).item()
+        T=T
+        n_chains=n_chains
+        ratios = []
+        acc_rates = []
+        from flonacomldft.utils.io_utils import load_pickle_file 
+        mlp = load_pickle_file("models/is{:d}_mlp_dic_training.pkl".format(isomer))['model']
 
     x = x_train.detach().requires_grad_()
 
@@ -75,80 +81,87 @@ def train_flow(
         if with_tqdm:
             pbar.set_description(f"Loss: {losses_train[-1]:.4f}")
 
-        
-        #ADD NEW PARAMETERS, T, chains
-        n_chains = 100
-        n_steps = 1
+        if compute_ratio_acc:
 
-        """
-        _ = run_metropolis(model=model,
-                    init=test[:n_chains],
-                    n_chains=n_chains,
-                    n_steps=n_steps,
-                    n_run="",
-                    energy_type='mlp', #'dft',
-                    frac_dft=None,
-                    mlp_models=mlp,
-                    mixture=False,
-                    T=300,
-                    with_tqdm=False,
-                )
-        acc_rate = (_['accs'].cpu().numpy() * 1).mean()
-        acc_rates.append(acc_rate)
-        """
-        # TODO: get both, acceptance and ratio
-        def get_ratio(
-                    model,
-                    init,
-                    n_chains,
-                    n_steps,
-                    mlp_model,
-                    T=300,
-            ):  
+            n_chains = n_chains
+            n_steps = 1
 
-            assert init.shape[0] == n_chains
-            
-            kb = 8.617333262e-5
-            beta = 1 / (kb * T)
+            """
+            _ = run_metropolis(model=model,
+                        init=test[:n_chains],
+                        n_chains=n_chains,
+                        n_steps=n_steps,
+                        n_run="",
+                        energy_type='mlp', #'dft',
+                        frac_dft=None,
+                        mlp_models=mlp,
+                        mixture=False,
+                        T=300,
+                        with_tqdm=False,
+                    )
+            acc_rate = (_['accs'].cpu().numpy() * 1).mean()
+            acc_rates.append(acc_rate)
+            """
+            # TODO: get both, acceptance and ratio
+            def get_ratio_acc(
+                        model,
+                        init,
+                        n_chains,
+                        n_steps,
+                        mlp_model,
+                        T=T,
+                ):  
 
-            x_init = init[:, :12]
-            u_init = init[:, 13]
-            isomer_init = init[:, 14]
+                assert init.shape[0] == n_chains
 
-            for dt in range(n_steps):
-              
-                x_new = model.sample(n_chains)
-                isomer_new = isomer_init
+                kb = 8.617333262e-5
+                beta = 1 / (kb * T)
 
-                x_new = x_new.clone().detach().float()
-                isomer_new = isomer_new.clone().detach().float()
+                x_init = init[:, :12]
+                u_init = init[:, 13]
+                isomer_init = init[:, 14]
 
-                nll_x = model.nll(x_new)
-                nll_x_init = model.nll(x_init)
+                for dt in range(n_steps):
 
-                u_new = torch.zeros((n_chains, 1))
-                u_new = mlp_model(x_new)
-                u_new = u_new.squeeze().float()
+                    x_new = model.sample(n_chains)
+                    isomer_new = isomer_init
 
-                #print('energies: ', u_new, u_init)
-                #print('nll: ', nll_x, nll_x_init)
+                    x_new = x_new.clone().detach().float()
+                    isomer_new = isomer_new.clone().detach().float()
 
-                ratio = -beta * u_new + nll_x
-                ratio += beta * u_init - nll_x_init
-                ratio = torch.exp(ratio)
+                    nll_x = model.nll(x_new)
+                    nll_x_init = model.nll(x_init)
 
-            return ratio
+                    u_new = torch.zeros((n_chains, 1))
+                    u_new = mlp_model(x_new)
+                    u_new = u_new.squeeze().float()
 
-        acc_rate = get_ratio(model=model,
+                    #print('energies: ', u_new, u_init)
+                    #print('nll: ', nll_x, nll_x_init)
+
+                    ratio = -beta * u_new + nll_x
+                    ratio += beta * u_init - nll_x_init
+                    ratio = torch.exp(ratio)
+
+                    u = torch.rand_like(ratio)
+                    ratio = torch.min(ratio, torch.ones_like(ratio))
+                    acc = u < ratio
+
+                return ratio, acc
+
+            ratio, acc_rate = get_ratio_acc(model=model,
                     init=test[:n_chains],
                     n_chains=n_chains,
                     n_steps=n_steps,
                     mlp_model=mlp,
                     T=300,)
 
-        #print('ratio: ', acc_rate, (acc_rate.cpu().detach().numpy() * 1).mean())
-        acc_rate = (acc_rate.cpu().detach().numpy() * 1).mean()
-        acc_rates.append(acc_rate)
+            #print('ratio: ', acc_rate, (acc_rate.cpu().detach().numpy() * 1).mean())
+            ratio = (ratio.cpu().detach().numpy() * 1).mean()
+            ratios.append(ratio)
+        
+            acc_rate = (acc_rate.cpu().detach().numpy() * 1).mean()
+            acc_rates.append(acc_rate)
 
         if t % (n_iter / 100) == 0:
             total_norm = 0
@@ -170,7 +183,10 @@ def train_flow(
                 "t={:0.1e}".format(t), "Loss: {:3.2f}".format(loss.item()), end="  \t"
             )
 
-            print("acc: {:.3f}".format(acc_rate), end="\t")
+            if compute_ratio_acc:
+                print("ratio: {:.3f}".format(ratio), end="\t")
+
+                print("acc: {:.3f}".format(acc_rate), end="\t")
 
             print("Gd: {:0.0e}".format(total_norm), end="\t")
 
@@ -186,7 +202,10 @@ def train_flow(
         "losses": (losses_train, losses_test),
         "models": models,
         "grad_norms": grad_norms,
-        "acc_rates": acc_rates,
     }
+
+    if compute_ratio_acc:
+        to_return["acc_rates"]= acc_rates,
+        to_return["ratios"]: ratios
 
     return to_return

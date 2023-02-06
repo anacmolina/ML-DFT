@@ -27,15 +27,10 @@ def run_metropolis(
 ):
 
     assert init.shape[0] == n_chains
-    #assert x_init.shape[0] == n_chains
-    #assert isomer_init.shape[0] == n_chains
 
     x_init = init[:, :12]
     u_init = init[:, 13]
     isomer_init = init[:, 14]
-
-    # print(u_init.shape, x_init.shape, isomer_init.shape)
-    # print('assert pass')
 
     beta = 1 / (kb * T)
 
@@ -54,7 +49,6 @@ def run_metropolis(
         inds_dft = []
 
     else:
-        # mlp_dft = False
         use_dft = False
 
     #print("Use DFT: ", use_dft)
@@ -64,12 +58,12 @@ def run_metropolis(
         if(mlp_models is None):
             raise RuntimeError("No MLP model to calculate energy")
         if mixture:
-            model_mlp_is1, model_mlp_is2 = mlp_models
+            model_mlp_is0, model_mlp_is1 = mlp_models
         else:
             if(isomer_init.sum()==0):
-                model_mlp_is1 = mlp_models
+                model_mlp_is0 = mlp_models
             else:
-                model_mlp_is2 = mlp_models
+                model_mlp_is1 = mlp_models
 
     xs = []
     us = []
@@ -98,21 +92,15 @@ def run_metropolis(
        
         if "mlp" in energy_type:
             u_new = torch.zeros((n_chains, 1))
-            # Marylou: I suspect the line below are unnecessary - commented for now
-            # if count.sum().int() == count.shape[0]:
-            #     u_new[count.bool()] = model_mlp_is2.predict(x[count.bool()])
-            # elif count.sum().int() == 0:
-            #     u_new[~(count.bool())] = model_mlp_is1.predict(x[~(count.bool())])
-            # else:
 
             if mixture:
-                u_new[~(isomer_new.bool())] = model_mlp_is1(x_new[~(isomer_new.bool())])
-                u_new[isomer_new.bool()] = model_mlp_is2(x_new[isomer_new.bool()])
+                u_new[~(isomer_new.bool())] = model_mlp_is0(x_new[~(isomer_new.bool())])
+                u_new[isomer_new.bool()] = model_mlp_is1(x_new[isomer_new.bool()])
             else:
                 if(isomer_new.sum()==0):
-                    u_new = model_mlp_is1(x_new)
+                    u_new = model_mlp_is0(x_new)
                 else:
-                    u_new = model_mlp_is2(x_new)
+                    u_new = model_mlp_is1(x_new)
 
             u_new = u_new.squeeze().float()
 
@@ -139,7 +127,7 @@ def run_metropolis(
                     print('zmat', zmat)
                     xyz, logdetjac = coord_maps.get_cartesian_from_internal(zmat[0], logdetjac)
                     molecule = coord_maps._build_molecule_from_xyz(xyz)
-                    # BUILD molecule from zmat, return logdet
+                    # BUILD molecule from internal, return logdet
                     #molecule = coord_maps.build_molecule_from_zmat(zmat[0])
                     #from ase.visualize import view
                     #view(molecule)

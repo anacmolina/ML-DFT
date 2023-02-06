@@ -1,7 +1,7 @@
 import torch
 
 from flonacomldft.utils.io_utils import load_csv_file, save_pickle_file
-from flonacomldft.internal_coordinates import Coordinates_mapping
+from flonacomldft.internal_coordinates import Coordinates_mapping, join_data
 from flonacomldft.models.real_nvp import RealNVP_MLP
 from flonacomldft.train_flow_from_data import train_flow
 
@@ -41,8 +41,18 @@ xs_test, logdetjacs_test, energies_test = coord_mapping.get_real_centered_from_i
                                     )
 xs_test = xs_test.to(torch.float32)
 
-train = torch.cat((xs_train, logdetjacs_train.reshape(-1, 1), energies_train.reshape(-1, 1), zmat_train[:, 14].reshape(-1, 1)), dim=1).to(torch.float32)
-test = torch.cat((xs_test, logdetjacs_test.reshape(-1, 1), energies_test.reshape(-1, 1), zmat_test[:, 14].reshape(-1, 1)), dim=1).to(torch.float32)
+train = join_data(xs_train,
+                logdetjacs_train,
+                energies_train,
+                zmat_train[:, 14])
+
+test = join_data(xs_test,
+                logdetjacs_test,
+                energies_test,
+                zmat_test[:, 14])
+
+#train = torch.cat((xs_train, logdetjacs_train.reshape(-1, 1), energies_train.reshape(-1, 1), zmat_train[:, 14].reshape(-1, 1)), dim=1).to(torch.float32)
+#test = torch.cat((xs_test, logdetjacs_test.reshape(-1, 1), energies_test.reshape(-1, 1), zmat_test[:, 14].reshape(-1, 1)), dim=1).to(torch.float32)
 
 model = RealNVP_MLP(12,
                     n_blocks=12,
@@ -58,7 +68,6 @@ out = train_flow(
     model,
     train,
     test,
-    isomer=mode_label,
     n_iter=n_iter,
     lr=lr,
     use_scheduler=False,

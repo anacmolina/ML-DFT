@@ -2,7 +2,7 @@
 import torch
 
 from flonacomldft.utils.io_utils import load_csv_file, save_pickle_file
-from flonacomldft.internal_coordinates import Coordinates_mapping
+from flonacomldft.internal_coordinates import Coordinates_mapping, join_data
 from flonacomldft.models.mlp import MLP
 from flonacomldft.train_mlp_from_data import train_mlp
 
@@ -46,12 +46,20 @@ mlp_hyperparams = {'n_iter': 1500,
     'step_schedule': 100,
 }
 
-train = torch.cat((xs_train, logdetjacs_train.reshape(-1, 1), energies_train.reshape(-1, 1)), dim=1).to(torch.float32)
-test = torch.cat((xs_test, logdetjacs_test.reshape(-1, 1), energies_test.reshape(-1, 1)), dim=1).to(torch.float32)
+train = join_data(xs_train,
+                logdetjacs_train,
+                energies_train,
+                zmat_train[:, 14])
 
-print(test)
+test = join_data(xs_test,
+                logdetjacs_test,
+                energies_test,
+                zmat_test[:, 14])
 
-out = train_mlp(model, train, test, mode_label, **mlp_hyperparams, 
+#train = torch.cat((xs_train, logdetjacs_train.reshape(-1, 1), energies_train.reshape(-1, 1), zmat_train[:, 14].reshape(-1, 1)), dim=1).to(torch.float32)
+#test = torch.cat((xs_test, logdetjacs_test.reshape(-1, 1), energies_test.reshape(-1, 1), zmat_test[:, 14].reshape(-1, 1)), dim=1).to(torch.float32)
+
+out = train_mlp(model, train, test, **mlp_hyperparams, 
               with_tqdm=True)
 
 import matplotlib.pyplot as plt

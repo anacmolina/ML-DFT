@@ -1,12 +1,8 @@
-# TODO: LOAD DATA EQUALLY EVERYWHERE
-
 import copy
 import tqdm
 import torch
 from torch.nn.utils import clip_grad_norm_
 import torch.optim as optim
-
-# TODO: rename variables
 
 from flonacomldft.internal_coordinates import Coordinates_mapping
 
@@ -14,7 +10,6 @@ def train_mlp(
     model,
     train,
     test,
-    isomer,
     n_iter=100,
     lr=1e-4,
     use_scheduler=False,
@@ -35,16 +30,9 @@ def train_mlp(
             optimizer, step_size=step_schedule, gamma=0.5
         )
 
-    zs_train, us_train = train[:, :12], train[:, 13]
-    zs_test, us_test = test[:, :12], test[:, 13]
-
-    print(zs_train.shape, us_train.shape)
-
-    #coord_mapping = Coordinates_mapping()
-
-    #zs_train, logdetjac_train, us_train = coord_mapping.get_real_centered_from_internal(zs_train, logdetjac_train, isomer=isomer, energies=us_train)
-    #zs_test, logdetjac_test, us_test = coord_mapping.get_real_centered_from_internal(zs_test, logdetjac_test, isomer=isomer, energies=us_test)
-
+    xs_train, us_train = train[:, :12], train[:, 13]
+    xs_test, us_test = test[:, :12], test[:, 13] #(nsample_train, dims), (nsamples)
+    
     if with_tqdm:
         pbar = tqdm.tqdm(range(n_iter))
     else:
@@ -60,7 +48,7 @@ def train_mlp(
     for t in pbar:
         optimizer.zero_grad()
 
-        loss = loss_func(zs_train, us_train)
+        loss = loss_func(xs_train, us_train)
 
         if torch.isinf(loss).any():
             print("Stopped because loss became inf!")
@@ -70,7 +58,7 @@ def train_mlp(
         optimizer.step()
 
         losses_train.append(loss.item())
-        losses_test.append(loss_func(zs_test, us_test).item())
+        losses_test.append(loss_func(xs_test, us_test).item())
 
 
         if with_tqdm:

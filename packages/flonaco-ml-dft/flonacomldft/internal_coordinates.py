@@ -70,23 +70,60 @@ class Coordinates_mapping():
         } 
         self.kb = 8.617333262e-5 # eV/K
 
-    def _get_xyz_from_molecule(self, molecule): 
+    def _get_xyz_from_molecule(self, molecule):
+        """"
+        Get the Cartesian XYZ object from a ASE Atoms object (molecule)
+        
+        Args:
+            molecule: ASE Atoms object
+        Returns:  
+            xyz: chemcoord Cartesian XYZ object
+        """
         return cc.Cartesian.from_ase_atoms(molecule)
     
-    def _get_zmat_matrix_from_xyz(self, xyz): 
+    def _get_zmat_matrix_from_xyz(self, xyz):
+        """"
+        Get the ZMAT matrix object from a Cartesian XYZ object
+        
+        Args:
+            xyz: ASE Atoms object Cartesian XYZ object
+        Returns:  
+            zmat_matrix: chemcoord ZMAT matrix object
+        """ 
         return xyz.get_zmat(self.construction_table.copy())
     
     def _get_zmat_from_zmat_matrix(self, zmat_matrix):
+        """"
+        Returns only the bonds, angles and dihedrals of the ZMAT matrix
+        and turns it into a zmat tensor
+        
+        Args:
+            ZMAT matrix: chemcoord ZMAT matrix object
+        Returns:  
+            zmat (torch.tensor - (dims)): zmat tensor
+        """
 
         zmat_matrix = zmat_matrix.minimize_dihedrals()
         zmat = zmat_matrix.loc[:, ['bond', 'angle', 'dihedral']]
         zmat.loc[:, ['angle', 'dihedral']] = zmat.loc[:, ['angle', 'dihedral']].apply(np.deg2rad)
         zmat = zmat.to_numpy()[1:, :]
-        zmat = np.concatenate((zmat[:, 0], zmat[1:, 1], zmat[2:, 2]))
+        
+        zmat = torch.tensor(
+            np.concatenate((zmat[:, 0], zmat[1:, 1], zmat[2:, 2])) 
+            )
 
-        return torch.tensor(zmat)
+        return zmat.to(torch.float32)
     
+    # NOTE: This function it's not being used
     def get_zmat_from_molecule(self, molecule):
+        """"
+        Get the Cartesian XYZ object from a ASE Atoms object (molecule)
+        
+        Args:
+            molecule: ASE Atoms object
+        Returns:  
+            zmat (torch.tensor - (dims)): zmat tensor
+        """
         xyz = self._get_xyz_from_molecule(molecule)
         zmat = self._get_zmat_from_zmat_matrix(
             self._get_zmat_matrix_from_xyz(xyz)
@@ -149,9 +186,27 @@ class Coordinates_mapping():
         return zmat_matrix
 
     def _build_xyz_from_zmat_matrix(self, zmat_matrix):
+        """"
+        Build the Cartesian XYZ object from a ZMAT matrix object
+        
+        Args:
+            zmat_matrix: chemcoord ZMAT matrix object
+        Returns:  
+            xyz: Cartesian XYZ object
+
+        """ 
         return zmat_matrix.get_cartesian().sort_index()
 
     def _build_molecule_from_xyz(self, xyz):
+        """"
+        Build the ASE Atoms object from a Cartesian XYZ object
+        
+        Args:
+            xyz: Cartesian XYZ object
+        Returns:  
+            molecule: ASE Atoms object
+
+        """ 
         return xyz.get_ase_atoms()
 
     def build_molecule_from_zmat(self, zmat):
@@ -164,7 +219,7 @@ class Coordinates_mapping():
             configuration (12 inputs)
         
         Returns:  
-            molecule: ase object
+            molecule: ASE Atoms object
         """
 
         xyz = self._build_xyz_from_zmat_matrix(
@@ -172,34 +227,6 @@ class Coordinates_mapping():
         )
         
         return xyz.get_ase_atoms()
-
-    def _orient_and_center_xyz(self, xyz):
-        """
-        Args:
-            xyz: chemcoord Cartesian object
-        Returns:
-            xyz: chemcoord Cartesian object
-        """
-
-        zmat = self._get_zmat_from_zmat_matrix(
-            self._get_zmat_matrix_from_xyz(xyz)
-        )
-        xyz_rebuilt = self._build_zmat_matrix_from_zmat(zmat).get_cartesian()
-
-        return xyz_rebuilt.sort_index()
-
-    def reorient_and_center_molecule(self, molecule): #NOTE: It's working
-        """
-        Args:
-            molecule: ase atoms (molecule) object
-        Returns:
-            xyz: chemcoord Cartesian object
-        """
-
-        xyz = self._get_xyz_from_molecule(molecule)
-        xyz_rebuilt = self._orient_and_center_xyz(xyz)
-
-        return xyz_rebuilt.get_ase_atoms()
 
     def logdetjac_zmat_to_xyz(self, zmat): 
         """"
@@ -275,7 +302,7 @@ class Coordinates_mapping():
     def compute_energy_in_new_frame(self, energy, logdetjac, temperature=300):
         return energy - (self.kb * temperature) * logdetjac
 
-
+    # TODO: Update with new functions
     def get_internal_from_molecule(self, molecule, return_potential_energy=False,
                                 temperature=300, requires_grad=False):
         """"
@@ -347,6 +374,34 @@ class Coordinates_mapping():
                     break
 
         return torch.stack(zmats)
+
+    def _orient_and_center_xyz(self, xyz):
+        """
+        Args:
+            xyz: chemcoord Cartesian object
+        Returns:
+            xyz: chemcoord Cartesian object
+        """
+
+        zmat = self._get_zmat_from_zmat_matrix(
+            self._get_zmat_matrix_from_xyz(xyz)
+        )
+        xyz_rebuilt = self._build_zmat_matrix_from_zmat(zmat).get_cartesian()
+
+        return xyz_rebuilt.sort_index()
+
+    def reorient_and_center_molecule(self, molecule): #NOTE: It's working
+        """
+        Args:
+            molecule: ase atoms (molecule) object
+        Returns:
+            xyz: chemcoord Cartesian object
+        """
+
+        xyz = self._get_xyz_from_molecule(molecule)
+        xyz_rebuilt = self._orient_and_center_xyz(xyz)
+
+        return xyz_rebuilt.get_ase_atoms()
     
     def get_real_centered_from_internal(self, zmats, logdetjacs=None, isomer=None, 
                                         temperature=300, energies=None):
@@ -432,3 +487,13 @@ def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_ener
         df = pd.DataFrame(xs.detach().numpy())
         df.columns=labels
         df.to_csv(path + '/' + filename, index=False)
+
+def join_data(xs, logdetjacs, energies, isomers):
+    
+    data = torch.cat((xs, 
+            logdetjacs.reshape(-1, 1), 
+            energies.reshape(-1, 1), 
+            isomers.reshape(-1, 1)), 
+        dim=1).to(torch.float32)
+
+    return data
