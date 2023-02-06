@@ -205,7 +205,7 @@ def train_flow(
     }
 
     if compute_ratio_acc:
-        to_return["acc_rates"] = acc_rates,
+        to_return["acc_rates"] = acc_rates
         to_return["ratios"] = ratios
 
     return to_return

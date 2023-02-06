@@ -30,7 +30,7 @@ def run_metropolis(
 
     x_init = init[:, :12]
     u_init = init[:, 12]
-    isomer_init = init[:, 13]
+    isomer_init = init[:, 1]
 
     beta = 1 / (kb * T)
 
@@ -120,37 +120,28 @@ def run_metropolis(
             # TODO: type of isomer_dft
             for i,flag_dft in enumerate(ind_dft):
                 if flag_dft:
-#                    try:
-                    #TODO: FIX SHAPES OF XS, ZMAT
-                    print('prop',x_new[i], isomer_new[i].item())
-                    zmat, logdetjac = coord_maps.get_internal_from_real_centered(x_new[i].reshape(1, -1), isomer=isomer_new[i].item())
-                    print('zmat', zmat)
-                    xyz, logdetjac = coord_maps.get_cartesian_from_internal(zmat[0], logdetjac)
-                    molecule = coord_maps._build_molecule_from_xyz(xyz)
-                    # BUILD molecule from internal, return logdet
-                    #molecule = coord_maps.build_molecule_from_zmat(zmat[0])
-                    #from ase.visualize import view
-                    #view(molecule)
-                    u_ = calculator.calculate_potential_energy(
-                        molecule, 
-                        filename='ag6_'+str(name_run)+'_'+str(dt)+'_'+str(i)+'.out'
-                                        )
+                    try:
+                        #TODO: FIX SHAPES OF XS, ZMAT
+                        zmat, logdetjac = coord_maps.get_internal_from_real_centered(x_new[i].reshape(1, -1), isomer=isomer_new[i].item())
+                        xyz, logdetjac = coord_maps.get_cartesian_from_internal(zmat[0], logdetjac)
+                        molecule = coord_maps._build_molecule_from_xyz(xyz)
+                        #TODO: BUILD molecule from internal, return logdet
+                        u_ = calculator.calculate_potential_energy(
+                              molecule, 
+                              filename='ag6_'+str(name_run)+'_'+str(dt)+'_'+str(i)+'.out'
+                                              )
+                        u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
 
-                    print('energy xyz: ', molecule.get_potential_energy(), u_)
+                        #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
 
-                    #zmat, logdetjac_to_xyz, energy = coord_maps.get_internal_from_molecule(molecule, 
-                    #                                                                        return_potential_energy=True)
-                    u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
-                    print('energy xs: ', u_new[i])
-                    #u_new[i] = u_ - coord_maps.logdetjac_to_xyz(x_new[i]) / beta
-                    #u_new[i] = torch.tensor(-6.3*(1+np.random.rand()*0.1))
-                    xs_dft.append(x_new[i])
-                    #us_dft.append(u_) #TODO: ALERT! Possible BUG, ALERT
-                    us_dft.append(u_new[i])
-                    isomers_dft.append(isomer_new[i])
-#                    except:
-#                        u_new[i] = 0.
-#                        ind_not_computed[i] = 1
+                        xs_dft.append(x_new[i])
+                        us_dft.append(u_new[i])
+                        isomers_dft.append(isomer_new[i])
+
+                    except:
+                        u_new[i] = 0.
+                        ind_not_computed[i] = 1
+
         ratio = -beta * u_new + nll_x
         ratio += beta * u_init - nll_x_init
         ratio = torch.exp(ratio)

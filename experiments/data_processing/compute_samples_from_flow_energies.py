@@ -25,7 +25,7 @@ xs_samples = flow_model.sample(N)
 zs_samples, logdetjacs = coord_mapping.get_internal_from_real_centered(xs_samples, isomer=mode_label)
 
 calculator = DFTCalculator()
-calculator.initialize_calculator()
+calculator.initialize_calculator(foldername='DFTComputations_is{:d}'.format(mode_label))
 
 flow_configurations = []
  

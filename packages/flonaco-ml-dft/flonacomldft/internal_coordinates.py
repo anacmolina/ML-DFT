@@ -495,11 +495,6 @@ def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_ener
 
 def join_data(xs, energies, isomers, logdetjacs=None):
     # TODO: Fix logdetjac as optional, dim=-1
-    # data = torch.cat((xs, 
-    #         energies.reshape(-1, 1), 
-    #         isomers.reshape(-1, 1),
-    #         logdetjacs.reshape(-1, 1)), 
-    #     dim=1).to(torch.float32)
 
     data = torch.cat((xs, 
             energies.reshape(-1, 1), 
