@@ -35,8 +35,8 @@ mode_labels = [0, 1]
 
 # mcmc chains parameters
 
-n_chains = 5
-n_steps = 3
+n_chains = 50
+n_steps = 50
 energy_type = 'mlp'
 
 coord_mapping = Coordinates_mapping()
@@ -80,7 +80,7 @@ out = run_metropolis(
     init=xs,
     n_chains=n_chains,
     n_steps=n_steps,
-    n_run="",
+    name_run="", # TODO: number of runs
     energy_type=energy_type,
     frac_dft=0.2,
     mlp_models=mlp_models,
@@ -89,5 +89,5 @@ out = run_metropolis(
     with_tqdm=True,
 )
 
-#f = "experiments/mcmc_mixture_chains_{:d}_steps_{:d}.pkl".format(n_chains, n_steps)
-#save_pickle_file(out, f, path=get_project_path())
+f = "experiments/mcmc_mixture_chains_{:d}_steps_{:d}.pkl".format(n_chains, n_steps)
+save_pickle_file(out, f, path=get_project_path())

@@ -20,9 +20,9 @@ class DFTCalculator:
         self.calculator = None
         self.cell = [16, 16, 16]
 
-    def initialize_calculator(self, filename='ag6', rank=0, path=os.getcwd()):
+    def initialize_calculator(self, foldername='DFTComputations', filename='ag6', rank=0, path=os.getcwd()):
         
-        self.path = os.path.join(path, 'DFTComputations')    
+        self.path = os.path.join(path, foldername)    
         self.file = self.path + '/' + filename + '.out'
 
         if rank==0 and os.path.isdir(self.path)==False:

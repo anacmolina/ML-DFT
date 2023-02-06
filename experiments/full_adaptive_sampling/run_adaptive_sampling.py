@@ -86,11 +86,11 @@ for dataset_label in dataset_labels:
         file='datasets/is{:d}_{:s}.csv'.format(mode_label, dataset_label)
         zmat = load_csv_file(file)
         
-        x, logdetjac, energies = coord_mapping.get_real_centered_from_internal(zmat[:, :12], 
-                                                                            zmat[:, 12],  
+        x, logdetjac, energies = coord_mapping.get_real_centered_from_internal(zmat[:, :12],   
                                                                             isomer=mode_label,
-                                                                            energies=zmat[:, 13])
-        x = join_data(x, logdetjac, energies, zmat[:, 14])
+                                                                            energies=zmat[:, 12],
+                                                                            logdetjacs=zmat[:, 14])
+        x = join_data(x, energies, zmat[:, 13], logdetjac)
         
         zmats.append(zmat)
         xs.append(x)
@@ -114,6 +114,7 @@ flows_dic = [load_pickle_file('models/is{:d}_flow_dic_training.pkl'.format(mode_
 
 mlps_dic = [load_pickle_file('models/is{:d}_mlp_dic_training.pkl'.format(mode_label)) for mode_label in mode_labels]
 
+print(xs_datasets)
 
 out = adaptative_sampling(
     flow_init_train=xs_datasets[0],

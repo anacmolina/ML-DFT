@@ -9,8 +9,8 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # for flows
 
-n_iter = 5000
-lr = 1e-4
+n_iter = 10000
+lr = 5e-5
 
 torch.manual_seed(100)
 
@@ -26,33 +26,33 @@ zmat_test = load_csv_file("datasets/is{:d}_md_test.csv".format(mode_label))
 coord_mapping = Coordinates_mapping()
 xs_train, logdetjacs_train, energies_train = coord_mapping.get_real_centered_from_internal(
                                     zmat_train[:, :12],
-                                    zmat_train[:, 12],
                                     isomer=mode_label,
-                                    energies=zmat_train[:, 13]
+                                    energies=zmat_train[:, 12],
+                                    logdetjacs=zmat_train[:, 14],
                                     )
 xs_train = xs_train.to(torch.float32)
 
 
 xs_test, logdetjacs_test, energies_test = coord_mapping.get_real_centered_from_internal(
                                     zmat_test[:, :12],
-                                    zmat_test[:, 12],
                                     isomer=mode_label,
-                                    energies=zmat_test[:, 13]
+                                    energies=zmat_test[:, 12],
+                                    logdetjacs=zmat_test[:, 14],
                                     )
 xs_test = xs_test.to(torch.float32)
 
 train = join_data(xs_train,
-                logdetjacs_train,
                 energies_train,
-                zmat_train[:, 14])
+                zmat_train[:, 13],
+                logdetjacs_train,
+)
 
 test = join_data(xs_test,
-                logdetjacs_test,
                 energies_test,
-                zmat_test[:, 14])
+                zmat_test[:, 13],
+                logdetjacs_test,
+)
 
-#train = torch.cat((xs_train, logdetjacs_train.reshape(-1, 1), energies_train.reshape(-1, 1), zmat_train[:, 14].reshape(-1, 1)), dim=1).to(torch.float32)
-#test = torch.cat((xs_test, logdetjacs_test.reshape(-1, 1), energies_test.reshape(-1, 1), zmat_test[:, 14].reshape(-1, 1)), dim=1).to(torch.float32)
 
 model = RealNVP_MLP(12,
                     n_blocks=12,
@@ -75,7 +75,7 @@ out = train_flow(
     save_splits=10,
     grad_clip=1e4,
 )
-
+"""
 import numpy as np
 from flonacomldft.collective_variables import get_CVs 
 from flonacomldft.utils.plots import plotting_fes_db, plot_losses
@@ -102,6 +102,7 @@ ax.scatter(x_sample_cv[:, 0], x_sample_cv[:, 1], label="mode {:d} - realnvp init
 ax.scatter(x_cv[:, 0], x_cv[:, 1], marker='x', c='C{:d}'.format(mode_label), label="mode {:d} - data".format(mode_label), alpha=0.5)
 ax.legend()
 plt.show()
+"""
 
 f = "models/is{:d}_flow_dic_training.pkl".format(mode_label)
 save_pickle_file(out, f)

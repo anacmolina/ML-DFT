@@ -36,20 +36,21 @@ def adaptative_sampling(
 
     # setting up databases for flows and mlps
 
-    xs_for_flows_train_is0 = flow_init_train.clone()[:,:12][~flow_init_train[:, 14].bool()]
-    xs_for_flows_train_is1 = flow_init_train.clone()[:,:12][flow_init_train[:, 14].bool()]
+    xs_for_flows_train_is0 = flow_init_train.clone()[~flow_init_train[:, 13].bool()]
+    xs_for_flows_train_is1 = flow_init_train.clone()[flow_init_train[:, 13].bool()]
  
-    xs_for_flows_test_is0 = flow_init_test.clone()[:,:12][~flow_init_test[:, 14].bool()]
-    xs_for_flows_test_is1 = flow_init_test.clone()[:,:12][flow_init_test[:, 14].bool()]
+    xs_for_flows_test_is0 = flow_init_test.clone()[~flow_init_test[:, 13].bool()]
+    xs_for_flows_test_is1 = flow_init_test.clone()[flow_init_test[:, 13].bool()]
 
+    print(xs_for_flows_test_is0, xs_for_flows_test_is1)
      
     if retraining_mlp:
 
-        xs_for_mlps_train_is0 = mlp_init_train.clone()[:,:12][~mlp_init_train[:, 14].bool()]
-        xs_for_mlps_train_is1 = mlp_init_train.clone()[:,:12][mlp_init_train[:, 14].bool()]
+        xs_for_mlps_train_is0 = mlp_init_train.clone()[:,:12][~mlp_init_train[:, 13].bool()]
+        xs_for_mlps_train_is1 = mlp_init_train.clone()[:,:12][mlp_init_train[:, 13].bool()]
  
-        xs_for_mlps_test_is0 = mlp_init_test.clone()[:,:12][~mlp_init_test[:, 14].bool()]
-        xs_for_mlps_test_is1 = mlp_init_test.clone()[:,:12][mlp_init_test[:, 14].bool()]
+        xs_for_mlps_test_is0 = mlp_init_test.clone()[:,:12][~mlp_init_test[:, 13].bool()]
+        xs_for_mlps_test_is1 = mlp_init_test.clone()[:,:12][mlp_init_test[:, 13].bool()]
      
         
         """
@@ -95,7 +96,7 @@ def adaptative_sampling(
             #isomer_init=isomer_init,
             n_chains=n_chains,
             n_steps=n_steps,
-            n_run=i,
+            name_run=i,
             energy_type=energy_type,
             mlp_models=get_models(dict_mlps_training[-1]),
             mixture=True,
@@ -120,7 +121,7 @@ def adaptative_sampling(
         #x_init = xs[i][-1]
         #isomer_init = isomers[i][-1]
 
-        init = join_data(xs[i][-1], init[:, 12], us[i][-1], isomers[i][-1])
+        init = join_data(xs[i][-1], us[i][-1], isomers[i][-1])
         
         #TODO: delete logdetjac from databases
     
@@ -141,10 +142,14 @@ def adaptative_sampling(
         is0_from_chains = chains_flatten[~mask_flow][:, :-1]
 
         if is0_from_chains.nelement() != 0:
+
+            print('before', xs_for_flows_test_is0)
+
             xs_for_flows_train_is0 = torch.cat(
                 (xs_for_flows_train_is0, is0_from_chains)
             )
 
+            print('after', xs_for_flows_test_is0)
             #x_rad_center = dict_flows_training[i][0]['model'].centering_args['mean_out']
 #
             #xs_train_ = centering_in_radian(xs_for_flows_train_is0.clone(), x_rad_center, return_centering_args=False)

@@ -47,7 +47,7 @@ def train_flow(
     grad_norms = []
 
     if compute_ratio_acc:
-        isomer=train[0, 14].to(torch.int64).item()
+        isomer=train[0, 13].to(torch.int64).item()
         T=T
         n_chains=n_chains
         ratios = []
@@ -118,8 +118,8 @@ def train_flow(
                 beta = 1 / (kb * T)
 
                 x_init = init[:, :12]
-                u_init = init[:, 13]
-                isomer_init = init[:, 14]
+                u_init = init[:, 12]
+                isomer_init = init[:, 13]
 
                 for dt in range(n_steps):
 
@@ -205,7 +205,7 @@ def train_flow(
     }
 
     if compute_ratio_acc:
-        to_return["acc_rates"]= acc_rates,
-        to_return["ratios"]: ratios
+        to_return["acc_rates"] = acc_rates,
+        to_return["ratios"] = ratios
 
     return to_return

@@ -29,8 +29,8 @@ def run_metropolis(
     assert init.shape[0] == n_chains
 
     x_init = init[:, :12]
-    u_init = init[:, 13]
-    isomer_init = init[:, 14]
+    u_init = init[:, 12]
+    isomer_init = init[:, 13]
 
     beta = 1 / (kb * T)
 

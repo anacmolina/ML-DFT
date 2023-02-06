@@ -355,19 +355,23 @@ class Coordinates_mapping():
                 zmat, logdetjac, potential_energy = self.get_internal_from_molecule(molecule_configuration, 
                                                             return_potential_energy=True,
                                                             temperature=temperature)
-                zmat = torch.cat((zmat, logdetjac, potential_energy), dim=-1)
+                if isomer is not None:
+                    isomer = torch.tensor([isomer])
+                    zmat = torch.cat((zmat, potential_energy, isomer), dim=-1 )
+                else:   
+                    zmat = torch.cat((zmat, potential_energy), dim=-1 )
+                
+                zmat = torch.cat((zmat, logdetjac), dim=-1)
 
             else:
                 zmat, logdetjac = self.get_internal_from_molecule(molecule_configuration, 
                                                             return_potential_energy=False)
+                if isomer is not None:
+                    isomer = torch.tensor([isomer])
+                    zmat = torch.cat((zmat, isomer), dim=-1 )
+
                 zmat = torch.cat((zmat, logdetjac), dim=-1)
 
-            if isomer is not None:
-                print(isomer)
-                isomer = torch.tensor([isomer])
-                zmat = torch.cat((zmat, isomer), dim=-1 )
-
-            
             zmats.append(zmat)
             
             if max_samples is not None:
@@ -475,9 +479,6 @@ def get_labels_from_construction_table(construction_table, all_labels=False):
 def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_energy=True, add_logdetjac=True, add_isomer=True, filename='traj.csv', path=get_path()):
 
         labels = get_labels_from_construction_table(construction_table)
-        
-        if add_logdetjac:
-            labels = labels + ['logdetjac']
             
         if add_potential_energy:
             labels = labels + ['potential_energy']
@@ -485,16 +486,28 @@ def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_ener
         if add_isomer:
             labels = labels + ['isomer']
 
+        if add_logdetjac:
+            labels = labels + ['logdetjac']
+
         df = pd.DataFrame(xs.detach().numpy())
         df.columns=labels
         df.to_csv(path + '/' + filename, index=False)
 
-def join_data(xs, logdetjacs, energies, isomers):
-    
+def join_data(xs, energies, isomers, logdetjacs=None):
+    # TODO: Fix logdetjac as optional, dim=-1
+    # data = torch.cat((xs, 
+    #         energies.reshape(-1, 1), 
+    #         isomers.reshape(-1, 1),
+    #         logdetjacs.reshape(-1, 1)), 
+    #     dim=1).to(torch.float32)
+
     data = torch.cat((xs, 
-            logdetjacs.reshape(-1, 1), 
             energies.reshape(-1, 1), 
             isomers.reshape(-1, 1)), 
         dim=1).to(torch.float32)
+    
+    if logdetjacs is not None:
+        data = torch.cat((data,
+            logdetjacs.reshape(-1, 1)), dim=1)
 
     return data
