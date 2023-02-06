@@ -88,18 +88,18 @@ def adaptative_sampling(
         mixture = Mixture(get_models(dict_flows_training[i]), weights)
 
         mcmc_run = run_metropolis(
-        model=mixture,
-        init=init,
-        #x_init=x_init,
-        #u_init=u_init,
-        #isomer_init=isomer_init,
-        n_chains=n_chains,
-        n_steps=n_steps,
-        n_run=i,
-        energy_type=energy_type,
-        mlp_models=get_models(dict_mlps_training[-1]),
-        mixture=True,
-        )
+            model=mixture,
+            init=init,
+            #x_init=x_init,
+            #u_init=u_init,
+            #isomer_init=isomer_init,
+            n_chains=n_chains,
+            n_steps=n_steps,
+            n_run=i,
+            energy_type=energy_type,
+            mlp_models=get_models(dict_mlps_training[-1]),
+            mixture=True,
+            )
         
         mcmc_runs.append(mcmc_run)
 
@@ -116,7 +116,6 @@ def adaptative_sampling(
         accs.append(mcmc_run["accs"])
         isomers.append(mcmc_run["isomers"])
 
-
         #u_init = us[i][-1]
         #x_init = xs[i][-1]
         #isomer_init = isomers[i][-1]
@@ -125,7 +124,7 @@ def adaptative_sampling(
         
         #TODO: delete logdetjac from databases
     
-
+        #### RETRAINING OF THE FLOWS
         chains_flatten = Transpose(
             torch.cat(
                 (
@@ -186,9 +185,7 @@ def adaptative_sampling(
         else:
             dict_new_flow_is1 = dict_flows_training[i][1]
 
-        # retrain MLPs 
-        
-        
+        #### RETRAINING OF THE MLPS
         if retraining_mlp and ('dft' in energy_type):
 
             xs_dft = mcmc_run['xs_dft']

@@ -14,10 +14,11 @@ from flonacomldft.utils.silver_isomers_utils import get_construction_table, get_
 def add_phase(tensor, phase = 2 * torch.pi):
     return tensor - phase
 
-# map from radians to reals with tan function
+
 class Angles_mapping():
     """
-    Class to get the forward and backward mapping of the angles.
+    Class to get the forward and backward mapping of the angles: 
+    it maps from radians to reals with tan function.
     It stores the index at which the angles start in the internal coordinates
 
     """
@@ -244,7 +245,7 @@ class Coordinates_mapping():
         return np.linalg.slogdet(det)
 
     def logdetjac_xyz_to_zmat(self, xyz):
-
+            
         """"
         Args:
             xyz: chemcoord Cartesian object
