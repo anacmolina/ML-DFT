@@ -108,7 +108,7 @@ class Coordinates_mapping():
         
         zmat = torch.tensor(
             np.concatenate((zmat[:, 0], zmat[1:, 1], zmat[2:, 2])) 
-            )
+            ).requires_grad_()
 
         return zmat.to(torch.float32)
     
@@ -150,12 +150,12 @@ class Coordinates_mapping():
 
             zmat_ref = torch.tensor([1.27, 2.21657, 2.21657]).to(torch.double)
 
-            b = torch.cat((zmat_ref[0].unsqueeze(0), zmat[:self.Natoms-1]))
-            a = torch.cat((zmat_ref[1].repeat(2), zmat[self.Natoms-1:2*self.Natoms-3]))
-            d = torch.cat((zmat_ref[1].repeat(3),zmat[2*self.Natoms-3:]))
+            b = torch.cat((zmat_ref[0].unsqueeze(0), zmat[:self.Natoms-1])).detach().numpy()
+            a = torch.cat((zmat_ref[1].repeat(2), zmat[self.Natoms-1:2*self.Natoms-3])).detach().numpy()
+            d = torch.cat((zmat_ref[1].repeat(3),zmat[2*self.Natoms-3:])).detach().numpy()
 
-            a = torch.rad2deg(a)
-            d = torch.rad2deg(d)
+            a = np.rad2deg(a)
+            d = np.rad2deg(d)
 
             zmat_matrix.insert(2, "bond", b, True)
             zmat_matrix.insert(4, "angle", a, True)

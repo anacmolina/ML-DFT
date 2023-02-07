@@ -52,7 +52,7 @@ def acceptance_rate_plot(acceptance_rate, title, xlabel, figsize=(8, 6)):
     fig, ax = plt.subplots(1, 1, figsize=figsize)
     ax.plot(acceptance_rate)
     ax.set_title(title)
-    ax.set_ylabel('Acceptance rate')
+    ax.set_ylabel(title)
     ax.set_xlabel(xlabel)
     ax.legend()
     return fig, ax
@@ -72,9 +72,9 @@ def plot_correlation_target_and_predict_value(target_train, predicted_train, tar
     import numpy as np
     
     fig, ax = plt.subplots(1, 1, figsize=figsize)
-    ax.scatter(target_train, predicted_train.detach().numpy()[:], label='train')
+    ax.scatter(target_train.detach().numpy(), predicted_train.detach().numpy()[:], label='train')
     if target_test is not None and predicted_test is not None:
-        ax.scatter(target_test, predicted_test.detach().numpy()[:], label='test')
+        ax.scatter(target_test.detach().numpy(), predicted_test.detach().numpy()[:], label='test')
         predicted = torch.cat((predicted_train, predicted_test))
     else:
         predicted = predicted_train
