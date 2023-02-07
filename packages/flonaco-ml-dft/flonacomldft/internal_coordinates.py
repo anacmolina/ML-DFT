@@ -6,7 +6,6 @@ import chemcoord as cc
 from flonacomldft.utils.io_utils import get_path
 from flonacomldft.utils.silver_isomers_utils import get_construction_table, get_molecule_isomer_minima 
 
-
 # TODO: Add description EVERYWHERE
 
 
@@ -506,3 +505,4 @@ def join_data(xs, energies, isomers, logdetjacs=None):
             logdetjacs.reshape(-1, 1)), dim=1)
 
     return data
+

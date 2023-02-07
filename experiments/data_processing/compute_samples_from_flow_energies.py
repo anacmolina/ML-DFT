@@ -1,8 +1,9 @@
-#TODO: Run in the cluster
 import torch
 
 from flonacomldft.utils.io_utils import (
-    load_pickle_file
+    load_pickle_file,
+    save_ase_molecules_as_traj,
+    get_path
 )
 
 from flonacomldft.dft_calculator import DFTCalculator
@@ -28,7 +29,7 @@ calculator = DFTCalculator()
 calculator.initialize_calculator(foldername='DFTComputations_is{:d}'.format(mode_label))
 
 flow_configurations = []
- 
+
 for i, zmat_sample in enumerate(zs_samples):
     molecule = coord_mapping.build_molecule_from_zmat(zmat_sample.detach())
     calculator.calculate_potential_energy(molecule, 
@@ -38,7 +39,8 @@ for i, zmat_sample in enumerate(zs_samples):
 
 internal_coordinates = coord_mapping.get_internal_from_trajectory(flow_configurations, isomer=mode_label, temperature=300)
 
-# TODO: save configs as a trajectory
+save_ase_molecules_as_traj(flow_configurations, 'configs.traj', get_path())
+
 save_internal_coordinates_to_csv(internal_coordinates,
-            get_construction_table(), 
+            get_construction_table(),
             filename='int_coords/is{:d}_flow_zmat.csv'.format(mode_label))
