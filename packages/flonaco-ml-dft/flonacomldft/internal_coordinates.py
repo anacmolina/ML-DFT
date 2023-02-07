@@ -302,7 +302,6 @@ class Coordinates_mapping():
     def compute_energy_in_new_frame(self, energy, logdetjac, temperature=300):
         return energy - (self.kb * temperature) * logdetjac
 
-    # TODO: Update with new functions
     def get_internal_from_molecule(self, molecule, return_potential_energy=False,
                                 temperature=300, requires_grad=False):
         """"
@@ -452,6 +451,14 @@ class Coordinates_mapping():
             return zmats, logdetjacs, energies
 
         return zmats, logdetjacs
+    
+    def build_molecule_from_real_centered(self, x, isomer):
+
+        zmat, logdetjac = self.get_internal_from_real_centered(x, isomer=isomer)
+        xyz, logdetjac = self.get_cartesian_from_internal(zmat[0], logdetjac)
+        molecule = self._build_molecule_from_xyz(xyz)
+
+        return molecule, logdetjac
         
 
 def get_labels_from_construction_table(construction_table, all_labels=False):
@@ -493,7 +500,6 @@ def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_ener
         df.to_csv(path + '/' + filename, index=False)
 
 def join_data(xs, energies, isomers, logdetjacs=None):
-    # TODO: Fix logdetjac as optional, dim=-1
 
     data = torch.cat((xs, 
             energies.reshape(-1, 1), 

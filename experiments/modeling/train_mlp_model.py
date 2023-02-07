@@ -1,4 +1,3 @@
-# TODO: LOAD DATA EQUALLY EVERYWHERE
 import torch
 
 from flonacomldft.utils.io_utils import load_csv_file, save_pickle_file
@@ -14,9 +13,10 @@ torch.manual_seed(100)
 # load data
 
 mode_label = 1 #1
+dataset_labels = ['md', 'flow']
 
-zmat_train = load_csv_file("datasets/is{:d}_md_train.csv".format(mode_label))
-zmat_test = load_csv_file("datasets/is{:d}_md_test.csv".format(mode_label))
+zmat_train = torch.cat([load_csv_file("datasets/is{:d}_{:s}_train.csv".format(mode_label, dataset_label)) for dataset_label in dataset_labels])
+zmat_test = torch.cat([load_csv_file("datasets/is{:d}_{:s}_test.csv".format(mode_label, dataset_label)) for dataset_label in dataset_labels])
 
 # real centered frame
 
@@ -36,11 +36,11 @@ xs_test, logdetjacs_test, energies_test = coord_mapping.get_real_centered_from_i
                                     )
 
 
-n_hidden = 128
-n_layers = 32
+n_hidden = 256
+n_layers = 16
 model = MLP([xs_train.shape[1]] +  [n_hidden] * n_layers + [1])
 
-mlp_hyperparams = {'n_iter': 1500,
+mlp_hyperparams = {'n_iter': 1000,
     'lr': 1e-4,
     'use_scheduler': False,
     'step_schedule': 100,
@@ -57,19 +57,16 @@ test = join_data(xs_test,
                 zmat_test[:, 14],
                 logdetjacs_test)
 
-#train = torch.cat((xs_train, logdetjacs_train.reshape(-1, 1), energies_train.reshape(-1, 1), zmat_train[:, 14].reshape(-1, 1)), dim=1).to(torch.float32)
-#test = torch.cat((xs_test, logdetjacs_test.reshape(-1, 1), energies_test.reshape(-1, 1), zmat_test[:, 14].reshape(-1, 1)), dim=1).to(torch.float32)
-
 out = train_mlp(model, train, test, **mlp_hyperparams, 
               with_tqdm=True)
 
 import matplotlib.pyplot as plt
 from flonacomldft.utils.plots import (
     plot_losses,
-    plot_correlation_target_and_predict_value
+    plot_correlation_target_and_predict_value,
 )
 
-plot_losses(out['losses'][0], out['losses'][1])
+plot_losses(out['losses'][0], out['losses'][1], log_yscale=True)
 plt.show()
 
 plot_correlation_target_and_predict_value(
@@ -81,5 +78,6 @@ plot_correlation_target_and_predict_value(
 )
 plt.show()
 
-f = "models/is{:d}_mlp_dic_training.pkl".format(mode_label)
-save_pickle_file(out, f)
+
+#f = "models/is{:d}_mlp_dic_training.pkl".format(mode_label)
+#save_pickle_file(out, f)

@@ -122,14 +122,18 @@ def run_metropolis(
                 if flag_dft:
                     try:
                         #TODO: FIX SHAPES OF XS, ZMAT
-                        zmat, logdetjac = coord_maps.get_internal_from_real_centered(x_new[i].reshape(1, -1), isomer=isomer_new[i].item())
-                        xyz, logdetjac = coord_maps.get_cartesian_from_internal(zmat[0], logdetjac)
-                        molecule = coord_maps._build_molecule_from_xyz(xyz)
+
+                        #       zmat, logdetjac = coord_maps.get_internal_from_real_centered(x_new[i].reshape(1, -1), isomer=isomer_new[i].item())
+                        #       xyz, logdetjac = coord_maps.get_cartesian_from_internal(zmat[0], logdetjac)
+                        #       molecule = coord_maps._build_molecule_from_xyz(xyz)
+
                         #TODO: BUILD molecule from internal, return logdet
+
+                        molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer_new[i].item())
                         u_ = calculator.calculate_potential_energy(
-                              molecule, 
-                              filename='ag6_'+str(name_run)+'_'+str(dt)+'_'+str(i)+'.out'
-                                              )
+                                molecule, 
+                                filename='ag6_'+str(name_run)+'_'+str(dt)+'_'+str(i)+'.out'
+                                                )
                         u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
 
                         #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
@@ -151,7 +155,7 @@ def run_metropolis(
 
         if use_dft:
             if ind_not_computed is not None and ind_not_computed.sum() != 0:
-                acc[ind_not_computed.bool()] = torch.full((1, len(ind_not_computed)), False)
+                acc[ind_not_computed.bool()] = False
 
             ind_dft[~acc] = 0
             inds_dft.append(ind_dft.float().clone())
@@ -164,7 +168,6 @@ def run_metropolis(
         else:
             isomer_new = isomer_init
 
-        #print('accs: {:2f}'.format(acc.float().mean()))
         
         xs.append(x_new.float().clone())
         us.append(u_new.float().clone())
@@ -172,16 +175,12 @@ def run_metropolis(
         nlls.append(nll_x.float().clone())
         isomers.append(isomer_new.float().clone())
         
-        #if use_dft:
-        #    inds_dft.append(ind_dft.float().clone())
-
         x_init = x_new.clone().detach()
         u_init = u_new.clone().detach()
         isomer_init = isomer_new.clone().detach()
 
         if with_tqdm:
             pbar.set_description(f'acc: {acc.float().mean():.2f}')
-
 
         #print("acc: {:0.2f}".format(acc.float().mean()))
 
@@ -192,6 +191,7 @@ def run_metropolis(
         "isomers": torch.stack(isomers),
 
     }
+
     if use_dft:
         to_return["inds_dft"] = torch.stack(inds_dft)
         to_return["xs_dft"] = torch.stack(xs_dft)

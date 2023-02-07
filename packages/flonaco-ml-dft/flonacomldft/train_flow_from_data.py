@@ -6,7 +6,46 @@ from torch.nn.utils import clip_grad_norm_
 from ray import tune
 
 from ase.parallel import parprint as print
-from flonacomldft.sampling import run_metropolis
+
+def get_ratio_acc(
+            model,
+            init,
+            n_chains,
+            mlp_model,
+            T=300,
+    ):
+
+    assert init.shape[0] == n_chains
+
+    kb = 8.617333262e-5
+    beta = 1 / (kb * T)
+
+    x_init = init[:, :12]
+    u_init = init[:, 12]
+    isomer_init = init[:, 13]
+
+    x_new = model.sample(n_chains)
+    isomer_new = isomer_init
+
+    x_new = x_new.clone().detach().float()
+    isomer_new = isomer_new.clone().detach().float()
+
+    nll_x = model.nll(x_new)
+    nll_x_init = model.nll(x_init)
+
+    u_new = torch.zeros((n_chains, 1))
+    u_new = mlp_model(x_new)
+    u_new = u_new.squeeze().float()
+
+    ratio = -beta * u_new + nll_x
+    ratio += beta * u_init - nll_x_init
+    ratio = torch.exp(ratio)
+
+    u = torch.rand_like(ratio)
+    ratio = torch.min(ratio, torch.ones_like(ratio))
+    acc = u < ratio
+
+    return ratio, acc
 
 def train_flow(
     model,
@@ -84,79 +123,12 @@ def train_flow(
         if compute_ratio_acc:
 
             n_chains = n_chains
-            n_steps = 1
-
-            """
-            _ = run_metropolis(model=model,
-                        init=test[:n_chains],
-                        n_chains=n_chains,
-                        n_steps=n_steps,
-                        n_run="",
-                        energy_type='mlp', #'dft',
-                        frac_dft=None,
-                        mlp_models=mlp,
-                        mixture=False,
-                        T=300,
-                        with_tqdm=False,
-                    )
-            acc_rate = (_['accs'].cpu().numpy() * 1).mean()
-            acc_rates.append(acc_rate)
-            """
-            # TODO: get both, acceptance and ratio
-            def get_ratio_acc(
-                        model,
-                        init,
-                        n_chains,
-                        n_steps,
-                        mlp_model,
-                        T=T,
-                ):  
-
-                assert init.shape[0] == n_chains
-
-                kb = 8.617333262e-5
-                beta = 1 / (kb * T)
-
-                x_init = init[:, :12]
-                u_init = init[:, 12]
-                isomer_init = init[:, 13]
-
-                for dt in range(n_steps):
-
-                    x_new = model.sample(n_chains)
-                    isomer_new = isomer_init
-
-                    x_new = x_new.clone().detach().float()
-                    isomer_new = isomer_new.clone().detach().float()
-
-                    nll_x = model.nll(x_new)
-                    nll_x_init = model.nll(x_init)
-
-                    u_new = torch.zeros((n_chains, 1))
-                    u_new = mlp_model(x_new)
-                    u_new = u_new.squeeze().float()
-
-                    #print('energies: ', u_new, u_init)
-                    #print('nll: ', nll_x, nll_x_init)
-
-                    ratio = -beta * u_new + nll_x
-                    ratio += beta * u_init - nll_x_init
-                    ratio = torch.exp(ratio)
-
-                    u = torch.rand_like(ratio)
-                    ratio = torch.min(ratio, torch.ones_like(ratio))
-                    acc = u < ratio
-
-                return ratio, acc
-
             ratio, acc_rate = get_ratio_acc(model=model,
                     init=test[:n_chains],
                     n_chains=n_chains,
-                    n_steps=n_steps,
                     mlp_model=mlp,
-                    T=300,)
+                    T=T)
 
-            #print('ratio: ', acc_rate, (acc_rate.cpu().detach().numpy() * 1).mean())
             ratio = (ratio.cpu().detach().numpy() * 1).mean()
             ratios.append(ratio)
         
@@ -180,7 +152,7 @@ def train_flow(
             # prints
 
             print(
-                "t={:0.1e}".format(t), "Loss: {:3.2f}".format(loss.item()), end="  \t"
+                "t={:0.1e}".format(t), "loss: {:3.2f}".format(loss.item()), end="  \t"
             )
 
             if compute_ratio_acc:

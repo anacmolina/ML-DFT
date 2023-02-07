@@ -10,7 +10,6 @@ import torch
 import pandas as pd
 from ase.io.trajectory import Trajectory
 
-# TODO: set database project path
 
 # path to database folder (initial trajectories)
 def get_path():

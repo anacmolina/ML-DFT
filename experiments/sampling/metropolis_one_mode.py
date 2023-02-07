@@ -1,5 +1,5 @@
 import torch
-import numpy as np # TODO: avoid using numpy
+import numpy as np 
 
 import gpaw.mpi as mpi
 

@@ -11,9 +11,9 @@ from flonacomldft.utils.io_utils import (
 from flonacomldft.internal_coordinates import Coordinates_mapping, join_data
 from flonacomldft.full_adaptive_sampling import adaptative_sampling
 
-energy_type="dft"
-# energy_type="mlp-dft"
-# energy_type="mlp"
+#energy_type="dft"
+energy_type="mlp-dft"
+#energy_type="mlp"
 
 # mcmc params
 n_runs = 1

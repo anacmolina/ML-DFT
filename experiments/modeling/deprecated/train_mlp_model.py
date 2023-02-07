@@ -37,7 +37,6 @@ mlp_hyperparams = {'n_iter': 1000,
     'step_schedule': 100,
 }
 
-#TODO: Fix mode label convention
 out = train_mlp(model, train, test, mode_label, **mlp_hyperparams, 
               with_tqdm=True)
 

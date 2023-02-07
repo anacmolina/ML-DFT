@@ -1,5 +1,5 @@
 import torch
-import numpy as np # TODO: avoid using numpy
+import numpy as np
 
 import gpaw.mpi as mpi
 
@@ -89,5 +89,5 @@ out = run_metropolis(
     with_tqdm=True,
 )
 
-f = "experiments/mcmc_mixture_chains_{:d}_steps_{:d}.pkl".format(n_chains, n_steps)
-save_pickle_file(out, f, path=get_project_path())
+#f = "experiments/mcmc_mixture_chains_{:d}_steps_{:d}.pkl".format(n_chains, n_steps)
+#save_pickle_file(out, f, path=get_project_path())
