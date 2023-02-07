@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import time
 
-from flonacomldft.utils.io_utils import load_csv_file, save_pickle_file
+from flonacomldft.utils.io_utils import load_csv_file, save_pickle_file, get_path
 from flonacomldft.internal_coordinates import Coordinates_mapping, join_data
 from flonacomldft.models.real_nvp import RealNVP_MLP
 from flonacomldft.train_flow_from_data import train_flow
@@ -13,6 +13,8 @@ from flonacomldft.train_flow_from_data import train_flow
 date = time.strftime('%d-%m-%Y')
 random_id = str(np.random.randint(100))
 print('random id!', random_id)
+
+print(get_path())
 
 ### Define arguments to parse from command line
 parser = argparse.ArgumentParser(description='Prepare experiment')

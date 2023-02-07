@@ -13,9 +13,7 @@ import pandas as pd
 
 # path to database folder (initial trajectories)
 def get_path():
-    if os.path.isdir('../../../ceph/database/'):
-        ceph_home = '../../../ceph/database/' #marylou launching from rusty
-    elif os.path.isdir('/mnt/home/amolina/ceph/database/'):
+    if os.path.isdir('/mnt/home/amolina/ceph/database/'):
         ceph_home = '/mnt/home/amolina/ceph/database/'
     elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/database/'):
         ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/database/'
