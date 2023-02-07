@@ -15,9 +15,9 @@ from flonacomldft.internal_coordinates import Coordinates_mapping
 from flonacomldft.utils.io_utils import get_path, save_pickle_file
 from flonacomldft.collective_variables import get_CVs
 
-from ray import air, tune
-from ray.tune.schedulers import ASHAScheduler
-from ray.tune.search.optuna import OptunaSearch
+# from ray import air, tune
+# from ray.tune.schedulers import ASHAScheduler
+# from ray.tune.search.optuna import OptunaSearch
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 

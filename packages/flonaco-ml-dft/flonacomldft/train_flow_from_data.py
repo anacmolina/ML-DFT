@@ -3,7 +3,7 @@ import tqdm
 
 import torch
 from torch.nn.utils import clip_grad_norm_
-from ray import tune
+# from ray import tune
 
 from ase.parallel import parprint as print
 from flonacomldft.sampling import run_metropolis
@@ -194,8 +194,8 @@ def train_flow(
                 print("lr: {:0.2e}".format(param_group["lr"]), end="\t")
 
             print("")
-            if use_tune:
-                tune.report({"loss":loss.item(), "grad_norm":total_norm})
+            # if use_tune:
+            #     tune.report({"loss":loss.item(), "grad_norm":total_norm})
 
     to_return = {
         "model": model,
