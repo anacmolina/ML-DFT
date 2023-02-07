@@ -4,7 +4,7 @@ from flonacomldft.internal_coordinates import Coordinates_mapping
 from flonacomldft.utils.io_utils import load_csv_file
 
 from flonacomldft.models.mlp import MLP
-from flonacomldft.train_mlp import train_mlp
+from flonacomldft.train_mlp_from_data import train_mlp
 
 from flonacomldft.utils.io_utils import save_pickle_file
 import matplotlib.pyplot as plt

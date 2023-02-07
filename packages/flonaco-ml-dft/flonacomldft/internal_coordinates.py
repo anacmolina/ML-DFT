@@ -6,8 +6,6 @@ import chemcoord as cc
 from flonacomldft.utils.io_utils import get_path
 from flonacomldft.utils.silver_isomers_utils import get_construction_table, get_molecule_isomer_minima 
 
-# TODO: Add description EVERYWHERE
-
 
 # add a phase for some internal coordinates angles
 def add_phase(tensor, phase = 2 * torch.pi):
@@ -131,7 +129,6 @@ class Coordinates_mapping():
         return zmat
       
     def _build_zmat_matrix_from_zmat(self, zmat): #NOTE: It's working
-        # TODO: Rebuild this using read_xyz from chemcoord  
         """"
         Build the chemcoord zmat matrix adding default frame position/rotation and 
         angles in degrees from the zmat values (only the internal coordinates with 
@@ -143,43 +140,65 @@ class Coordinates_mapping():
         Returns:  
             zmat_matrix: chemcoord df-zmat of coordinates in the basis of the IC
         """
-
-        if torch.is_tensor(zmat):
-            zmat = zmat.clone().detach().numpy()
-        else:
-            zmat = zmat.copy()
-                
-        zmat_matrix = self.construction_table.copy()
         
-        b = np.zeros(6)
-        a = np.zeros(6)
-        d = np.zeros(6)
-        
-        if len(zmat)==12:
-         
-            # reference frame shift - values taken from chemcoord
-            b[0] = 1.27
-            a[0:2] = np.array([2.21657, 2.21657])
-            d[0:3] = np.array([2.21657, 2.21657, 2.21657])
+        if zmat.shape[0] == 3*self.Natoms - 6:
 
-            b[1:] = zmat[:5]
-            a[2:] = zmat[5:9]
-            d[3:] = zmat[9:]
-            
-            a = np.rad2deg(a)
-            d = np.rad2deg(d)
-            
-            b = np.double(b)
-            a = np.double(a)
-            d = np.double(d)
-            
-            zmat_matrix.insert(0, "atom", self.symbols, True)
+            zmat = zmat.clone().to(torch.double)
+            zmat_matrix = self.construction_table.copy()
+
+            zmat_matrix.insert(0, "atom", self.symbols.copy(), True)
+
+            zmat_ref = torch.tensor([1.27, 2.21657, 2.21657]).to(torch.double)
+
+            b = torch.cat((zmat_ref[0].unsqueeze(0), zmat[:self.Natoms-1]))
+            a = torch.cat((zmat_ref[1].repeat(2), zmat[self.Natoms-1:2*self.Natoms-3]))
+            d = torch.cat((zmat_ref[1].repeat(3),zmat[2*self.Natoms-3:]))
+
+            a = torch.rad2deg(a)
+            d = torch.rad2deg(d)
+
             zmat_matrix.insert(2, "bond", b, True)
             zmat_matrix.insert(4, "angle", a, True)
             zmat_matrix.insert(6, "dihedral", d, True)
 
             zmat_matrix = cc.Zmat(zmat_matrix)
 
+#        if torch.is_tensor(zmat):
+#            zmat = zmat.clone().detach().numpy()
+#        else:
+#            zmat = zmat.copy()
+#                
+#        zmat_matrix = self.construction_table.copy()
+#        
+#        b = np.zeros(6)
+#        a = np.zeros(6)
+#        d = np.zeros(6)
+#        
+#        if len(zmat)==12:
+#         
+#            # reference frame shift - values taken from chemcoord
+#            b[0] = 1.27
+#            a[0:2] = np.array([2.21657, 2.21657])
+#            d[0:3] = np.array([2.21657, 2.21657, 2.21657])
+#
+#            b[1:] = zmat[:5]
+#            a[2:] = zmat[5:9]
+#            d[3:] = zmat[9:]
+#            
+#            a = np.rad2deg(a)
+#            d = np.rad2deg(d)
+#            
+#            b = np.double(b)
+#            a = np.double(a)
+#            d = np.double(d)
+#            
+#            zmat_matrix.insert(0, "atom", self.symbols, True)
+#            zmat_matrix.insert(2, "bond", b, True)
+#            zmat_matrix.insert(4, "angle", a, True)
+#            zmat_matrix.insert(6, "dihedral", d, True)
+#
+#            zmat_matrix = cc.Zmat(zmat_matrix)
+#
         else:
             raise RuntimeError('Data not valid')
       
