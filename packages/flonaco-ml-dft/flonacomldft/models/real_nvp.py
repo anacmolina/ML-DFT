@@ -58,33 +58,6 @@ class ResidualAffineCoupling(nn.Module):
                 raise RuntimeError('Scale factor has NaN entries')
 
         return x, log_det_jac
-
-class Angles_mapping():
-    """
-    Class to get the forward and backward mapping of the angles.
-    It stores the index at which the angles start in the internal coordinates
-
-    """
-    def __init__(self, idx_first_angle=5):
-        self.idx_first_angle = idx_first_angle
-
-    def rads_to_reals(self, x_rads, log_det_jac=None):
-        if log_det_jac is None:
-            log_det_jac = 0
-
-        x_reals = x_rads.clone()
-        x_reals[:, self.idx_first_angle:] = x_rads[:, self.idx_first_angle:].tan()
-        log_det_jac += torch.log(1 + x_reals[:, self.idx_first_angle:]**2).sum(-1)
-        return x_reals, log_det_jac
-        
-    def reals_to_rads(self, x_reals, log_det_jac=None):
-        if log_det_jac is None:
-            log_det_jac = 0
-
-        x_rads = x_reals.clone()
-        x_rads[:, self.idx_first_angle:] = x_reals[:, self.idx_first_angle:].arctan()
-        log_det_jac -= torch.log(1 + x_reals[:, self.idx_first_angle:]**2).sum(-1)
-        return x_rads, log_det_jac
        
 class RealNVP_MLP(nn.Module):
     """ Minimal Real NVP architecture
@@ -93,7 +66,7 @@ class RealNVP_MLP(nn.Module):
         n_blocks (int): number of pairs of coupling layers
         block_depth (int): repetition of blocks with shared param
         init_weight_scale (float): scaling factor for weights in s and t layers
-        centering_args (dict): specifies the base distribution
+        base_cov (tensor - (dims, dims)): specifies the base distribution covariance
         mask_type (str): 'half' or 'inter' masking pattern
         hidden_dim (int): # of hidden neurones per layer (coupling MLPs)
     """
@@ -101,7 +74,7 @@ class RealNVP_MLP(nn.Module):
     def __init__(self, dim, n_blocks, 
                  block_depth,
                  init_weight_scale=None,
-                 centering_args=None,
+                 base_cov=None,
                  mask_type='half',  
                  hidden_dim=100,
                  hidden_depth=3,
@@ -120,6 +93,7 @@ class RealNVP_MLP(nn.Module):
         self.hidden_bias = hidden_bias
         self.hidden_activation = hidden_activation
         self.init_scale_in_coupling = init_weight_scale
+        self.base_cov = base_cov
 
         mask = torch.ones(dim, device=self.device)
         if mask_type == 'half':
@@ -130,18 +104,14 @@ class RealNVP_MLP(nn.Module):
         self.mask = mask.view(1, dim)
 
         self.coupling_layers = self.initialize()
-        self.angles_mapping = Angles_mapping()
 
-        if centering_args is None:
-            self.centering_args = {["mean_out"]: torch.zeros((dim,)).to(device),}
+        if base_cov is None:
             self.prior_prec =  torch.eye(dim).to(device)
             self.prior_log_det = 0
             self.prior_distrib = MultivariateNormal(
                 torch.zeros((dim,)).to(device), self.prior_prec)
         else:
-            self.centering_args = centering_args
-            cov = centering_args["cov_base"]
-            self.prior_prec = torch.inverse(cov).to(device)
+            self.prior_prec = torch.inverse(self.base_cov).to(device)
             self.prior_prec = 0.5 * (self.prior_prec + self.prior_prec.T)
             self.prior_log_det = - torch.logdet(self.prior_prec)
             self.prior_distrib = MultivariateNormal(
@@ -165,16 +135,10 @@ class RealNVP_MLP(nn.Module):
                 for coupling_layer in couplings:
                     x, log_det_jac = coupling_layer(x, log_det_jac)
 
-        x, log_det_jac = self.angles_mapping.reals_to_rads(x, log_det_jac)
-        x = x + self.centering_args["mean_out"]
-
         return x, log_det_jac
 
     def backward(self, x, return_per_block=False):
         log_det_jac = torch.zeros(x.shape[0], device=self.device)
-
-        x = x #sh flat- self.centering_args["mean_out"]
-        x, log_det_jac = self.angles_mapping.rads_to_reals(x, log_det_jac)
         
         for block in range(self.n_blocks):
             couplings = self.coupling_layers[::-1][block]
@@ -240,33 +204,3 @@ class RealNVP_MLP(nn.Module):
         alias
         """
         return self.nll(x)
-
-# TODO: delete this 
-# def init_model(zmat, n_blocks=15, block_depth=1, init_weight_scale=1e-6, device='cpu'):
-# 
-#     # Set this as a default for all the files
-#     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# 
-#     x_tensor = zmat[:, :-1]
-# 
-#     cov = torch.cov(x_tensor.T)
-#     cov = torch.eye(12) * cov.mean()
-#     mean = x_tensor.mean(0)
-#     centering_args =  {
-#         "type": "white",
-#         "cov_base": cov,
-#         "mean_out": mean
-#         }  # Gaussian with non-trival mean and covariance for base
-# 
-#     model = RealNVP_MLP(
-#         x_tensor.shape[-1],
-#         n_blocks,
-#         block_depth,
-#         init_weight_scale=init_weight_scale,
-#         centering_args=centering_args,
-#         device=device,
-#     )
-# 
-#     return model
-# 
-# 

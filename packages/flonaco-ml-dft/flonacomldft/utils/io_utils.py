@@ -8,8 +8,8 @@ import pickle
 
 import torch
 import pandas as pd
+from ase.io.trajectory import Trajectory
 
-# TODO: set database project path
 
 # path to database folder (initial trajectories)
 def get_path():
@@ -56,9 +56,9 @@ def save_pickle_file(data, filename, path=get_path()):
     outfile.close()
 
 # function that load csv data 
-def load_csv_file(filename, path=get_path()):
+def load_csv_file(filename, path=get_path(), dtype=torch.float32):
     path =  path + filename
-    zmat = torch.tensor(pd.read_csv(path).to_numpy()).float()
+    zmat = torch.tensor(pd.read_csv(path).to_numpy()).to(dtype)
     return zmat
 
 # function that saves data to csv
@@ -66,4 +66,6 @@ def save_csv_file(dataframe, filename, path=os.getcwd()):
     dataframe.to_csv(path + filename)
 
 
- 
+def save_ase_molecules_as_traj(configs, filename='configs.traj', path=os.getcwd()):
+   traj = Trajectory(path + '/' + filename, 'w', atoms=configs)
+   traj.close()

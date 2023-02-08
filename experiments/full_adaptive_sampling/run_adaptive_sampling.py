@@ -8,39 +8,42 @@ from flonacomldft.utils.io_utils import (
     get_project_path
 )
 
+from flonacomldft.internal_coordinates import Coordinates_mapping, join_data
 from flonacomldft.full_adaptive_sampling import adaptative_sampling
 
-# energy_type="dft"
-# energy_type="mlp-dft"
-energy_type="mlp"
+#energy_type="dft"
+energy_type="mlp-dft"
+#energy_type="mlp"
 
 # mcmc params
-n_runs = 10
-n_chains = 50
-n_steps = 30
+n_runs = 1
+n_chains = 5
+n_steps = 2
+
+# TODO: Check the mlp is1 training loss
+
+flow_hyperparams_is0 = {'n_iter': 100,
+    'lr': 1e-4,
+    'use_scheduler': False,
+    'step_schedule': 100,
+    'save_splits': 10,
+    'grad_clip': 1e4}
 
 flow_hyperparams_is1 = {'n_iter': 100,
-    'lr': 5e-4,
+    'lr': 1e-4,
     'use_scheduler': False,
     'step_schedule': 100,
     'save_splits': 10,
     'grad_clip': 1e4}
 
-flow_hyperparams_is2 = {'n_iter': 100,
-    'lr': 5e-4,
-    'use_scheduler': False,
-    'step_schedule': 100,
-    'save_splits': 10,
-    'grad_clip': 1e4}
-
-mlp_hyperparams_is1 = {'n_iter': 100,
-    'lr': 5e-2,
+mlp_hyperparams_is0 = {'n_iter': 100,
+    'lr': 5e-5,
     'use_scheduler': False,
     'step_schedule': 100,
 }
 
-mlp_hyperparams_is2 = {'n_iter': 100,
-    'lr': 5e-2,
+mlp_hyperparams_is1 = {'n_iter': 1000,
+    'lr': 5e-5,
     'use_scheduler': False,
     'step_schedule': 100,
 }
@@ -70,82 +73,65 @@ else:
     print("Seed: %d" % num_seed[0])
 
 
-mode_labels = [1, 2]
+mode_labels = [0, 1]
+dataset_labels = ['md_train', 'md_test', 'flow_train', 'flow_test']
 
-x_flow_train = torch.cat( [load_csv_file(
-    'datasets/is{:d}_md_train.csv'.format(mode_label)
-    ) for mode_label in mode_labels] ) 
+coord_mapping = Coordinates_mapping()
 
-x_flow_test = torch.cat( [load_csv_file(
-    'datasets/is{:d}_md_test.csv'.format(mode_label)
-    ) for mode_label in mode_labels] )
+zmat_datasets = []
+xs_datasets = []
 
-x_mlp_train = torch.cat( [x_flow_train.clone()] + [load_csv_file(
-    'datasets/is{:d}_flow_train.csv'.format(mode_label)
-    ) for mode_label in mode_labels] )
+for dataset_label in dataset_labels:    
+    zmats = []
+    xs = []
+    for mode_label in mode_labels:
+        file='datasets/is{:d}_{:s}.csv'.format(mode_label, dataset_label)
+        zmat = load_csv_file(file)
+        
+        x, logdetjac, energies = coord_mapping.get_real_centered_from_internal(zmat[:, :12],   
+                                                                            isomer=mode_label,
+                                                                            energies=zmat[:, 12],
+                                                                            logdetjacs=zmat[:, 14])
+        x = join_data(x, energies, zmat[:, 13], logdetjac)
+        
+        zmats.append(zmat)
+        xs.append(x)
+        
+    zmats = torch.cat(zmats)
+    xs = torch.cat(xs)
 
-x_mlp_test = torch.cat( [x_flow_test.clone()] + [load_csv_file(
-    'datasets/is{:d}_flow_test.csv'.format(mode_label)
-    ) for mode_label in mode_labels] )
+    zmat_datasets.append(zmats)
+    xs_datasets.append(xs)
 
-
-# TODO: shuffle again
-
-# configurations for the running the adaptative sampling
-
-# for flows
-u_flow_train = x_flow_train.clone()[:, 13]
-isomers_flow_train = x_flow_train.clone()[:, 14]
-x_flow_train = x_flow_train.clone()[:, :12]
-
-isomers_flow_test = x_flow_test.clone()[:, 14]
-x_flow_test = x_flow_test.clone()[:, :12]
-
-# for mlps
-u_mlp_train = x_mlp_train.clone()[:, 13]
-isomers_mlp_train = x_mlp_train.clone()[:, 14]
-x_mlp_train = x_mlp_train.clone()[:, :12]
-
-u_mlp_test = x_mlp_test.clone()[:, 13]
-isomers_mlp_test = x_mlp_test.clone()[:, 14]
-x_mlp_test = x_mlp_test.clone()[:, :12]
+mlp_train = torch.cat([xs_datasets[i] for i in [0, 2]])
+mlp_test = torch.cat([xs_datasets[i] for i in [1, 3]])
 
 # pretrain flows and mlps
 
-# loading pretrain flows models
-init_nf_is1 = load_pickle_file("models/is1_flow_dic_training.pkl")
-init_nf_is2 = load_pickle_file("models/is2_flow_dic_training.pkl")
+# flow models
 
-# loading pretrain mlps models
-init_mlp_is1 = load_pickle_file("models/is1_mlp_dic_training.pkl")
-init_mlp_is2 = load_pickle_file("models/is2_mlp_dic_training.pkl")
+flows_dic = [load_pickle_file('models/is{:d}_flow_dic_training.pkl'.format(mode_label)) for mode_label in mode_labels]
 
-init_flow_train = [init_nf_is1, init_nf_is2]
-init_mlps = [init_mlp_is1, init_mlp_is2]
+# mlp models
 
+mlps_dic = [load_pickle_file('models/is{:d}_mlp_dic_training.pkl'.format(mode_label)) for mode_label in mode_labels]
 
 out = adaptative_sampling(
-    xs_md_init_train=x_flow_train,
-    us_md_init_train=u_flow_train,
-    isomers_md_init_train=isomers_flow_train,
-    xs_md_init_test=x_flow_test,
-    isomers_md_init_test=isomers_flow_test,
-    xs_dft_init_train=x_mlp_train,
-    us_dft_init_train=u_mlp_train,
-    isomers_dft_init_train=isomers_mlp_train,
-    xs_dft_init_test=x_mlp_test,
-    us_dft_init_test=u_mlp_test,
-    isomers_dft_init_test=isomers_mlp_test,
+    flow_init_train=xs_datasets[0],
+    flow_init_test=xs_datasets[1],
     n_runs=n_runs,
     n_chains=n_chains,
     n_steps=n_steps,
     energy_type=energy_type,
-    dict_flows_init=init_flow_train,
-    flow_hyperparams=[flow_hyperparams_is1, flow_hyperparams_is2],
-    mlp_hyperparams=[mlp_hyperparams_is1, mlp_hyperparams_is2],
-    dict_mlps_init=init_mlps,
-    retraining_mlp=True)
+    dict_flows_init=flows_dic,
+    flow_hyperparams=[flow_hyperparams_is0, flow_hyperparams_is1],
+    retraining_mlp=True,
+    dict_mlps_init=mlps_dic,
+    mlp_hyperparams=[mlp_hyperparams_is0, mlp_hyperparams_is1],
+    mlp_init_train=mlp_train,
+    mlp_init_test=mlp_test,
+)
 
-f = "experiments/adaptative_sampling_runs_{:d}_chains_{:d}_steps_{:d}_flow_dic_training.pkl".format(n_runs, n_chains, n_steps)
-save_pickle_file(out, f, path=get_project_path())
+#f = "experiments/adaptative_sampling_runs_{:d}_chains_{:d}_steps_{:d}_flow_dic_training.pkl".format(n_runs, n_chains, n_steps)
+#save_pickle_file(out, f, path=get_project_path())
 

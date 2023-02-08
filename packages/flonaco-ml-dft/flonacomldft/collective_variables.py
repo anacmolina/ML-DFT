@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from flonacomldft.internal_coordinates import Structure
+from flonacomldft.internal_coordinates import Coordinates_mapping
 
 d=2.8
 rij_d = lambda rij: rij/d
@@ -37,8 +37,8 @@ def get_CVs(data):
    
    for x in data:
    
-      structure = Structure()
-      molecule = structure.build_molecule(x)
+      coord_maps = Coordinates_mapping()
+      molecule = coord_maps.build_molecule_from_zmat(x)
                                                                                
       C_vals.append(compute_C(molecule))
       R_vals.append(compute_R(molecule))

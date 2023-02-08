@@ -3,39 +3,66 @@ import tqdm
 
 import torch
 from torch.nn.utils import clip_grad_norm_
-
-from ase.parallel import parprint as print
 from ray import tune
 
+from ase.parallel import parprint as print
+
+def get_ratio_acc(
+            model,
+            init,
+            n_chains,
+            mlp_model,
+            T=300,
+    ):
+
+    assert init.shape[0] == n_chains
+
+    kb = 8.617333262e-5
+    beta = 1 / (kb * T)
+
+    x_init = init[:, :12]
+    u_init = init[:, 12]
+    isomer_init = init[:, 13]
+
+    x_new = model.sample(n_chains)
+    isomer_new = isomer_init
+
+    x_new = x_new.clone().detach().float()
+    isomer_new = isomer_new.clone().detach().float()
+
+    nll_x = model.nll(x_new)
+    nll_x_init = model.nll(x_init)
+
+    u_new = torch.zeros((n_chains, 1))
+    u_new = mlp_model(x_new)
+    u_new = u_new.squeeze().float()
+
+    ratio = -beta * u_new + nll_x
+    ratio += beta * u_init - nll_x_init
+    ratio = torch.exp(ratio)
+
+    u = torch.rand_like(ratio)
+    ratio = torch.min(ratio, torch.ones_like(ratio))
+    acc = u < ratio
+
+    return ratio, acc
 
 def train_flow(
     model,
-    x_train,
-    x_test,
-    n_iter=1000,
+    train,
+    test,
+    n_iter=100,
     lr=5e-3,
     use_scheduler=False,
     step_schedule=100,
     save_splits=10,
     grad_clip=1e4,
     with_tqdm=False,
-
     use_tune=False,
-    metrics=None, 
+    compute_ratio_acc=True,
+    n_chains=100,
+    T=300,
 ):
-    """
-    Args:
-        model (Realnvp_MLP)
-        x_train (tensor of float)
-        x_test (tensor of float)
-        n_iter (int)
-        lr (float): learning rate
-        use_scheduler (bool): if learning rate schedule should be used
-        step_schedule (int): iteration frequency of schedule
-        save_splits: number of snapshots saved during training
-        grad_clip (float): gradient clipping
-        use_tune (bool): whether a tuner from Ray package has been initialized
-    """
 
     # setting up the loss
     def loss_func(x):
@@ -43,16 +70,29 @@ def train_flow(
 
     # setting the optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
     if use_scheduler:
         scheduler = torch.optim.lr_scheduler.StepLR(
             optimizer, step_size=step_schedule, gamma=0.5
         )
+        
+    x_train = train[:, :12]
+    x_test = test[:, :12]
 
     # logs
     losses_train = []
     losses_test = []
     models = [copy.deepcopy(model)]
     grad_norms = []
+
+    if compute_ratio_acc:
+        isomer=train[0, 13].to(torch.int64).item()
+        T=T
+        n_chains=n_chains
+        ratios = []
+        acc_rates = []
+        from flonacomldft.utils.io_utils import load_pickle_file 
+        mlp = load_pickle_file("models/is{:d}_mlp_dic_training.pkl".format(isomer))['model']
 
     x = x_train.detach().requires_grad_()
 
@@ -80,6 +120,21 @@ def train_flow(
         if with_tqdm:
             pbar.set_description(f"Loss: {losses_train[-1]:.4f}")
 
+        if compute_ratio_acc:
+
+            n_chains = n_chains
+            ratio, acc_rate = get_ratio_acc(model=model,
+                    init=test[:n_chains],
+                    n_chains=n_chains,
+                    mlp_model=mlp,
+                    T=T)
+
+            ratio = (ratio.cpu().detach().numpy() * 1).mean()
+            ratios.append(ratio)
+        
+            acc_rate = (acc_rate.cpu().detach().numpy() * 1).mean()
+            acc_rates.append(acc_rate)
+
         if t % (n_iter / 100) == 0:
             total_norm = 0
             for p in model.parameters():
@@ -97,8 +152,13 @@ def train_flow(
             # prints
 
             print(
-                "t={:0.1e}".format(t), "Loss: {:3.2f}".format(loss.item()), end="  \t"
+                "t={:0.1e}".format(t), "loss: {:3.2f}".format(loss.item()), end="  \t"
             )
+
+            if compute_ratio_acc:
+                print("ratio: {:.3f}".format(ratio), end="\t")
+
+                print("acc: {:.3f}".format(acc_rate), end="\t")
 
             print("Gd: {:0.0e}".format(total_norm), end="\t")
 
@@ -115,5 +175,9 @@ def train_flow(
         "models": models,
         "grad_norms": grad_norms,
     }
+
+    if compute_ratio_acc:
+        to_return["acc_rates"] = acc_rates
+        to_return["ratios"] = ratios
 
     return to_return

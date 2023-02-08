@@ -1,18 +1,17 @@
 import torch
-import numpy as np # TODO: avoid using numpy
+import numpy as np 
 
 import gpaw.mpi as mpi
 
 from flonacomldft.utils.io_utils import (
     load_pickle_file,
     load_csv_file,
-    save_pickle_file, 
-    get_project_path
+    save_pickle_file,
+    get_project_path 
 )
 
 from flonacomldft.sampling import run_metropolis
-from flonacomldft.models.mixture import Mixture
-
+from flonacomldft.internal_coordinates import Coordinates_mapping
 # set equal seed for all ranks for parallel computations
 
 ranks = np.arange(0, mpi.world.size)
@@ -30,35 +29,35 @@ comm.broadcast(num_seed, 0)
 print(rank, num_seed)
 torch.manual_seed(num_seed[0])
 
-mode_label = 1 #or 2
-# mcmc chains parameters
+mode_label = 0 #or 1
 
+# mcmc chains parameters
 n_chains = 50
-n_steps = 100
+n_steps = 20
 energy_type = 'mlp'
 
-if mode_label==1:
-    isomer = 0
-elif mode_label==2:
-    isomer = 1
+coord_mapping = Coordinates_mapping()
 
+# loading data
+zmat_test = load_csv_file("datasets/is{:d}_md_test.csv".format(mode_label)) 
 
-xs = load_csv_file("datasets/is{:d}_md_test.csv".format(mode_label)) # remove energy and logdetjac values
+xs_test, logdetjacs_test, energies_test = coord_mapping.get_real_centered_from_internal(
+                                    zmat_test[:, :12],
+                                    zmat_test[:, 12],
+                                    isomer=mode_label,
+                                    energies=zmat_test[:, 13]
+                                    )
+
+xs = torch.cat((xs_test, logdetjacs_test.reshape(-1, 1), energies_test.reshape(-1, 1), zmat_test[:, 14].reshape(-1, 1)), dim=1).to(torch.float32)
+
+# configs to initialize the chains
 xs = xs[torch.randperm(xs.size()[0])]
 xs = xs[:n_chains]
 
-# configs to initialize the chains
-
-x_init = xs[:, :12]
-u_init = xs[:, 13]
-isomer_init = xs[:, 14]
-
 # flow models
-
 flow_model = load_pickle_file('models/is{:d}_flow_dic_training.pkl'.format(mode_label))['model']
 
 # mlp models
-
 mlp_model = load_pickle_file('models/is{:d}_mlp_dic_training.pkl'.format(mode_label))['model']
 
 
@@ -66,12 +65,10 @@ mlp_model = load_pickle_file('models/is{:d}_mlp_dic_training.pkl'.format(mode_la
 
 out = run_metropolis(
     model=flow_model,
-    x_init=x_init,
-    u_init=u_init,
-    isomer_init=isomer_init,
+    init=xs,
     n_chains=n_chains,
     n_steps=n_steps,
-    n_run="",
+    name_run="",
     energy_type=energy_type,
     frac_dft=0.2,
     mlp_models=mlp_model,

@@ -4,15 +4,12 @@ import torch
 from torch.nn.utils import clip_grad_norm_
 import torch.optim as optim
 
-from flonacomldft.models.mlp import  center_values
-
+from flonacomldft.internal_coordinates import Coordinates_mapping
 
 def train_mlp(
     model,
-    x_train,
-    x_test,
-    y_train,
-    y_test,
+    train,
+    test,
     n_iter=100,
     lr=1e-4,
     use_scheduler=False,
@@ -20,20 +17,6 @@ def train_mlp(
     save_splits=10,
     with_tqdm=False,
 ):
-    """
-    Args:
-        model (Realnvp_MLP)
-        x_train (tensor of float)
-        x_test (tensor of float)
-        y_train (tensor of float)
-        y_test (tensor of float)
-        n_iter (int)
-        lr (float): learning rate
-        use_scheduler (bool): if learning rate schedule should be used
-        step_schedule (int): iteration frequency of schedule
-        save_splits: number of snapshots saved during training
-        grad_clip:
-    """
 
     # mse: loss function with data centered
     def loss_func(x, y):
@@ -47,51 +30,39 @@ def train_mlp(
             optimizer, step_size=step_schedule, gamma=0.5
         )
 
+    xs_train, us_train = train[:, :12], train[:, 12]
+    xs_test, us_test = test[:, :12], test[:, 12] #(nsample_train, dims), (nsamples)
+    
+    if with_tqdm:
+        pbar = tqdm.tqdm(range(n_iter))
+    else:
+        pbar = range(n_iter)
+
+
     # logs
     losses_train = []
     losses_test = []
     grad_norms = []
     models = [copy.deepcopy(model)]
 
-    # centering data with mean 1 and variance 0
-    if model.has_centered:
-        x_train_centered = center_values(x_train, model.x_mean, model.x_centered_std)
-        y_train_centered = center_values(y_train, model.y_mean, model.y_centered_std)
-        x_test_centered = center_values(x_test, model.x_mean, model.x_centered_std)
-        y_test_centered = center_values(y_test, model.y_mean, model.y_centered_std)
-    else:
-        x_train_centered, x_mean, x_centered_std = center_values(x_train)
-        y_train_centered, y_mean, y_centered_std = center_values(y_train)
-        x_test_centered = center_values(x_test, x_mean, x_centered_std)
-        y_test_centered = center_values(y_test, y_mean, y_centered_std)
-
-        means = [x_mean, y_mean]
-        stds = [x_centered_std, y_centered_std]
-
-        model.set_center_values(means, stds)
-
-    if with_tqdm:
-        pbar = tqdm.tqdm(range(n_iter))
-    else:
-        pbar = range(n_iter)
-
     for t in pbar:
         optimizer.zero_grad()
 
-        loss = loss_func(x_train_centered, y_train_centered)
+        loss = loss_func(xs_train, us_train)
 
         if torch.isinf(loss).any():
             print("Stopped because loss became inf!")
             return model, losses_train
 
-        loss.backward(retain_graph=True)
+        loss.backward()
         optimizer.step()
 
         losses_train.append(loss.item())
-        losses_test.append(loss_func(x_test_centered, y_test_centered).item())
+        losses_test.append(loss_func(xs_test, us_test).item())
+
 
         if with_tqdm:
-            pbar.set_description(f"Loss train: {losses_train[-1]:.4f}, loss test: {losses_test[-1]:.4f}")
+            pbar.set_description(f"loss train: {losses_train[-1]:.4f}, loss test: {losses_test[-1]:.4f}")
 
         if t % (n_iter / 100) == 0:
             total_norm = 0

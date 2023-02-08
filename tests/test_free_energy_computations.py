@@ -6,7 +6,7 @@ from flonacomldft.utils.io_utils import (
     load_pickle_file,
     # save_pickle_file
 )
-from flonacomldft.internal_coordinates import get_mix_data
+from flonacomldft.utils.data_processing import get_mix_data
 from flonacomldft.sampling import run_metropolis
 from flonacomldft.models.mixture import Mixture
 from flonacomldft.free_energy_computations import compute_BAR, compute_TFP
