@@ -20,9 +20,9 @@ class DFTCalculator:
         self.calculator = None
         self.cell = [16, 16, 16]
 
-    def initialize_calculator(self, filename='ag6', rank=0, path=os.getcwd()):
+    def initialize_calculator(self, foldername='DFTComputations', filename='ag6', rank=0, path=os.getcwd()):
         
-        self.path = os.path.join(path, 'DFTComputations')    
+        self.path = os.path.join(path, foldername)    
         self.file = self.path + '/' + filename + '.out'
 
         if rank==0 and os.path.isdir(self.path)==False:
@@ -95,12 +95,3 @@ class DFTCalculator:
         traj = Trajectory(self.file+'.traj')
 
         return traj
-
-# # TODO: review this
-# def run_md_get_zmat(molecule, iterations, filename, starting=True):
-#     dft_calculator = DFTCalculator()
-#     dft_calculator.initialize_calculator(filename=filename)
-#     md_traj = dft_calculator.run_molecular_dynamics(molecule, iterations,
-#                                                 filename, starting)
-#     zmat = coord_maps.get_internal_from_trajectory(md_traj).detach()
-#     return zmat

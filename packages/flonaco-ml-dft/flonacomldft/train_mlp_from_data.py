@@ -30,8 +30,8 @@ def train_mlp(
             optimizer, step_size=step_schedule, gamma=0.5
         )
 
-    xs_train, us_train = train[:, :12], train[:, 13]
-    xs_test, us_test = test[:, :12], test[:, 13] #(nsample_train, dims), (nsamples)
+    xs_train, us_train = train[:, :12], train[:, 12]
+    xs_test, us_test = test[:, :12], test[:, 12] #(nsample_train, dims), (nsamples)
     
     if with_tqdm:
         pbar = tqdm.tqdm(range(n_iter))
@@ -62,7 +62,7 @@ def train_mlp(
 
 
         if with_tqdm:
-            pbar.set_description(f"Loss train: {losses_train[-1]:.4f}, loss test: {losses_test[-1]:.4f}")
+            pbar.set_description(f"loss train: {losses_train[-1]:.4f}, loss test: {losses_test[-1]:.4f}")
 
         if t % (n_iter / 100) == 0:
             total_norm = 0

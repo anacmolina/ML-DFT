@@ -11,37 +11,39 @@ from flonacomldft.utils.io_utils import (
 from flonacomldft.internal_coordinates import Coordinates_mapping, join_data
 from flonacomldft.full_adaptive_sampling import adaptative_sampling
 
-# energy_type="dft"
-# energy_type="mlp-dft"
-energy_type="mlp"
+#energy_type="dft"
+energy_type="mlp-dft"
+#energy_type="mlp"
 
 # mcmc params
-n_runs = 10
-n_chains = 50
-n_steps = 30
+n_runs = 1
+n_chains = 5
+n_steps = 2
+
+# TODO: Check the mlp is1 training loss
+
+flow_hyperparams_is0 = {'n_iter': 100,
+    'lr': 1e-4,
+    'use_scheduler': False,
+    'step_schedule': 100,
+    'save_splits': 10,
+    'grad_clip': 1e4}
 
 flow_hyperparams_is1 = {'n_iter': 100,
-    'lr': 5e-4,
+    'lr': 1e-4,
     'use_scheduler': False,
     'step_schedule': 100,
     'save_splits': 10,
     'grad_clip': 1e4}
 
-flow_hyperparams_is2 = {'n_iter': 100,
-    'lr': 5e-4,
-    'use_scheduler': False,
-    'step_schedule': 100,
-    'save_splits': 10,
-    'grad_clip': 1e4}
-
-mlp_hyperparams_is1 = {'n_iter': 100,
-    'lr': 5e-2,
+mlp_hyperparams_is0 = {'n_iter': 100,
+    'lr': 5e-5,
     'use_scheduler': False,
     'step_schedule': 100,
 }
 
-mlp_hyperparams_is2 = {'n_iter': 100,
-    'lr': 5e-2,
+mlp_hyperparams_is1 = {'n_iter': 1000,
+    'lr': 5e-5,
     'use_scheduler': False,
     'step_schedule': 100,
 }
@@ -86,11 +88,11 @@ for dataset_label in dataset_labels:
         file='datasets/is{:d}_{:s}.csv'.format(mode_label, dataset_label)
         zmat = load_csv_file(file)
         
-        x, logdetjac, energies = coord_mapping.get_real_centered_from_internal(zmat[:, :12], 
-                                                                            zmat[:, 12],  
+        x, logdetjac, energies = coord_mapping.get_real_centered_from_internal(zmat[:, :12],   
                                                                             isomer=mode_label,
-                                                                            energies=zmat[:, 13])
-        x = join_data(x, logdetjac, energies, zmat[:, 14])
+                                                                            energies=zmat[:, 12],
+                                                                            logdetjacs=zmat[:, 14])
+        x = join_data(x, energies, zmat[:, 13], logdetjac)
         
         zmats.append(zmat)
         xs.append(x)
@@ -114,7 +116,6 @@ flows_dic = [load_pickle_file('models/is{:d}_flow_dic_training.pkl'.format(mode_
 
 mlps_dic = [load_pickle_file('models/is{:d}_mlp_dic_training.pkl'.format(mode_label)) for mode_label in mode_labels]
 
-
 out = adaptative_sampling(
     flow_init_train=xs_datasets[0],
     flow_init_test=xs_datasets[1],
@@ -123,10 +124,10 @@ out = adaptative_sampling(
     n_steps=n_steps,
     energy_type=energy_type,
     dict_flows_init=flows_dic,
-    flow_hyperparams=[flow_hyperparams_is1, flow_hyperparams_is2],
-    retraining_mlp=False,
+    flow_hyperparams=[flow_hyperparams_is0, flow_hyperparams_is1],
+    retraining_mlp=True,
     dict_mlps_init=mlps_dic,
-    mlp_hyperparams=[mlp_hyperparams_is1, mlp_hyperparams_is2],
+    mlp_hyperparams=[mlp_hyperparams_is0, mlp_hyperparams_is1],
     mlp_init_train=mlp_train,
     mlp_init_test=mlp_test,
 )

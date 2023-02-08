@@ -7,9 +7,6 @@ from flonacomldft.utils.io_utils import get_path
 from flonacomldft.utils.silver_isomers_utils import get_construction_table, get_molecule_isomer_minima 
 
 
-# TODO: Add description EVERYWHERE
-
-
 # add a phase for some internal coordinates angles
 def add_phase(tensor, phase = 2 * torch.pi):
     return tensor - phase
@@ -111,7 +108,7 @@ class Coordinates_mapping():
         
         zmat = torch.tensor(
             np.concatenate((zmat[:, 0], zmat[1:, 1], zmat[2:, 2])) 
-            )
+            ).requires_grad_()
 
         return zmat.to(torch.float32)
     
@@ -132,7 +129,6 @@ class Coordinates_mapping():
         return zmat
       
     def _build_zmat_matrix_from_zmat(self, zmat): #NOTE: It's working
-        # TODO: Rebuild this using read_xyz from chemcoord  
         """"
         Build the chemcoord zmat matrix adding default frame position/rotation and 
         angles in degrees from the zmat values (only the internal coordinates with 
@@ -144,43 +140,65 @@ class Coordinates_mapping():
         Returns:  
             zmat_matrix: chemcoord df-zmat of coordinates in the basis of the IC
         """
-
-        if torch.is_tensor(zmat):
-            zmat = zmat.clone().detach().numpy()
-        else:
-            zmat = zmat.copy()
-                
-        zmat_matrix = self.construction_table.copy()
         
-        b = np.zeros(6)
-        a = np.zeros(6)
-        d = np.zeros(6)
-        
-        if len(zmat)==12:
-         
-            # reference frame shift - values taken from chemcoord
-            b[0] = 1.27
-            a[0:2] = np.array([2.21657, 2.21657])
-            d[0:3] = np.array([2.21657, 2.21657, 2.21657])
+        if zmat.shape[0] == 3*self.Natoms - 6:
 
-            b[1:] = zmat[:5]
-            a[2:] = zmat[5:9]
-            d[3:] = zmat[9:]
-            
+            zmat = zmat.clone().to(torch.double)
+            zmat_matrix = self.construction_table.copy()
+
+            zmat_matrix.insert(0, "atom", self.symbols.copy(), True)
+
+            zmat_ref = torch.tensor([1.27, 2.21657, 2.21657]).to(torch.double)
+
+            b = torch.cat((zmat_ref[0].unsqueeze(0), zmat[:self.Natoms-1])).detach().numpy()
+            a = torch.cat((zmat_ref[1].repeat(2), zmat[self.Natoms-1:2*self.Natoms-3])).detach().numpy()
+            d = torch.cat((zmat_ref[1].repeat(3),zmat[2*self.Natoms-3:])).detach().numpy()
+
             a = np.rad2deg(a)
             d = np.rad2deg(d)
-            
-            b = np.double(b)
-            a = np.double(a)
-            d = np.double(d)
-            
-            zmat_matrix.insert(0, "atom", self.symbols, True)
+
             zmat_matrix.insert(2, "bond", b, True)
             zmat_matrix.insert(4, "angle", a, True)
             zmat_matrix.insert(6, "dihedral", d, True)
 
             zmat_matrix = cc.Zmat(zmat_matrix)
 
+#        if torch.is_tensor(zmat):
+#            zmat = zmat.clone().detach().numpy()
+#        else:
+#            zmat = zmat.copy()
+#                
+#        zmat_matrix = self.construction_table.copy()
+#        
+#        b = np.zeros(6)
+#        a = np.zeros(6)
+#        d = np.zeros(6)
+#        
+#        if len(zmat)==12:
+#         
+#            # reference frame shift - values taken from chemcoord
+#            b[0] = 1.27
+#            a[0:2] = np.array([2.21657, 2.21657])
+#            d[0:3] = np.array([2.21657, 2.21657, 2.21657])
+#
+#            b[1:] = zmat[:5]
+#            a[2:] = zmat[5:9]
+#            d[3:] = zmat[9:]
+#            
+#            a = np.rad2deg(a)
+#            d = np.rad2deg(d)
+#            
+#            b = np.double(b)
+#            a = np.double(a)
+#            d = np.double(d)
+#            
+#            zmat_matrix.insert(0, "atom", self.symbols, True)
+#            zmat_matrix.insert(2, "bond", b, True)
+#            zmat_matrix.insert(4, "angle", a, True)
+#            zmat_matrix.insert(6, "dihedral", d, True)
+#
+#            zmat_matrix = cc.Zmat(zmat_matrix)
+#
         else:
             raise RuntimeError('Data not valid')
       
@@ -303,7 +321,6 @@ class Coordinates_mapping():
     def compute_energy_in_new_frame(self, energy, logdetjac, temperature=300):
         return energy - (self.kb * temperature) * logdetjac
 
-    # TODO: Update with new functions
     def get_internal_from_molecule(self, molecule, return_potential_energy=False,
                                 temperature=300, requires_grad=False):
         """"
@@ -355,19 +372,23 @@ class Coordinates_mapping():
                 zmat, logdetjac, potential_energy = self.get_internal_from_molecule(molecule_configuration, 
                                                             return_potential_energy=True,
                                                             temperature=temperature)
-                zmat = torch.cat((zmat, logdetjac, potential_energy), dim=-1)
+                if isomer is not None:
+                    isomer = torch.tensor([isomer])
+                    zmat = torch.cat((zmat, potential_energy, isomer), dim=-1 )
+                else:   
+                    zmat = torch.cat((zmat, potential_energy), dim=-1 )
+                
+                zmat = torch.cat((zmat, logdetjac), dim=-1)
 
             else:
                 zmat, logdetjac = self.get_internal_from_molecule(molecule_configuration, 
                                                             return_potential_energy=False)
+                if isomer is not None:
+                    isomer = torch.tensor([isomer])
+                    zmat = torch.cat((zmat, isomer), dim=-1 )
+
                 zmat = torch.cat((zmat, logdetjac), dim=-1)
 
-            if isomer is not None:
-                print(isomer)
-                isomer = torch.tensor([isomer])
-                zmat = torch.cat((zmat, isomer), dim=-1 )
-
-            
             zmats.append(zmat)
             
             if max_samples is not None:
@@ -449,6 +470,14 @@ class Coordinates_mapping():
             return zmats, logdetjacs, energies
 
         return zmats, logdetjacs
+    
+    def build_molecule_from_real_centered(self, x, isomer):
+
+        zmat, logdetjac = self.get_internal_from_real_centered(x, isomer=isomer)
+        xyz, logdetjac = self.get_cartesian_from_internal(zmat[0], logdetjac)
+        molecule = self._build_molecule_from_xyz(xyz)
+
+        return molecule, logdetjac
         
 
 def get_labels_from_construction_table(construction_table, all_labels=False):
@@ -475,9 +504,6 @@ def get_labels_from_construction_table(construction_table, all_labels=False):
 def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_energy=True, add_logdetjac=True, add_isomer=True, filename='traj.csv', path=get_path()):
 
         labels = get_labels_from_construction_table(construction_table)
-        
-        if add_logdetjac:
-            labels = labels + ['logdetjac']
             
         if add_potential_energy:
             labels = labels + ['potential_energy']
@@ -485,16 +511,23 @@ def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_ener
         if add_isomer:
             labels = labels + ['isomer']
 
+        if add_logdetjac:
+            labels = labels + ['logdetjac']
+
         df = pd.DataFrame(xs.detach().numpy())
         df.columns=labels
         df.to_csv(path + '/' + filename, index=False)
 
-def join_data(xs, logdetjacs, energies, isomers):
-    
+def join_data(xs, energies, isomers, logdetjacs=None):
+
     data = torch.cat((xs, 
-            logdetjacs.reshape(-1, 1), 
             energies.reshape(-1, 1), 
             isomers.reshape(-1, 1)), 
         dim=1).to(torch.float32)
+    
+    if logdetjacs is not None:
+        data = torch.cat((data,
+            logdetjacs.reshape(-1, 1)), dim=1)
 
     return data
+

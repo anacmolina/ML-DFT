@@ -1,5 +1,5 @@
 import torch
-import numpy as np # TODO: avoid using numpy
+import numpy as np 
 
 import gpaw.mpi as mpi
 
@@ -33,7 +33,7 @@ mode_label = 0 #or 1
 
 # mcmc chains parameters
 n_chains = 50
-n_steps = 1
+n_steps = 20
 energy_type = 'mlp'
 
 coord_mapping = Coordinates_mapping()
@@ -68,7 +68,7 @@ out = run_metropolis(
     init=xs,
     n_chains=n_chains,
     n_steps=n_steps,
-    n_run="",
+    name_run="",
     energy_type=energy_type,
     frac_dft=0.2,
     mlp_models=mlp_model,
@@ -77,5 +77,5 @@ out = run_metropolis(
     with_tqdm=True,
 )
 
-#f = "experiments/mcmc_mode_{:d}_chains_{:d}_steps_{:d}.pkl".format(mode_label, n_chains, n_steps)
-#save_pickle_file(out, f, path=get_project_path())
+f = "experiments/mcmc_mode_{:d}_chains_{:d}_steps_{:d}.pkl".format(mode_label, n_chains, n_steps)
+save_pickle_file(out, f, path=get_project_path())
