@@ -36,8 +36,8 @@ xs_test, logdetjacs_test, energies_test = coord_mapping.get_real_centered_from_i
                                     )
 
 
-n_hidden = 256
-n_layers = 16
+n_hidden = 128
+n_layers = 3
 model = MLP([xs_train.shape[1]] +  [n_hidden] * n_layers + [1])
 
 mlp_hyperparams = {'n_iter': 1000,
@@ -66,8 +66,8 @@ from flonacomldft.utils.plots import (
     plot_correlation_target_and_predict_value,
 )
 
-plot_losses(out['losses'][0], out['losses'][1], log_yscale=True)
-plt.show()
+plot_losses(out['losses'][0], out['losses'][1])
+plt.show(block=False)
 
 plot_correlation_target_and_predict_value(
     energies_train,
@@ -76,7 +76,7 @@ plot_correlation_target_and_predict_value(
     out['model'](xs_test.float()),
     title='MLP mode {:d}'.format(mode_label)
 )
-plt.show()
+plt.show(block=False)
 
 
 #f = "models/is{:d}_mlp_dic_training.pkl".format(mode_label)
