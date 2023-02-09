@@ -7,6 +7,7 @@ from flonacomldft.sampling import run_metropolis
 from flonacomldft.models.mixture import Mixture, get_models
 
 from flonacomldft.internal_coordinates import join_data
+from flonacomldft.train_mlp_from_data import train_mlp
 
 def Transpose(x):
     return x.permute(*torch.arange(x.ndim - 1, -1, -1))
@@ -30,6 +31,22 @@ def adaptative_sampling(
 
     """
     function for sampling
+
+    Args:
+        flow_init_train (torch.tensor): training data for flows (xs, us, isomers, logdetjac)
+        flow_init_test (torch.tensor): test data for flows (xs, us, isomers, logdetjac) + chain init
+        n_runs (int): number of sampling-training reps
+        n_chains (int): number of chains
+        n_steps (int): number of steps per sampling phase
+        energy_type (str): type of energy to use ('dft', 'mlp', 'dft+mlp')
+        dict_flows_init (dict): initial flows training dictionaries
+        flow_hyperparams (dict): hyperparameters for flows re-training
+        retraining_mlp (bool): whether to retrain MLPs
+        dict_mlps_init (dict): initial MLPs training dictionaries
+        mlp_hyperparams (dict): hyperparameters for MLPs re-training
+        mlp_init_train (torch.tensor): training data for MLPs (xs, us, isomers, logdetjac)
+        mlp_init_test (torch.tensor): test data for MLPs (xs, us, isomers, logdetjac)
+
     """
 
     # setting up databases for flows and mlps
@@ -49,6 +66,7 @@ def adaptative_sampling(
         xs_for_mlps_test_is1 = mlp_init_test.clone()[:,:-1][mlp_init_test[:, 13].bool()]    
     
     dict_flows_training = [dict_flows_init, ]
+
     dict_mlps_training = [dict_mlps_init, ] #TODO: Not to use if MLPs models None
 
     mcmc_runs = []
@@ -105,6 +123,7 @@ def adaptative_sampling(
 
         if is0_from_chains.nelement() != 0:
 
+            # extend data set for flow training
             xs_for_flows_train_is0 = torch.cat(
                 (xs_for_flows_train_is0, is0_from_chains)
             )
@@ -162,7 +181,7 @@ def adaptative_sampling(
             xs_for_mlps_train_is0 = torch.cat((xs_for_mlps_train_is0, configs_dft_flatten[~mask_mlp]))
             xs_for_mlps_train_is1 = torch.cat((xs_for_mlps_train_is1, configs_dft_flatten[mask_mlp]))
 
-            from flonacomldft.train_mlp_from_data import train_mlp
+            
 
             mlp_is0 = train_mlp(dict_mlps_training[-1][0]['model'], 
                                 xs_for_mlps_train_is0,  
@@ -177,7 +196,6 @@ def adaptative_sampling(
                                 with_tqdm=True)
 
             dict_mlps_training.append([mlp_is0, mlp_is1])
-        
 
         dict_flows_training.append([dict_new_flow_is0, dict_new_flow_is1])
 
