@@ -50,12 +50,12 @@ train = join_data(xs_train,
                 energies_train,
                 zmat_train[:, 14],
                 logdetjacs_train,
-                )
+                ).detach()
 
 test = join_data(xs_test,
                 energies_test,
                 zmat_test[:, 14],
-                logdetjacs_test)
+                logdetjacs_test).detach()
 
 out = train_mlp(model, train, test, **mlp_hyperparams, 
               with_tqdm=True)
@@ -79,5 +79,5 @@ plot_correlation_target_and_predict_value(
 plt.show()
 
 
-#f = "models/is{:d}_mlp_dic_training.pkl".format(mode_label)
-#save_pickle_file(out, f)
+f = "models/is{:d}_mlp_dic_training.pkl".format(mode_label)
+save_pickle_file(out, f)
