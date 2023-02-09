@@ -25,12 +25,31 @@ def run_metropolis(
     T=300,
     with_tqdm=False,
 ):
+    """
+    Run Metropolis-Hastings algorithm to sample from a model.
+    
+    Args:
+        model (torch.nn.Module): model to sample from
+        init (torch.Tensor): initial positions of shape (n_chains, n_dim + 2) - xs, us, isomers
+        n_chains (int): number of chains to run
+        n_steps (int): number of steps to run
+        name_run (str): name of the run
+        energy_type (str): type of energy to use (dft, mlp, dft+mlp)
+        frac_dft (float): fraction of chains for which to use DFT per step
+        mlp_models (torch.nn.Module): MLP model to use for energy calculation
+        mixture (bool): whether the model is a mixture
+        T (float): temperature in K
+        with_tqdm (bool): whether to use tqdm progress bar
+    
+    Returns:
+        dictionary reporting all the progress
+    """
 
     assert init.shape[0] == n_chains
 
     x_init = init[:, :12]
     u_init = init[:, 12]
-    isomer_init = init[:, 1]
+    isomer_init = init[:, 13]
 
     beta = 1 / (kb * T)
 
