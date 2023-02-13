@@ -34,6 +34,8 @@ def compute_TFP(n_prop, target_log_prob, prop):
     # squeezing because the mlp are returning a 2d tensor with a size 1 extra column
 
     logr = - logsumexp(logprob_target - logprob_prop) + np.log(n_prop)
+
+    # TODO: rewrite with logsumexp - no log?
     logr_err = np.var(np.exp(logprob_target - logprob_prop)) / (logr ** 2) / n_prop
 
     return logr, np.sqrt(logr_err)
