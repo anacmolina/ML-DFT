@@ -10,7 +10,7 @@ from flonacomldft.train_flow_from_data import train_flow
 
 
 # for naming files
-date_start = time.strftime('%H:%M:%S %d-%m-%Y')
+date = time.strftime('%d-%m-%Y')
 random_id = str(np.random.randint(100))
 print('random id!', random_id)
 
@@ -28,9 +28,6 @@ parser.add_argument('-hdp', '--hidden-depth', type=int, default=3)
 parser.add_argument('-id', '--slurm-id', type=str, default=str(random_id))
 
 args = parser.parse_args()
-
-args.date_start = date_start
-args.random_seed = random_id
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -99,19 +96,27 @@ out = train_flow(
     compute_ratio_acc=True
 )
 
-date_end = time.strftime('%H:%M:%S %d-%m-%Y')
-args.date_end = date_end
-
-argparse_dict = vars(args)
-out['args'] = argparse_dict
+# import numpy as np
+# from flonacomldft.collective_variables import get_CVs 
+# from flonacomldft.utils.plots import plotting_fes_db, plot_losses
+# import matplotlib.pyplot as plt
+# plot_losses(out['losses'][0], out['losses'][1])
+# plt.show()
+# xs_sample = out['model'].sample(100)
+# coord_mapping = Coordinates_mapping()
+# zs_sample, logdetjac_sample = coord_mapping.get_internal_from_real_centered(xs_sample, isomer=mode_label)
+# from ase.visualize import view
+# view(coord_mapping.build_molecule_from_zmat(zs_sample[0])
+# )
+# x_sample_cv = np.array(get_CVs(zs_sample)).T
+# x_cv = np.array(get_CVs(zmat_train[:50, :12])).T
+# fig, ax = plotting_fes_db()
+# ax.scatter(x_sample_cv[:, 0], x_sample_cv[:, 1], label="mode {:d} - realnvp init".format(mode_label), c='C{:d}'.format(mode_label))#, alpha=0.5)
+# ax.scatter(x_cv[:, 0], x_cv[:, 1], marker='x', c='C{:d}'.format(mode_label), label="mode {:d} - data".format(mode_label), alpha=0.5)
+# ax.legend()
+# plt.show()
 
 # filename could also include the hyperparameters
 f = "models/flow_tracking/is{:d}_flow_dic_training_{:s}.pkl".format(mode_label, args.slurm_id)
 save_pickle_file(out, f)
 
-import json
-
-filename_args = "args_" + args.slurm_id + ".json"
-
-with open(get_path() + "models/flow_tracking/" + filename_args, "w") as outfile:
-    json.dump(argparse_dict, outfile)
