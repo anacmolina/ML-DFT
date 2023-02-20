@@ -63,7 +63,7 @@ def compute_TFP_logratio(n_prop, target_log_prob, mix_prop):
         logrs.append(logr)
         logr_errs.append(logr_err)
         
-    return  logrs[0] - logrs[1], logr_errs[0] + logr_errs[1] 
+    return  logrs[0] - logrs[1], logr_errs[0] + logr_errs[1], logrs
 
 
 def compute_BAR(xs, target_log_prob, prop, n_prop=None, 
@@ -177,4 +177,4 @@ def compute_deepBAR_logratio(xs, cs, target_log_prob, mix_prop, n_prop=None):
         logrs.append(logr)
         logr_errs.append(logr_err)
         
-    return  logrs[0] - logrs[1], logr_errs[0] + logr_errs[1] 
+    return  logrs[0] - logrs[1], logr_errs[0] + logr_errs[1], logrs 
