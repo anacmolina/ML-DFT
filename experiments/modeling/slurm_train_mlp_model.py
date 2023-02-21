@@ -67,6 +67,7 @@ n_layers = args.hidden_depth
 model = MLP([xs_train.shape[1]] +  [n_hidden] * n_layers + [1])
 
 print(args)
+print('threads: {:d}'.format(torch.get_num_threads()))
 
 mlp_hyperparams = {'n_iter': args.n_iter,
     'lr': args.learning_rate,

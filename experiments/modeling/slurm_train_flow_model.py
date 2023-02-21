@@ -18,7 +18,7 @@ print(get_path())
 
 ### Define arguments to parse from command line
 parser = argparse.ArgumentParser(description='Prepare experiment')
-parser.add_argument('-np', '--num-procs', type=int, default=8)
+parser.add_argument('-np', '--num-procs', type=int, default=1)
 parser.add_argument('-ni', '--n-iter', type=int, default=10)
 parser.add_argument('-lr', '--learning-rate', type=float, default=1e-4)
 parser.add_argument('-ml', '--mode-label', type=int, default=0)
@@ -34,9 +34,11 @@ args.random_seed = random_id
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+print('n_thread_set: ', args.num_procs)
+
 torch.set_num_threads(int(args.num_procs))
 
-torch.manual_seed(100)
+torch.manual_seed(random_id)
 
 # load data
 mode_label = args.mode_label #or 1 
@@ -86,6 +88,16 @@ model = RealNVP_MLP(12,
                     device=device,
                     )
 
+#print(args.n_blocks)
+#print(args.hidden_depth)
+#print(args.hidden_dim)
+
+print('n_blocks', model.n_blocks, type(model.n_blocks))
+print('hidden_depth', model.n_layers_in_coupling, type(model.n_layers_in_coupling))
+print('hidden_dim', model.hidden_dim_in_coupling, type(model.hidden_dim_in_coupling))
+
+print('threads: {:d}'.format(torch.get_num_threads()))
+
 out = train_flow(
     model,
     train,
@@ -96,7 +108,8 @@ out = train_flow(
     step_schedule=100,
     save_splits=10,
     grad_clip=1e4,
-    compute_ratio_acc=True
+    compute_ratio_acc=True,
+    with_tqdm=True
 )
 
 date_end = time.strftime('%H:%M:%S %d-%m-%Y')
