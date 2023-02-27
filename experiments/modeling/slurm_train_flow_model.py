@@ -38,7 +38,7 @@ print('n_thread_set: ', args.num_procs)
 
 torch.set_num_threads(int(args.num_procs))
 
-torch.manual_seed(random_id)
+torch.manual_seed(100)
 
 # load data
 mode_label = args.mode_label #or 1 
@@ -98,6 +98,10 @@ print('hidden_dim', model.hidden_dim_in_coupling, type(model.hidden_dim_in_coupl
 
 print('threads: {:d}'.format(torch.get_num_threads()))
 
+#from flonacomldft.utils.io_utils import load_pickle_file 
+#mlp = load_pickle_file("models/is{:d}_mlp_dic_training.pkl".format(mode_label))['model']
+
+
 out = train_flow(
     model,
     train,
@@ -109,6 +113,8 @@ out = train_flow(
     save_splits=10,
     grad_clip=1e4,
     compute_ratio_acc=True,
+    #mlp_model=mlp,
+    n_chains=5,
     with_tqdm=True
 )
 
@@ -117,6 +123,10 @@ args.date_end = date_end
 
 argparse_dict = vars(args)
 out['args'] = argparse_dict
+
+import matplotlib.pyplot as plt
+plt.plot(out['ratios'])
+plt.show()
 
 # filename could also include the hyperparameters
 f = "models/flow_tracking/is{:d}_flow_dic_training_{:s}.pkl".format(mode_label, args.slurm_id)

@@ -11,7 +11,8 @@ def get_ratio_acc(
             model,
             init,
             n_chains,
-            mlp_model,
+            training_step,
+            mlp_model=None,
             T=300,
     ):
 
@@ -21,7 +22,6 @@ def get_ratio_acc(
     beta = 1 / (kb * T)
 
     x_init = init[:, :12]
-    u_init = init[:, 12]
     isomer_init = init[:, 13]
 
     x_new = model.sample(n_chains)
@@ -34,8 +34,33 @@ def get_ratio_acc(
     nll_x_init = model.nll(x_init)
 
     u_new = torch.zeros((n_chains, 1))
-    u_new = mlp_model(x_new)
-    u_new = u_new.squeeze().float()
+
+    if mlp_model is None:
+        u_init = init[:, 12]
+
+        from flonacomldft.dft_calculator import DFTCalculator
+        from flonacomldft.internal_coordinates import Coordinates_mapping
+        
+        coord_maps = Coordinates_mapping()
+        calculator = DFTCalculator()
+        calculator.initialize_calculator()
+
+        for i in range(len(x_new)):
+            molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer_new[i].item())
+            u_ = calculator.calculate_potential_energy(
+                                molecule, 
+                                filename='ag6_'+str(training_step)+'_'+str(i)+'.out'
+                                                )
+            u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
+
+    else:
+        u_init = mlp_model(x_init)
+        u_init = u_init.squeeze().float()
+        u_new = mlp_model(x_new)
+        u_new = u_new.squeeze().float()
+
+    #u_init = u_init.detach()
+    #u_new = u_new.detach()
 
     ratio = -beta * u_new + nll_x
     ratio += beta * u_init - nll_x_init
@@ -60,6 +85,7 @@ def train_flow(
     with_tqdm=False,
     use_tune=False,
     compute_ratio_acc=True,
+    mlp_model=None,
     n_chains=100,
     T=300,
 ):
@@ -91,8 +117,8 @@ def train_flow(
         n_chains=n_chains
         ratios = []
         acc_rates = []
-        from flonacomldft.utils.io_utils import load_pickle_file 
-        mlp = load_pickle_file("models/is{:d}_mlp_dic_training.pkl".format(isomer))['model']
+        #from flonacomldft.utils.io_utils import load_pickle_file 
+        #mlp = load_pickle_file("models/is{:d}_mlp_dic_training.pkl".format(isomer))['model']
 
     x = x_train.detach().requires_grad_()
 
@@ -126,7 +152,8 @@ def train_flow(
             ratio, acc_rate = get_ratio_acc(model=model,
                     init=test[:n_chains],
                     n_chains=n_chains,
-                    mlp_model=mlp,
+                    training_step=t,
+                    mlp_model=mlp_model,
                     T=T)
 
             ratio = (ratio.cpu().detach().numpy() * 1).mean()
