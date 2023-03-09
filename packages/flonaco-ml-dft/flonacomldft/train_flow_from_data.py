@@ -146,7 +146,7 @@ def train_flow(
         if with_tqdm:
             pbar.set_description(f"Loss: {losses_train[-1]:.4f}")
 
-        if compute_ratio_acc:
+        if compute_ratio_acc==True and t % (n_iter / save_splits) == 0:
 
             n_chains = n_chains
             ratio, acc_rate = get_ratio_acc(model=model,

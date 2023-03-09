@@ -120,7 +120,7 @@ def run_metropolis(
             # TODO: type of isomer_dft
             for i,flag_dft in enumerate(ind_dft):
                 if flag_dft:
-                    try:
+                    try: # Dangerous strategy
                         #TODO: FIX SHAPES OF XS, ZMAT
 
                         #       zmat, logdetjac = coord_maps.get_internal_from_real_centered(x_new[i].reshape(1, -1), isomer=isomer_new[i].item())
@@ -129,15 +129,14 @@ def run_metropolis(
 
                         #TODO: BUILD molecule from internal, return logdet
 
-                        molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer_new[i].item())
+                        molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), int(isomer_new[i].item()))
                         u_ = calculator.calculate_potential_energy(
-                                molecule, 
-                                filename='ag6_'+str(name_run)+'_'+str(dt)+'_'+str(i)+'.out'
-                                                )
+                            molecule, 
+                            filename='ag6_'+str(name_run)+'_'+str(dt)+'_'+str(i)+'.out'
+                                            )
+                        
                         u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
-
                         #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
-
                         xs_dft.append(x_new[i])
                         us_dft.append(u_new[i])
                         isomers_dft.append(isomer_new[i])
