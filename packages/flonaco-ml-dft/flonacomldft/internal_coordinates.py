@@ -6,6 +6,7 @@ import chemcoord as cc
 from flonacomldft.utils.io_utils import get_path
 from flonacomldft.utils.silver_isomers_utils import get_construction_table, get_molecule_isomer_minima 
 
+#TODO: Add new description
 
 # add a phase for some internal coordinates angles
 def add_phase(tensor, phase = 2 * torch.pi):

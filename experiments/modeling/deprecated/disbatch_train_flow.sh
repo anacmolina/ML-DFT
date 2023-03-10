@@ -1,0 +1,5 @@
+# Note there is a space at the end of the next line.
+#DISBATCH PREFIX cd /mnt/home/amolina/ceph/ML-DFT/experiments/modeling ;  echo "Running on $(hostname)" ; module purge ; module load gcc slurm ; source /mnt/home/amolina/miniconda3/bin/activate ml-dft ; echo $PYTHON_PATH ; 
+#DISBATCH SUFFIX > /mnt/ceph/users/amolina/database/models/flow_tracking/outputs/${SLURM_JOB_ID}_${DISBATCH_TASKID}.log 2>&1
+
+python slurm_train_flow_model.py -np 8  -ml 0 -lr 1e-3 -ni 10000 -nb 4 -hdm 16 -hdp 4 -id ${DISBATCH_JOBID}_${DISBATCH_TASKID}

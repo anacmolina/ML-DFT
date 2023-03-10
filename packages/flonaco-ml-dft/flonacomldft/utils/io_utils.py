@@ -19,6 +19,8 @@ def get_path():
         ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/database/'
     elif os.path.isdir('/home/ana/assisting_sampling/database/'):
         ceph_home = '/home/ana/assisting_sampling/database/'
+    elif os.path.isdir('/home/amolina/assisting_sampling/database/'):
+        ceph_home = '/home/amolina/assisting_sampling/database/'    
     else:
         raise RuntimeError('Data path not understood')
     return ceph_home

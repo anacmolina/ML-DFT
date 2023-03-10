@@ -10,7 +10,7 @@ from flonacomldft.train_flow_from_data import train_flow
 
 
 # for naming files
-date_start = time.strftime('%H:%M:%S %d-%m-%Y')
+date = time.strftime('%d-%m-%Y')
 random_id = str(np.random.randint(100))
 print('random id!', random_id)
 
@@ -18,7 +18,7 @@ print(get_path())
 
 ### Define arguments to parse from command line
 parser = argparse.ArgumentParser(description='Prepare experiment')
-parser.add_argument('-np', '--num-procs', type=int, default=1)
+parser.add_argument('-np', '--num-procs', type=int, default=8)
 parser.add_argument('-ni', '--n-iter', type=int, default=10)
 parser.add_argument('-lr', '--learning-rate', type=float, default=1e-4)
 parser.add_argument('-ml', '--mode-label', type=int, default=0)
@@ -29,12 +29,7 @@ parser.add_argument('-id', '--slurm-id', type=str, default=str(random_id))
 
 args = parser.parse_args()
 
-args.date_start = date_start
-args.random_seed = random_id
-
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-print('n_thread_set: ', args.num_procs)
 
 torch.set_num_threads(int(args.num_procs))
 
@@ -88,20 +83,6 @@ model = RealNVP_MLP(12,
                     device=device,
                     )
 
-#print(args.n_blocks)
-#print(args.hidden_depth)
-#print(args.hidden_dim)
-
-print('n_blocks', model.n_blocks, type(model.n_blocks))
-print('hidden_depth', model.n_layers_in_coupling, type(model.n_layers_in_coupling))
-print('hidden_dim', model.hidden_dim_in_coupling, type(model.hidden_dim_in_coupling))
-
-print('threads: {:d}'.format(torch.get_num_threads()))
-
-#from flonacomldft.utils.io_utils import load_pickle_file 
-#mlp = load_pickle_file("models/is{:d}_mlp_dic_training.pkl".format(mode_label))['model']
-
-
 out = train_flow(
     model,
     train,
@@ -112,29 +93,30 @@ out = train_flow(
     step_schedule=100,
     save_splits=10,
     grad_clip=1e4,
-    compute_ratio_acc=True,
-    #mlp_model=mlp,
-    n_chains=5,
-    with_tqdm=True
+    compute_ratio_acc=True
 )
 
-date_end = time.strftime('%H:%M:%S %d-%m-%Y')
-args.date_end = date_end
-
-argparse_dict = vars(args)
-out['args'] = argparse_dict
-
-import matplotlib.pyplot as plt
-plt.plot(out['ratios'])
-plt.show()
+# import numpy as np
+# from flonacomldft.collective_variables import get_CVs 
+# from flonacomldft.utils.plots import plotting_fes_db, plot_losses
+# import matplotlib.pyplot as plt
+# plot_losses(out['losses'][0], out['losses'][1])
+# plt.show()
+# xs_sample = out['model'].sample(100)
+# coord_mapping = Coordinates_mapping()
+# zs_sample, logdetjac_sample = coord_mapping.get_internal_from_real_centered(xs_sample, isomer=mode_label)
+# from ase.visualize import view
+# view(coord_mapping.build_molecule_from_zmat(zs_sample[0])
+# )
+# x_sample_cv = np.array(get_CVs(zs_sample)).T
+# x_cv = np.array(get_CVs(zmat_train[:50, :12])).T
+# fig, ax = plotting_fes_db()
+# ax.scatter(x_sample_cv[:, 0], x_sample_cv[:, 1], label="mode {:d} - realnvp init".format(mode_label), c='C{:d}'.format(mode_label))#, alpha=0.5)
+# ax.scatter(x_cv[:, 0], x_cv[:, 1], marker='x', c='C{:d}'.format(mode_label), label="mode {:d} - data".format(mode_label), alpha=0.5)
+# ax.legend()
+# plt.show()
 
 # filename could also include the hyperparameters
 f = "models/flow_tracking/is{:d}_flow_dic_training_{:s}.pkl".format(mode_label, args.slurm_id)
 save_pickle_file(out, f)
 
-import json
-
-filename_args = "args_" + args.slurm_id + ".json"
-
-with open(get_path() + "models/flow_tracking/" + filename_args, "w") as outfile:
-    json.dump(argparse_dict, outfile)

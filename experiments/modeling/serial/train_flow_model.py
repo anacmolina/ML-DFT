@@ -45,13 +45,13 @@ train = join_data(xs_train,
                 energies_train,
                 zmat_train[:, 13],
                 logdetjacs_train,
-)
+).detach()
 
 test = join_data(xs_test,
                 energies_test,
                 zmat_test[:, 13],
                 logdetjacs_test,
-)
+).detach()
 
 
 model = RealNVP_MLP(12,

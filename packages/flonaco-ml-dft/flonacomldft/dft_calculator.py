@@ -95,3 +95,5 @@ class DFTCalculator:
         traj = Trajectory(self.file+'.traj')
 
         return traj
+    
+#TODO: Add optimization and optical spectrum methods
