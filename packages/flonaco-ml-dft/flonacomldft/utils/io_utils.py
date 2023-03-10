@@ -13,15 +13,15 @@ from ase.io.trajectory import Trajectory
 
 # path to database folder (initial trajectories)
 def get_path():
-   if os.path.isdir('/mnt/home/amolina/ceph/database/'):
-      ceph_home = '/mnt/home/amolina/ceph/database/'
-   elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/database/'):
-      ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/database/'
-   elif os.path.isdir('/home/ana/assisting_sampling/database/'):
-      ceph_home = '/home/ana/assisting_sampling/database/'
-   else:
-      raise RuntimeError('Data path not understood')
-   return ceph_home
+    if os.path.isdir('/mnt/home/amolina/ceph/database/'):
+        ceph_home = '/mnt/home/amolina/ceph/database/'
+    elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/database/'):
+        ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/database/'
+    elif os.path.isdir('/home/ana/assisting_sampling/database/'):
+        ceph_home = '/home/ana/assisting_sampling/database/'
+    else:
+        raise RuntimeError('Data path not understood')
+    return ceph_home
 
 # get working folder path
 def get_project_path():

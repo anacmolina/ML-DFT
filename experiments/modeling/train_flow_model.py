@@ -104,6 +104,6 @@ ax.legend()
 plt.show()
 """
 
-f = "models/is{:d}_flow_dic_training.pkl".format(mode_label)
+f = "models/is{:d}_flow_dic_training_12blocks_10000it.pkl".format(mode_label)
 save_pickle_file(out, f)
 

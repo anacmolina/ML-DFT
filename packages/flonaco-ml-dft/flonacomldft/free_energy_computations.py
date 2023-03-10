@@ -33,10 +33,14 @@ def compute_TFP(n_prop, target_log_prob, prop):
     logprob_target = target_log_prob(xs_prop).detach().numpy().squeeze() 
     # squeezing because the mlp are returning a 2d tensor with a size 1 extra column
 
-    logr = - logsumexp(logprob_target - logprob_prop) + np.log(n_prop)
-    logr_err = np.var(np.exp(logprob_target - logprob_prop)) / (logr ** 2) / n_prop
+    logr_per_sample = logprob_target - logprob_prop
+    logr = - logsumexp(logr_per_sample) + np.log(n_prop)
 
-    return logr, np.sqrt(logr_err)
+    # TODO: rewrite with logsumexp - no log?
+    err = np.sqrt(np.var(np.exp(logr_per_sample)) / np.exp(2 * logr)  / n_prop)
+    logr_err =  np.log(err)
+
+    return logr, logr_err
 
 
 def compute_TFP_logratio(n_prop, target_log_prob, mix_prop):
@@ -51,12 +55,17 @@ def compute_TFP_logratio(n_prop, target_log_prob, mix_prop):
 
         prop = mix_prop[mode]
 
-        logr, logr_err = compute_TFP(n_prop, target_log_prob, prop)
+        if type(target_log_prob) == list:
+            target_log_p = target_log_prob[mode]
+        else:
+            target_log_p = target_log_prob
+
+        logr, logr_err = compute_TFP(n_prop, target_log_p, prop)
 
         logrs.append(logr)
         logr_errs.append(logr_err)
         
-    return  logrs[0] - logrs[1], logr_errs[0] + logr_errs[1] 
+    return  logrs[0] - logrs[1], logr_errs[0] + logr_errs[1], logrs
 
 
 def compute_BAR(xs, target_log_prob, prop, n_prop=None, 
@@ -159,10 +168,15 @@ def compute_deepBAR_logratio(xs, cs, target_log_prob, mix_prop, n_prop=None):
         warnings.warn("Error estimation misses ESS estimation")
         ess = 1
 
-        logr, logr_err = compute_BAR(xs_mode, target_log_prob, prop, n_prop=n_prop,
+        if type(target_log_prob) == list:
+            target_log_p = target_log_prob[mode]
+        else:
+            target_log_p = target_log_prob
+
+        logr, logr_err = compute_BAR(xs_mode, target_log_p, prop, n_prop=n_prop,
                                      ess=ess)
 
         logrs.append(logr)
         logr_errs.append(logr_err)
         
-    return  logrs[0] - logrs[1], logr_errs[0] + logr_errs[1] 
+    return  logrs[0] - logrs[1], logr_errs[0] + logr_errs[1], logrs 

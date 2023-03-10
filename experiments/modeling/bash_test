@@ -1,0 +1,1 @@
+python slurm_train_flow_model.py -lr 1e-3 --hidden-depth 2 
