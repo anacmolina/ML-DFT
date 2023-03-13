@@ -225,14 +225,16 @@ class Plotter():
             maxi = minmax[1]
 
         F_grid = F.reshape((self.bins, self.bins))
-        im = ax.contourf(C, R, F_grid, np.arange(mini,maxi,delta), cmap=cmap, 
+        print(type(minmax))
+
+        im = ax.contourf(C.astype(float), R.astype(float), F_grid.astype(float), np.arange(mini,maxi,delta), cmap=cmap, 
                          vmin=minmax[0], vmax=minmax[1])
         if delta2 is None:
             delta2 = delta
-        cp = ax.contour(C, R, F_grid, np.arange(mini,maxi,delta), 
+        cp = ax.contour(C.astype(float), R.astype(float), F_grid.astype(float), np.arange(mini,maxi,delta), 
                          linestyles='-', colors = 'darkgray', linewidths=1.2)
         if isopotentials is not None:
-            ax.contour(C, R, F_grid, isopotentials, 
+            ax.contour(C.astype(float), R.astype(float), F_grid.astype(float), isopotentials, 
                          linestyles='-', colors = 'red', linewidths=1.5)
         if orientation[0]=='v':
             pad = 0.02
