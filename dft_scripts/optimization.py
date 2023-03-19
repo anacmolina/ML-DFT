@@ -62,5 +62,5 @@ args.date_end = date_end
 
 argparse_dict = vars(args)
 
-with open('args_'+id, "w") as outfile:
+with open('args_'+args.slurm_id, "w") as outfile:
     json.dump(argparse_dict, outfile)
