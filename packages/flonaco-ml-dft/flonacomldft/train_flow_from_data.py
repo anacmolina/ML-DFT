@@ -11,7 +11,8 @@ def get_ratio_acc(
             model,
             init,
             n_chains,
-            training_step,
+            n_steps,
+            training_iteration,
             mlp_model=None,
             T=300,
     ):
@@ -49,7 +50,7 @@ def get_ratio_acc(
             molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer_new[i].item())
             u_ = calculator.calculate_potential_energy(
                                 molecule, 
-                                filename='ag6_'+str(training_step)+'_'+str(i)+'.out'
+                                filename='ag6_'+str(training_iteration)+'_'+str(i)+'.out'
                                                 )
             u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
 
