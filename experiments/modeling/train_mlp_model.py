@@ -40,8 +40,8 @@ n_hidden = 56
 n_layers = 8
 model = MLP([xs_train.shape[1]] +  [n_hidden] * n_layers + [1])
 
-mlp_hyperparams = {'n_iter': 40000,
-    'lr': 5e-5,
+mlp_hyperparams = {'n_iter': 65000,
+    'lr': 1e-5,
     'use_scheduler': False,
     'step_schedule': 100,
 }
