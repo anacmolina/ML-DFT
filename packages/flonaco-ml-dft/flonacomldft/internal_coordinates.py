@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import chemcoord as cc
 
-from flonacomldft.utils.io_utils import get_path
+from flonacomldft.utils.io_utils import get_project_path
 from flonacomldft.utils.silver_isomers_utils import get_construction_table, get_molecule_isomer_minima 
 
 #TODO: Add new description
@@ -502,7 +502,7 @@ def get_labels_from_construction_table(construction_table, all_labels=False):
 
         return labels
 
-def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_energy=True, add_logdetjac=True, add_isomer=True, filename='traj.csv', path=get_path()):
+def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_energy=True, add_logdetjac=True, add_isomer=True, filename='traj.csv', path=get_project_path()):
 
         labels = get_labels_from_construction_table(construction_table)
             

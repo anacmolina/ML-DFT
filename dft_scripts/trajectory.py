@@ -1,5 +1,5 @@
 # TODO: Add this to package
-
+# TODO: Add argparse to this script
 import numpy as np
 
 from ase.io import write

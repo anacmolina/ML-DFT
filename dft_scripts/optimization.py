@@ -1,7 +1,8 @@
 # TODO: Add this to package
+# TODO: Run this script again
 
 import argparse
-import json
+#import json
 import time
 import numpy as np
 
@@ -12,6 +13,7 @@ from flonacomldft.utils.silver_isomers_utils import (
     isomers,
     get_molecule_isomer_minima
 )
+from flonacomldft.utils.io_utils import save_json_args
 
 # for naming files
 date_start = time.strftime('%H:%M:%S %d-%m-%Y')
@@ -34,11 +36,11 @@ print(args)
 isomer = list(isomers.keys())[args.mode_label]
 mode = args.gpaw_mode
 
-mol = get_molecule_isomer_minima(isomer)
+molecule = get_molecule_isomer_minima(isomer)
 
-mol.set_cell([16, 16, 16])
-mol.set_pbc(True)
-mol.center()
+molecule.set_cell([16, 16, 16])
+molecule.set_pbc(True)
+molecule.center()
 
 name = isomer + "_" + mode + "_" + args.slurm_id
 
@@ -53,14 +55,17 @@ calc = GPAW(
     txt=name + ".out",
 )
 
-mol.set_calculator(calc)
-opt = BFGS(mol, trajectory = name + ".traj", logfile = name + ".log")
+molecule.set_calculator(calc)
+opt = BFGS(molecule, trajectory = name + ".traj", logfile = name + ".log")
 opt.run(0.01)
 
 date_end = time.strftime('%H:%M:%S %d-%m-%Y')
 args.date_end = date_end
 
-argparse_dict = vars(args)
+args.algorithm = 'optimization.py'
 
-with open('args_'+args.slurm_id, "w") as outfile:
-    json.dump(argparse_dict, outfile)
+save_json_args(args)
+#argparse_dict = vars(args)
+
+#with open('args_'+args.slurm_id, "w") as outfile:
+#    json.dump(argparse_dict, outfile)

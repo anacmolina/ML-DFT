@@ -1,7 +1,3 @@
-# TODO: remove this
-import warnings
-warnings.filterwarnings("ignore")
-
 import copy
 import tqdm
 
@@ -13,12 +9,8 @@ from ase.parallel import parprint as print
 
 kb = 8.617333262e-5
 
-def compute_ratio(u_new, u_init, nll_x, nll_x_init, beta):
-    ratio = -beta * u_new + nll_x
-    ratio += beta * u_init - nll_x_init
-    ratio = torch.exp(ratio)
-    ratio = torch.min(ratio, torch.ones_like(ratio))
-    return ratio
+def compute_ratio(u, u_init, nll, nll_init, beta):
+    return torch.exp(-beta * (u - u_init) + nll - nll_init)
 
 def compute_pariticpation_ratio(x_new, u_new, nll, beta):
     log_weight = (- u_new * beta).squeeze() + nll.squeeze()
@@ -30,7 +22,7 @@ def get_all_ratios(
     init,
     n_chains,
     n_steps,
-    mlp_model,
+    mlp_model=None,
     scheduled_dft=100,
     T=300,):
 
@@ -64,13 +56,14 @@ def get_all_ratios(
         nll_x_init = model.nll(x_init)
 
         # calculate energy mlp
+        if mlp_model is not None:
             
-        u_new_mlp = mlp_model(x_new).squeeze()
-        ratio_mlp = compute_ratio(u_new_mlp, u_init, nll_x, nll_x_init, beta)
-        participation_ratio_mlp = compute_pariticpation_ratio(x_new, u_new_mlp, nll_x, beta)
+            u_new_mlp = mlp_model(x_new)
+            ratio_mlp = compute_ratio(u_new_mlp, u_init, nll_x, nll_x_init, beta)
+            participation_ratio_mlp = compute_pariticpation_ratio(x_new, u_new_mlp, nll_x, beta)
 
-        mlp_ratios.append(ratio_mlp)
-        mlp_part_ratios.append(participation_ratio_mlp)
+            mlp_ratios.append(ratio_mlp)
+            mlp_part_ratios.append(participation_ratio_mlp)
 
         # calculate energy dft
         if n_steps % scheduled_dft == 0:
@@ -89,7 +82,7 @@ def get_all_ratios(
 
                 #u_new_dft[i] = coord_mapping.compute_energy_in_new_frame(u_, logdetjac*(-1))
 
-                u_new_dft[i] = -6.8+torch.rand(1)*0.5
+                u_new_dft[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
 
             # calculate ratio
             ratio_dft = compute_ratio(u_new_dft, u_init, nll_x, nll_x_init, beta)
@@ -115,6 +108,72 @@ def get_all_ratios(
 
     return all_ratios
 
+# def get_ratio_acc(
+#             model,
+#             init,
+#             n_chains,
+#             n_steps,
+#             training_iteration,
+#             mlp_model=None,
+#             T=300,
+#     ):
+# 
+#     assert init.shape[0] == n_chains
+# 
+#     kb = 8.617333262e-5
+#     beta = 1 / (kb * T)
+# 
+#     x_init = init[:, :12]
+#     isomer_init = init[:, 13]
+# 
+#     x_new = model.sample(n_chains)
+#     isomer_new = isomer_init
+# 
+#     x_new = x_new.clone().detach().float()
+#     isomer_new = isomer_new.clone().detach().float()
+# 
+#     nll_x = model.nll(x_new)
+#     nll_x_init = model.nll(x_init)
+# 
+#     u_new = torch.zeros((n_chains, 1))
+# 
+#     if mlp_model is None:
+#         u_init = init[:, 12]
+# 
+#         from flonacomldft.dft_calculator import DFTCalculator
+#         from flonacomldft.internal_coordinates import Coordinates_mapping
+#         
+#         coord_maps = Coordinates_mapping()
+#         calculator = DFTCalculator()
+#         calculator.initialize_calculator()
+# 
+#         for i in range(len(x_new)):
+#             molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer_new[i].item())
+#             u_ = calculator.calculate_potential_energy(
+#                                 molecule, 
+#                                 filename='ag6_'+str(training_iteration)+'_'+str(i)+'.out'
+#                                                 )
+#             u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
+# 
+#     else:
+#         u_init = mlp_model(x_init)
+#         u_init = u_init.squeeze().float()
+#         u_new = mlp_model(x_new)
+#         u_new = u_new.squeeze().float()
+# 
+#     #u_init = u_init.detach()
+#     #u_new = u_new.detach()
+# 
+#     ratio = -beta * u_new + nll_x
+#     ratio += beta * u_init - nll_x_init
+#     ratio = torch.exp(ratio)
+# 
+#     u = torch.rand_like(ratio)
+#     ratio = torch.min(ratio, torch.ones_like(ratio))
+#     acc = u < ratio
+# 
+#     return ratio, acc
+
 def train_flow(
     model,
     train,
@@ -127,7 +186,7 @@ def train_flow(
     grad_clip=1e4,
     with_tqdm=False,
     use_tune=False,
-    compute_ratios=True,
+    compute_ratio_acc=True,
     mlp_model=None,
     n_chains=100,
     T=300,
@@ -154,12 +213,15 @@ def train_flow(
     models = [copy.deepcopy(model)]
     grad_norms = []
 
-    if compute_ratios and mlp_model is not None:
+    if compute_ratio_acc:
+        isomer=train[0, 13].to(torch.int64).item()
         T=T
         n_chains=n_chains
         ratios = []
         acc_rates = []
-        
+        #from flonacomldft.utils.io_utils import load_pickle_file 
+        #mlp = load_pickle_file("models/is{:d}_mlp_dic_training.pkl".format(isomer))['model']
+
     x = x_train.detach().requires_grad_()
 
     if with_tqdm:
@@ -186,20 +248,22 @@ def train_flow(
         if with_tqdm:
             pbar.set_description(f"Loss: {losses_train[-1]:.4f}")
 
-        if compute_ratios==True and t % (n_iter / save_splits) == 0:
+        if compute_ratio_acc==True and t % (n_iter / save_splits) == 0:
 
-            ratios_ = get_all_ratios(
-                model=model,
-                init=test[:n_chains],
-                n_chains=n_chains,
-                n_steps=100,
-                mlp_model=mlp_model,
-                scheduled_dft=20,
-                T=300,
-                )
+            n_chains = n_chains
+            ratio, acc_rate = get_ratio_acc(model=model,
+                    init=test[:n_chains],
+                    n_chains=n_chains,
+                    training_step=t,
+                    mlp_model=mlp_model,
+                    T=T)
 
-            ratios.append(ratios_)
+            ratio = (ratio.cpu().detach().numpy() * 1).mean()
+            ratios.append(ratio)
         
+            acc_rate = (acc_rate.cpu().detach().numpy() * 1).mean()
+            acc_rates.append(acc_rate)
+
         if t % (n_iter / 100) == 0:
             total_norm = 0
             for p in model.parameters():
@@ -220,10 +284,10 @@ def train_flow(
                 "t={:0.1e}".format(t), "loss: {:3.2f}".format(loss.item()), end="  \t"
             )
 
-            if compute_ratio:
-                ratio = ratios_["ratios"][0][-1].mean() 
-                print("ratio: {:.3f}".format(ratio.item()), end="\t")
+            if compute_ratio_acc:
+                print("ratio: {:.3f}".format(ratio), end="\t")
 
+                print("acc: {:.3f}".format(acc_rate), end="\t")
 
             print("Gd: {:0.0e}".format(total_norm), end="\t")
 
@@ -241,7 +305,8 @@ def train_flow(
         "grad_norms": grad_norms,
     }
 
-    if compute_ratio:
+    if compute_ratio_acc:
+        to_return["acc_rates"] = acc_rates
         to_return["ratios"] = ratios
 
     return to_return
