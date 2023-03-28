@@ -38,7 +38,7 @@ def get_all_ratios(
 
     x_init = init[:, :12]
     u_init = init[:, 12]
-    isomer_init = init[:, 13]
+    isomer_init = init[:, -1]
 
     beta = 1 / (kb * T)
 
@@ -58,7 +58,7 @@ def get_all_ratios(
 
     for dt in range(n_steps):
         x_new = model.sample(n_chains)
-        isomer_new = isomer_init
+        isomer_new = isomer_init.clone().detach()
 
         nll_x = model.nll(x_new)
         nll_x_init = model.nll(x_init)
@@ -75,19 +75,17 @@ def get_all_ratios(
         # calculate energy dft
         if n_steps % scheduled_dft == 0:
             u_new_dft = torch.zeros(n_chains)
-
+           
             for i in range(n_chains):
-                molecule, logdetjac = coord_mapping.build_molecule_from_real_centered(
-                    x_new[i].reshape[1, -1], 
-                    int(isomer_new[i].item())
-                    )
-                u_ = calculator.calculate_potential_energy(
-                    molecule, 
-                    filename='ag6_'+str(dt)+'_'+str(i)+'.out'
-                )
-                u_new_dft[i] = coord_mapping.compute_energy_in_new_frame(u_, logdetjac*(-1))
+                #molecule, logdetjac = coord_mapping.build_molecule_from_real_centered(x_new[i].reshape(1, -1), int(isomer_new[i].item()))
 
-                #u_new_dft[i] = -6.8+torch.rand(1)*0.5
+                #u_ = calculator.calculate_potential_energy(
+                #    molecule, 
+                #    filename='ag6_'+str(dt)+'_'+str(i)+'.out'
+                #)
+                #u_new_dft[i] = coord_mapping.compute_energy_in_new_frame(u_, logdetjac*(-1))
+
+                u_new_dft[i] = -6.8+torch.rand(1)*0.5
 
             # calculate ratio
             ratio_dft = compute_ratio(u_new_dft, u_init, nll_x, nll_x_init, beta)
@@ -102,9 +100,11 @@ def get_all_ratios(
 
         x_new[~acc_mlp] = x_init[~acc_mlp]
         u_new_mlp[~acc_mlp] = u_init[~acc_mlp]
+        isomer_new[~acc_mlp] = isomer_init[~acc_mlp]
 
         x_init = x_new.clone().detach()
         u_init = u_new_mlp.clone().detach()
+        isomer_init = isomer_new.clone().detach()
 
     all_ratios = {
         'ratios': (mlp_ratios, dft_ratios),
@@ -190,7 +190,7 @@ def train_flow(
                 model=model,
                 init=test[:n_chains],
                 n_chains=n_chains,
-                n_steps=10,
+                n_steps=100,
                 mlp_model=mlp_model,
                 scheduled_dft=20,
                 T=300,

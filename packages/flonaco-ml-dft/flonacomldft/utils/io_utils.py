@@ -13,8 +13,8 @@ from ase.io.trajectory import Trajectory
 
 # path to database folder (initial trajectories)
 def get_project_path():
-    if os.path.isdir('/mnt/home/amolina/ceph/assist_sampling/'):
-        ceph_home = '/mnt/home/amolina/ceph/assist_sampling/'
+    if os.path.isdir('/mnt/home/amolina/ceph/'):
+        ceph_home = '/mnt/home/amolina/ceph/'
     elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'):
         ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'
     elif os.path.isdir('/home/ana/assisting_sampling/'):
@@ -78,7 +78,7 @@ def save_json_args(args, script_name, id, path=os.getcwd()):
 
     filename_args = "args_{:s}_{:d}.json".format(script_name, id)
 
-    with open(path + '/' + filename_args, "w") as outfile:
+    with open(path + filename_args, "w") as outfile:
         json.dump(vars(args), outfile)
 
 def get_date_process_id():

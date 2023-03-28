@@ -7,7 +7,8 @@ from flonacomldft.utils.io_utils import (
     load_csv_file, 
     save_pickle_file,
     save_json_args, 
-    get_date_process_id
+    get_date_process_id,
+    get_project_path
 )
 
 from flonacomldft.internal_coordinates import (
@@ -36,7 +37,7 @@ parser.add_argument('-hdm', '--hidden-dim', type=int, default=64)
 parser.add_argument('-hdp', '--hidden-depth', type=int, default=3)
 parser.add_argument('-rs', '--random-seed', type=str, default=str(num_seed))
 parser.add_argument('-path', '--folder-path', type=str, default='database/')
-parser.add_argument('-pid', '--process-id', type=id, default=process_id)
+parser.add_argument('-pid', '--process-id', type=int, default=process_id)
 args = parser.parse_args()
 
 args.date_start = date_start
@@ -110,7 +111,7 @@ out['args'] = argparse_dict
 f = args.folder_path + "is{:d}_mlp_dic_training_{:d}.pkl".format(mode_label, args.process_id)
 save_pickle_file(out, f)
 
-save_json_args(args, 'train_mlp_model', process_id)
+save_json_args(args, 'train_mlp_model', args.process_id, get_project_path() + args.folder_path)
 
 import matplotlib.pyplot as plt
 from flonacomldft.utils.plots import (

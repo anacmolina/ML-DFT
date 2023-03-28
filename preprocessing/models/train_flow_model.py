@@ -40,10 +40,10 @@ parser.add_argument('-ml', '--mode-label', type=int, default=0)
 parser.add_argument('-nb', '--n-blocks', type=int, default=4)
 parser.add_argument('-hdm', '--hidden-dim', type=int, default=64)
 parser.add_argument('-hdp', '--hidden-depth', type=int, default=3)
+parser.add_argument('-id', '--id', type=int, default=22249210)
 parser.add_argument('-rs', '--random-seed', type=str, default=str(num_seed))
-parser.add_argument('-id', '--id', type=int, default=0)
 parser.add_argument('-path', '--folder-path', type=str, default='database/')
-parser.add_argument('-pid', '--process-id', type=str, default=process_id)
+parser.add_argument('-pid', '--process-id', type=int, default=int(process_id))
 
 args = parser.parse_args()
 
@@ -57,8 +57,8 @@ torch.set_num_threads(int(args.num_procs))
 
 # load data
 mode_label = args.mode_label
-zmat_train = load_csv_file(args.folder_path + "is{:d}_md_train_{:d}.csv".format(mode_label, args.id))
-zmat_test = load_csv_file(args.folder_path + "is{:d}_md_test_{:d}.csv".format(mode_label, args.id))
+zmat_train = load_csv_file(args.folder_path + "is{:d}_md_train.csv".format(mode_label))
+zmat_test = load_csv_file(args.folder_path + "is{:d}_md_test.csv".format(mode_label))
 
 # real centered frame
 coord_mapping = Coordinates_mapping()
@@ -79,8 +79,8 @@ xs_test, logdetjacs_test, energies_test = coord_mapping.get_real_centered_from_i
 xs_test = torch.tensor(xs_test, dtype=torch.float32)
 
 # join data
-train = join_data(xs_train, energies_train, logdetjacs_train).detach()
-test = join_data(xs_test, energies_test, logdetjacs_test).detach()
+train = join_data(xs_train, energies_train, logdetjacs_train, zmat_train[:, 13]).detach()
+test = join_data(xs_test, energies_test, logdetjacs_test, zmat_test[:, 13]).detach()
 
 cov = torch.cov(xs_train.T).detach()
 model = RealNVP_MLP(12,
@@ -100,7 +100,7 @@ print('hidden_dim', model.hidden_dim_in_coupling, type(model.hidden_dim_in_coupl
 print('threads: {:d}'.format(torch.get_num_threads()))
                                 
 from flonacomldft.utils.io_utils import load_pickle_file 
-mlp = load_pickle_file("database/andersen/is{:d}_mlp_dic_training_139859135667952.pkl".format(mode_label))['model']
+mlp = load_pickle_file(args.folder_path + "is{:d}_mlp_dic_training_{:d}.pkl".format(mode_label, args.id))['model']
 
 out = train_flow(
     model,
@@ -114,7 +114,7 @@ out = train_flow(
     grad_clip=1e4,
     compute_ratios=True,
     mlp_model=mlp,
-    n_chains=50,
+    n_chains=3,
     with_tqdm=False,
 )
 
@@ -126,6 +126,6 @@ args.algorithm = 'train_flow_model.py'
 argparse_dict = vars(args)
 out['args'] = argparse_dict
 
-save_pickle_file(out, args.output_path + "is{:d}_flow_dic_training_{:d}.pkl".format(mode_label, args.output_id))
+save_pickle_file(out, args.folder_path + "is{:d}_flow_dic_training_{:d}.pkl".format(mode_label, args.process_id))
 
-save_json_args(args, 'train_flow_model')
+save_json_args(args, 'train_flow_model', args.process_id, get_project_path() + args.folder_path)
