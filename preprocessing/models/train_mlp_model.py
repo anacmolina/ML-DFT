@@ -6,7 +6,8 @@ import torch
 from flonacomldft.utils.io_utils import (
     load_csv_file, 
     save_pickle_file,
-    save_json_args 
+    save_json_args, 
+    get_date_process_id
 )
 
 from flonacomldft.internal_coordinates import (
@@ -18,9 +19,10 @@ from flonacomldft.models.mlp import MLP
 from flonacomldft.train_mlp_from_data import train_mlp
 from flonacomldft.parallel import set_seed
 
-# for naming files
-date_start = time.strftime('%H:%M:%S %d-%m-%Y')
 num_seed = set_seed()
+
+# for naming files
+date_start, process_id = get_date_process_id()
 
 print('seed: ', num_seed)
 
@@ -33,22 +35,21 @@ parser.add_argument('-ml', '--mode-label', type=int, default=0)
 parser.add_argument('-hdm', '--hidden-dim', type=int, default=64)
 parser.add_argument('-hdp', '--hidden-depth', type=int, default=3)
 parser.add_argument('-rs', '--random-seed', type=str, default=str(num_seed))
-parser.add_argument('-inid', '--input-id', type=int, default=0)
-parser.add_argument('-inpath', '--input-path', type=str, default='database/')
-parser.add_argument('-outpath', '--output-path', type=str, default='database/')
-parser.add_argument('-outid', '--output-id', type=id, default=num_seed)
+parser.add_argument('-path', '--folder-path', type=str, default='database/')
+parser.add_argument('-pid', '--process-id', type=id, default=process_id)
 args = parser.parse_args()
 
 args.date_start = date_start
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 torch.set_num_threads(int(args.num_procs))
+torch.manual_seed(num_seed)
 
 # load data
 
 mode_label = args.mode_label
-zmat_train = load_csv_file(args.input_path + "is{:d}_md_train_{:d}.csv".format(mode_label, args.input_id))
-zmat_test = load_csv_file(args.input_path + "is{:d}_md_test_{:d}.csv".format(mode_label, args.input_id))
+zmat_train = load_csv_file(args.folder_path + "is{:d}_md_train.csv".format(mode_label))
+zmat_test = load_csv_file(args.folder_path + "is{:d}_md_test.csv".format(mode_label))
 
 #dataset_labels = ['md', 'flow']
 
@@ -106,10 +107,10 @@ args.date_end = date_end
 argparse_dict = vars(args)
 out['args'] = argparse_dict
 
-f = args.output_path + "is{:d}_mlp_dic_training_{:d}.pkl".format(mode_label, args.output_id)
+f = args.folder_path + "is{:d}_mlp_dic_training_{:d}.pkl".format(mode_label, args.process_id)
 save_pickle_file(out, f)
 
-save_json_args(args, 'train_mlp_model')
+save_json_args(args, 'train_mlp_model', process_id)
 
 import matplotlib.pyplot as plt
 from flonacomldft.utils.plots import (

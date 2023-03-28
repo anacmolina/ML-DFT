@@ -4,7 +4,6 @@ import argparse
 
 from ase.io.trajectory import Trajectory
 from flonacomldft.utils.io_utils import get_project_path
-from flonacomldft.parallel import set_seed
 from flonacomldft.internal_coordinates import (
     add_phase,
     get_construction_table,
@@ -16,8 +15,7 @@ from flonacomldft.internal_coordinates import (
 parser = argparse.ArgumentParser(description='Prepare dataset')
 parser.add_argument('-ml', '--mode-label', type=int, default=0)
 parser.add_argument('-N', '--num-samples', type=int, default=None)
-parser.add_argument('-inpath', '--input-path', type=str, default='database/')
-parser.add_argument('-outpath', '--output-path', type=str, default='database/')
+parser.add_argument('-path', '--folder-path', type=str, default='database/')
 parser.add_argument('-id', '--id', type=int, default=0)
 
 args = parser.parse_args()
@@ -25,7 +23,7 @@ args = parser.parse_args()
 mode_label = args.mode_label
 N = args.num_samples
 
-input_file = get_project_path() + args.input_path + 'ag6_md_is{:d}_{:d}.traj'.format(mode_label, args.id)
+input_file = get_project_path() + args.folder_path + 'ag6_md_is{:d}_{:d}.traj'.format(mode_label, args.id)
 
 traj = Trajectory(input_file) 
 
@@ -36,5 +34,5 @@ zmats = zmats.detach()
 if mode_label == 0:
     zmats[:, 11][zmats[:, 11]>0] = zmats[:, 11][zmats[:, 11]>0].apply_(add_phase)
 
-output_file = args.output_path + 'ag6_md_zmat_is{:d}_{:d}.csv'.format(mode_label, args.id)
+output_file = args.folder_path + 'ag6_md_zmat_is{:d}_{:d}.csv'.format(mode_label, args.id)
 save_internal_coordinates_to_csv(zmats, get_construction_table(), filename=output_file)

@@ -19,10 +19,15 @@ from flonacomldft.internal_coordinates import (
 from flonacomldft.models.real_nvp import RealNVP_MLP
 from flonacomldft.train_flow_from_data import train_flow
 from flonacomldft.parallel import set_seed
+from flonacomldft.utils.io_utils import get_date_process_id
+
+import gpaw.mpi as mpi
+
+num_seed = set_seed()
+mpi.world.barrier()
 
 # for naming files
-date_start = time.strftime('%H:%M:%S %d-%m-%Y')
-num_seed = set_seed()
+date_start, process_id = get_date_process_id()
 
 print('seed: ', num_seed)
 
@@ -36,13 +41,14 @@ parser.add_argument('-nb', '--n-blocks', type=int, default=4)
 parser.add_argument('-hdm', '--hidden-dim', type=int, default=64)
 parser.add_argument('-hdp', '--hidden-depth', type=int, default=3)
 parser.add_argument('-rs', '--random-seed', type=str, default=str(num_seed))
-parser.add_argument('-inid', '--input-id', type=int, default=0)
-parser.add_argument('-inpath', '--input-path', type=str, default='database/')
-parser.add_argument('-outpath', '--output-path', type=str, default='database/')
-parser.add_argument('-outid', '--output-id', type=id, default=num_seed)
+parser.add_argument('-id', '--id', type=int, default=0)
+parser.add_argument('-path', '--folder-path', type=str, default='database/')
+parser.add_argument('-pid', '--process-id', type=str, default=process_id)
+
 args = parser.parse_args()
 
 args.date_start = date_start
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 print('n_thread_set: ', args.num_procs)
@@ -51,8 +57,8 @@ torch.set_num_threads(int(args.num_procs))
 
 # load data
 mode_label = args.mode_label
-zmat_train = load_csv_file(args.input_path + "is{:d}_md_train_{:d}.csv".format(mode_label, args.input_id))
-zmat_test = load_csv_file(args.input_path + "is{:d}_md_test_{:d}.csv".format(mode_label, args.input_id))
+zmat_train = load_csv_file(args.folder_path + "is{:d}_md_train_{:d}.csv".format(mode_label, args.id))
+zmat_test = load_csv_file(args.folder_path + "is{:d}_md_test_{:d}.csv".format(mode_label, args.id))
 
 # real centered frame
 coord_mapping = Coordinates_mapping()

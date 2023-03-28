@@ -73,10 +73,16 @@ def save_ase_molecules_as_traj(configs, filename='configs.traj', path=os.getcwd(
    traj.close()
 
 # add type of algorithm to args filename
-def save_json_args(args, script_name, path=os.getcwd()):
+def save_json_args(args, script_name, id, path=os.getcwd()):
     import json
 
-    filename_args = "args_{:s}_{:d}.json".format(script_name, args.output_id)
+    filename_args = "args_{:s}_{:d}.json".format(script_name, id)
 
     with open(path + '/' + filename_args, "w") as outfile:
         json.dump(vars(args), outfile)
+
+def get_date_process_id():
+    import time
+    date = time.strftime('%H:%M:%S %d-%m-%Y')
+    id = date.replace(' ', '').replace(':', '').replace('-', '')
+    return date, int(id)
