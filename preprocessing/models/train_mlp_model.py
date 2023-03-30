@@ -120,7 +120,7 @@ from flonacomldft.utils.plots import (
 )
 
 plot_losses(out['losses'][0], out['losses'][1], log_yscale=True)
-plt.show()
+plt.savefig('loss_mlp_is{:d}_{:d}.png'.format(mode_label, args.process_id))
 
 plot_correlation_target_and_predict_value(
     energies_train,
@@ -129,4 +129,4 @@ plot_correlation_target_and_predict_value(
     out['model'](xs_test.float()),
     title='MLP mode {:d}'.format(mode_label)
 )
-plt.show()
+plt.savefig('corr_mlp_is{:d}_{:d}.png'.format(mode_label, args.process_id))

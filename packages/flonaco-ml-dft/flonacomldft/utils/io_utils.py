@@ -13,8 +13,8 @@ from ase.io.trajectory import Trajectory
 
 # path to database folder (initial trajectories)
 def get_project_path():
-    if os.path.isdir('/mnt/home/amolina/ceph/'):
-        ceph_home = '/mnt/home/amolina/ceph/'
+    if os.path.isdir('/mnt/home/amolina/ceph/ml-dft/'):
+        ceph_home = '/mnt/home/amolina/ceph/ml-dft/'
     elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'):
         ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'
     elif os.path.isdir('/home/ana/assisting_sampling/'):
