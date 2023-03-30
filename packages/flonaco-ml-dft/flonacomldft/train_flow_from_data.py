@@ -31,6 +31,7 @@ def get_all_ratios(
     n_chains,
     n_steps,
     mlp_model,
+    use_dft=False,
     scheduled_dft=100,
     T=300,):
 
@@ -47,9 +48,10 @@ def get_all_ratios(
     coord_mapping = Coordinates_mapping()
 
     # dft calculator
-    from flonacomldft.dft_calculator import DFTCalculator
-    calculator = DFTCalculator()
-    calculator.initialize_calculator()
+    if use_dft:
+        from flonacomldft.dft_calculator import DFTCalculator
+        calculator = DFTCalculator()
+        calculator.initialize_calculator()
 
     mlp_ratios = []
     dft_ratios = []
@@ -73,26 +75,27 @@ def get_all_ratios(
         mlp_part_ratios.append(participation_ratio_mlp)
 
         # calculate energy dft
-        if n_steps % scheduled_dft == 0:
-            u_new_dft = torch.zeros(n_chains)
-           
-            for i in range(n_chains):
-                #molecule, logdetjac = coord_mapping.build_molecule_from_real_centered(x_new[i].reshape(1, -1), int(isomer_new[i].item()))
-
-                #u_ = calculator.calculate_potential_energy(
-                #    molecule, 
-                #    filename='ag6_'+str(dt)+'_'+str(i)+'.out'
-                #)
-                #u_new_dft[i] = coord_mapping.compute_energy_in_new_frame(u_, logdetjac*(-1))
-
-                u_new_dft[i] = -6.8+torch.rand(1)*0.5
-
-            # calculate ratio
-            ratio_dft = compute_ratio(u_new_dft, u_init, nll_x, nll_x_init, beta)
-            participation_ratio_dft = compute_pariticpation_ratio(x_new, u_new_dft, nll_x, beta)
-
-            dft_ratios.append(ratio_dft)
-            dft_part_ratios.append(participation_ratio_dft)
+        if use_dft:
+            if n_steps % scheduled_dft == 0:
+                u_new_dft = torch.zeros(n_chains)
+               
+                for i in range(n_chains):
+                    #molecule, logdetjac = coord_mapping.build_molecule_from_real_centered(x_new[i].reshape(1, -1), int(isomer_new[i].item()))
+    
+                    #u_ = calculator.calculate_potential_energy(
+                    #    molecule, 
+                    #    filename='ag6_'+str(dt)+'_'+str(i)+'.out'
+                    #)
+                    #u_new_dft[i] = coord_mapping.compute_energy_in_new_frame(u_, logdetjac*(-1))
+    
+                    u_new_dft[i] = -6.8+torch.rand(1)*0.5
+    
+                # calculate ratio
+                ratio_dft = compute_ratio(u_new_dft, u_init, nll_x, nll_x_init, beta)
+                participation_ratio_dft = compute_pariticpation_ratio(x_new, u_new_dft, nll_x, beta)
+    
+                dft_ratios.append(ratio_dft)
+                dft_part_ratios.append(participation_ratio_dft)
 
         u = torch.rand_like(ratio_mlp)
 
@@ -125,6 +128,7 @@ def train_flow(
     grad_clip=1e4,
     with_tqdm=False,
     use_tune=False,
+    use_dft=False,
     compute_ratios=True,
     mlp_model=None,
     n_chains=5,
@@ -156,7 +160,6 @@ def train_flow(
         T=T
         n_chains=n_chains
         ratios = []
-        acc_rates = []
         
     x = x_train.detach().requires_grad_()
 
@@ -192,6 +195,7 @@ def train_flow(
                 n_chains=n_chains,
                 n_steps=100,
                 mlp_model=mlp_model,
+                use_dft=use_dft,
                 scheduled_dft=20,
                 T=300,
                 )

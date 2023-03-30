@@ -49,13 +49,13 @@ torch.manual_seed(num_seed)
 # load data
 
 mode_label = args.mode_label
-zmat_train = load_csv_file(args.folder_path + "is{:d}_md_train.csv".format(mode_label))
-zmat_test = load_csv_file(args.folder_path + "is{:d}_md_test.csv".format(mode_label))
+#zmat_train = load_csv_file(args.folder_path + "is{:d}_md_train.csv".format(mode_label))
+#zmat_test = load_csv_file(args.folder_path + "is{:d}_md_test.csv".format(mode_label))
 
-#dataset_labels = ['md', 'flow']
+dataset_labels = ['md', 'flow']
 
-#zmat_train = torch.cat([load_csv_file("database/datasets/is{:d}_{:s}_train.csv".format(mode_label, dataset_label)) for dataset_label in dataset_labels])
-#zmat_test = torch.cat([load_csv_file("database/datasets/is{:d}_{:s}_test.csv".format(mode_label, dataset_label)) for dataset_label in dataset_labels])
+zmat_train = torch.cat([load_csv_file("database/datasets/is{:d}_{:s}_train.csv".format(mode_label, dataset_label)) for dataset_label in dataset_labels])
+zmat_test = torch.cat([load_csv_file("database/datasets/is{:d}_{:s}_test.csv".format(mode_label, dataset_label)) for dataset_label in dataset_labels])
 
 
 # real centered frame
