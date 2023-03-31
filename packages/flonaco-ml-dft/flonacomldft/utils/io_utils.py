@@ -83,6 +83,6 @@ def save_json_args(args, script_name, id, path=os.getcwd()):
 
 def get_date_process_id():
     import time
-    date = time.strftime('%H:%M:%S %d-%m-%Y')
+    date = time.strftime('%Y-%m-%d %H:%M:%S')
     id = date.replace(' ', '').replace(':', '').replace('-', '')
     return date, int(id)
