@@ -114,7 +114,7 @@ out = train_flow(
     grad_clip=1e4,
     compute_ratios=True,
     mlp_model=mlp,
-    n_chains=3,
+    n_chains=100,
     with_tqdm=False,
 )
 
