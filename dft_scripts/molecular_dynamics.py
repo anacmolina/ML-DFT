@@ -1,10 +1,8 @@
 import argparse
 import time
 
-import numpy as np
 from gpaw import GPAW
 import gpaw.mpi as mpi
-from ase.optimize import BFGS
 from ase import units
 
 from ase.md.velocitydistribution import (MaxwellBoltzmannDistribution,
@@ -27,8 +25,8 @@ date_start, process_id = get_date_process_id()
 parser = argparse.ArgumentParser(description='Prepare simulation params')
 parser.add_argument('-ml', '--mode-label', type=int, default=0)
 parser.add_argument('-ni', '--n-iter', type=int, default=10)
-parser.add_argument('-ts', '--time-step', type=float, default=1)
-parser.add_argument('-ap', '--andersen-prob', type=float, default=1e-4)
+parser.add_argument('-ts', '--time-step', type=float, default=5)
+parser.add_argument('-ap', '--andersen-prob', type=float, default=2e-3)
 parser.add_argument('-pid', '--process-id', type=int, default=process_id)
 
 args = parser.parse_args()
@@ -38,7 +36,7 @@ path = get_project_path() + 'ag6_dft_calculations/md_trajectories/'
 
 mode_label = args.mode_label
 
-mol = get_molecule_isomer_minima(list(isomers.keys())[args.mode_label])
+mol = get_molecule_isomer_minima('is'+str(mode_label))
 
 mol.set_cell([16, 16, 16])
 mol.set_pbc(True)
@@ -47,8 +45,8 @@ mol.center()
 calc = GPAW(mode="lcao", h=0.2, basis="pvalence.dz", spinpol=True, xc="PBE", symmetry="off", txt=path+'ag6_is{:d}_{:d}.out'.format(args.mode_label, args.process_id))
 
 mol.calc = calc
-opt = BFGS(mol, trajectory=path+'ag6_opt_is{:d}_{:d}.traj'.format(args.mode_label, args.process_id), logfile=path+'qn_{:d}.log'.format(args.process_id))
-opt.run(0.01)
+#opt = BFGS(mol, trajectory=path+'ag6_opt_is{:d}_{:d}.traj'.format(args.mode_label, args.process_id), logfile=path+'qn_{:d}.log'.format(args.process_id))
+#opt.run(0.01)
 
 MaxwellBoltzmannDistribution(mol, temperature_K=300)
 Stationary(mol)
@@ -65,7 +63,7 @@ mol = Trajectory(path + 'ag6_berendsen_md_is{:d}_{:d}.traj'.format(args.mode_lab
 mol.calc = calc
 
 dyn = Andersen(mol, args.time_step * units.fs, temperature_K=300, andersen_prob=args.andersen_prob, trajectory=path+'ag6_andersen_md_is{:d}_{:d}.traj'.format(args.mode_label, args.process_id))
-dyn.run(int(args.n_iter))
+dyn.run(args.n_iter)
 
 date_end = time.strftime('%H:%M:%S %d-%m-%Y')
 args.date_end = date_end

@@ -19,7 +19,7 @@ from flonacomldft.internal_coordinates import (
 from flonacomldft.models.real_nvp import RealNVP_MLP
 from flonacomldft.train_flow_from_data import train_flow
 from flonacomldft.parallel import set_seed
-from flonacomldft.utils.io_utils import get_date_process_id
+from flonacomldft.utils.io_utils import get_process_id
 
 import gpaw.mpi as mpi
 
@@ -27,7 +27,8 @@ num_seed = set_seed()
 mpi.world.barrier()
 
 # for naming files
-date_start, process_id = get_date_process_id()
+date_start = time.strftime('%Y-%m-%d %H:%M:%S')
+process_id = get_process_id(date_start)
 
 print('seed: ', num_seed)
 

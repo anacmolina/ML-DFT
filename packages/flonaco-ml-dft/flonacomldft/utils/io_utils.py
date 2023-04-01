@@ -17,10 +17,10 @@ def get_project_path():
         ceph_home = '/mnt/home/amolina/ceph/ml-dft/'
     elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'):
         ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'
-    elif os.path.isdir('/home/ana/assisting_sampling/'):
-        ceph_home = '/home/ana/assisting_sampling/'
-    elif os.path.isdir('/home/amolina/assisting_sampling/'):
-        ceph_home = '/home/amolina/assisting_sampling/'    
+    elif os.path.isdir('/home/ana/ml-dft/'):
+        ceph_home = '/home/ana/ml-dft/'
+    elif os.path.isdir('/home/amolina/ml-dft/'):
+        ceph_home = '/home/amolina/ml-dft/'    
     else:
         raise RuntimeError('Data path not understood')
     return ceph_home
@@ -81,8 +81,6 @@ def save_json_args(args, script_name, id, path=os.getcwd()):
     with open(path + filename_args, "w") as outfile:
         json.dump(vars(args), outfile)
 
-def get_date_process_id():
-    import time
-    date = time.strftime('%Y-%m-%d %H:%M:%S')
+def get_process_id(date):
     id = date.replace(' ', '').replace(':', '').replace('-', '')
-    return date, int(id)
+    return int(id)

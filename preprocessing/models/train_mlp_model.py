@@ -2,12 +2,13 @@ import argparse
 
 import time
 import torch
+import numpy as np
 
 from flonacomldft.utils.io_utils import (
     load_csv_file, 
     save_pickle_file,
     save_json_args, 
-    get_date_process_id,
+    get_process_id,
     get_project_path
 )
 
@@ -18,12 +19,14 @@ from flonacomldft.internal_coordinates import (
 
 from flonacomldft.models.mlp import MLP
 from flonacomldft.train_mlp_from_data import train_mlp
-from flonacomldft.parallel import set_seed
+#from flonacomldft.parallel import set_seed
 
-num_seed = set_seed()
+#num_seed = set_seed()
+num_seed = np.random.randint(0, 100)
 
 # for naming files
-date_start, process_id = get_date_process_id()
+date_start = time.strftime('%Y-%m-%d %H:%M:%S')
+process_id = get_process_id(date_start)
 
 print('seed: ', num_seed)
 
@@ -49,14 +52,9 @@ torch.manual_seed(num_seed)
 # load data
 
 mode_label = args.mode_label
-#zmat_train = load_csv_file(args.folder_path + "is{:d}_md_train.csv".format(mode_label))
-#zmat_test = load_csv_file(args.folder_path + "is{:d}_md_test.csv".format(mode_label))
 
-dataset_labels = ['md', 'flow']
-
-zmat_train = torch.cat([load_csv_file("database/datasets/is{:d}_{:s}_train.csv".format(mode_label, dataset_label)) for dataset_label in dataset_labels])
-zmat_test = torch.cat([load_csv_file("database/datasets/is{:d}_{:s}_test.csv".format(mode_label, dataset_label)) for dataset_label in dataset_labels])
-
+zmat_train = load_csv_file(args.folder_path + "is{:d}_mlp_train.csv".format(mode_label))
+zmat_test = load_csv_file(args.folder_path + "is{:d}_mlp_test.csv".format(mode_label))
 
 # real centered frame
 
@@ -113,6 +111,8 @@ save_pickle_file(out, f)
 
 save_json_args(args, 'train_mlp_model', args.process_id, get_project_path() + args.folder_path)
 
+path = get_project_path() + args.folder_path
+
 import matplotlib.pyplot as plt
 from flonacomldft.utils.plots import (
     plot_losses,
@@ -120,7 +120,7 @@ from flonacomldft.utils.plots import (
 )
 
 plot_losses(out['losses'][0], out['losses'][1], log_yscale=True)
-plt.savefig('loss_mlp_is{:d}_{:d}.png'.format(mode_label, args.process_id))
+plt.savefig(path + 'loss_mlp_is{:d}_{:d}.png'.format(mode_label, args.process_id))
 
 plot_correlation_target_and_predict_value(
     energies_train,
@@ -129,4 +129,4 @@ plot_correlation_target_and_predict_value(
     out['model'](xs_test.float()),
     title='MLP mode {:d}'.format(mode_label)
 )
-plt.savefig('corr_mlp_is{:d}_{:d}.png'.format(mode_label, args.process_id))
+plt.savefig(path + 'corr_mlp_is{:d}_{:d}.png'.format(mode_label, args.process_id))
