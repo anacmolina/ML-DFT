@@ -109,10 +109,21 @@ def get_all_ratios(
         u_init = u_new_mlp.clone().detach()
         isomer_init = isomer_new.clone().detach()
 
-    all_ratios = {
-        'ratios': (mlp_ratios, dft_ratios),
-        'part_ratios': (mlp_part_ratios, dft_part_ratios)
+    mlp_ratios = {
+        'acc_ratios': mlp_ratios,
+        'part_ratios': mlp_part_ratios
     }
+
+    all_ratios = {
+        'mlp': mlp_ratios,
+        }
+
+    if use_dft:
+        dft_ratios = {
+            'acc_ratios': dft_ratios,
+            'part_ratios': dft_part_ratios,
+        }
+        all_ratios['dft'] = dft_ratios    
 
     return all_ratios
 
@@ -132,6 +143,7 @@ def train_flow(
     compute_ratios=True,
     mlp_model=None,
     n_chains=5,
+    n_steps=1,
     T=300,
 ):
 
@@ -193,7 +205,7 @@ def train_flow(
                 model=model,
                 init=test[:n_chains],
                 n_chains=n_chains,
-                n_steps=100,
+                n_steps=n_steps,
                 mlp_model=mlp_model,
                 use_dft=use_dft,
                 scheduled_dft=20,
@@ -223,7 +235,7 @@ def train_flow(
             )
 
             if compute_ratio:
-                ratio = ratios_["ratios"][0][-1].mean() 
+                ratio = ratios_["mlp"]["acc_ratios"][-1].mean() 
                 print("ratio: {:.3f}".format(ratio.item()), end="\t")
 
 
