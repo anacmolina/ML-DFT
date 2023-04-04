@@ -98,7 +98,7 @@ print('n_blocks', model.n_blocks, type(model.n_blocks))
 print('hidden_depth', model.n_layers_in_coupling, type(model.n_layers_in_coupling))
 print('hidden_dim', model.hidden_dim_in_coupling, type(model.hidden_dim_in_coupling))
 
-print('threads: {:d}'.format(torch.get_num_threads()))
+#print('threads: {:d}'.format(torch.get_num_threads()))
                                 
 from flonacomldft.utils.io_utils import load_pickle_file 
 mlp = load_pickle_file(args.folder_path + "is{:d}_mlp_dic_training_{:d}.pkl".format(mode_label, args.id))['model']
@@ -113,13 +113,15 @@ out = train_flow(
     step_schedule=100,
     save_splits=10,
     grad_clip=1e4,
+    use_dft=False,
     compute_ratios=True,
     mlp_model=mlp,
     n_chains=100,
+    n_steps=200,
     with_tqdm=False,
 )
 
-date_end = time.strftime('%H:%M:%S %d-%m-%Y')
+date_end = time.strftime('%Y-%m-%d %H:%M:%S')
 args.date_end = date_end
 
 args.algorithm = 'train_flow_model.py'
@@ -130,3 +132,21 @@ out['args'] = argparse_dict
 save_pickle_file(out, args.folder_path + "is{:d}_flow_dic_training_{:d}.pkl".format(mode_label, args.process_id))
 
 save_json_args(args, 'train_flow_model', args.process_id, get_project_path() + args.folder_path)
+
+import matplotlib.pyplot as plt
+from flonacomldft.utils.plots import (
+    plot_losses,
+)
+
+path = get_project_path() + args.folder_path
+
+plot_losses(out['losses'][0], out['losses'][1], log_yscale=False)
+plt.savefig(path + 'loss_flow_is{:d}_{:d}.png'.format(mode_label, args.process_id))
+
+acc_ratios = [torch.stack(out['ratios'][i]['mlp']['acc_ratios']).mean(dim=1)[-1].detach().numpy() for i in range(10)]
+part_ratios = [torch.stack(out['ratios'][i]['mlp']['part_ratios'])[-1].detach().numpy() for i in range(10)]
+plt.figure()
+plt.plot(acc_ratios, label='acceptance')
+plt.plot(part_ratios, label='participation')
+plt.legend()
+plt.savefig(path + 'acc_part_ratios_{:d}.png'.format(args.process_id))

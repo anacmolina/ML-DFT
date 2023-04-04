@@ -50,6 +50,7 @@ def get_all_ratios(
     # dft calculator
     if use_dft:
         from flonacomldft.dft_calculator import DFTCalculator
+        #TODO: DO NOT WRITE FILES LATER
         calculator = DFTCalculator()
         calculator.initialize_calculator()
 
@@ -80,15 +81,15 @@ def get_all_ratios(
                 u_new_dft = torch.zeros(n_chains)
                
                 for i in range(n_chains):
-                    #molecule, logdetjac = coord_mapping.build_molecule_from_real_centered(x_new[i].reshape(1, -1), int(isomer_new[i].item()))
+                    molecule, logdetjac = coord_mapping.build_molecule_from_real_centered(x_new[i].reshape(1, -1), int(isomer_new[i].item()))
     
-                    #u_ = calculator.calculate_potential_energy(
-                    #    molecule, 
-                    #    filename='ag6_'+str(dt)+'_'+str(i)+'.out'
-                    #)
-                    #u_new_dft[i] = coord_mapping.compute_energy_in_new_frame(u_, logdetjac*(-1))
+                    u_ = calculator.calculate_potential_energy(
+                        molecule, 
+                        filename='ag6_'+str(dt)+'_'+str(i)+'.out'
+                    )
+                    u_new_dft[i] = coord_mapping.compute_energy_in_new_frame(u_, logdetjac*(-1))
     
-                    u_new_dft[i] = -6.8+torch.rand(1)*0.5
+                    #u_new_dft[i] = -6.8+torch.rand(1)*0.5
     
                 # calculate ratio
                 ratio_dft = compute_ratio(u_new_dft, u_init, nll_x, nll_x_init, beta)
@@ -208,7 +209,7 @@ def train_flow(
                 n_steps=n_steps,
                 mlp_model=mlp_model,
                 use_dft=use_dft,
-                scheduled_dft=20,
+                scheduled_dft=int(n_steps/5),
                 T=300,
                 )
 

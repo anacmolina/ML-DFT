@@ -14,12 +14,13 @@ from flonacomldft.utils.silver_isomers_utils import get_molecule_isomer_minima
 from flonacomldft.utils.io_utils import get_project_path
 from flonacomldft.utils.silver_isomers_utils import isomers
 
-from flonacomldft.utils.io_utils import get_date_process_id
+from flonacomldft.utils.io_utils import get_process_id
 
 print('ranks: ', mpi.world.size)
 
 # for naming files
-date_start, process_id = get_date_process_id()
+date_start = time.strftime('%Y-%m-%d %H:%M:%S') 
+process_id = get_process_id(date_start)
 
 ### Define arguments to parse from command line
 parser = argparse.ArgumentParser(description='Prepare simulation params')
@@ -48,24 +49,25 @@ mol.calc = calc
 #opt = BFGS(mol, trajectory=path+'ag6_opt_is{:d}_{:d}.traj'.format(args.mode_label, args.process_id), logfile=path+'qn_{:d}.log'.format(args.process_id))
 #opt.run(0.01)
 
-MaxwellBoltzmannDistribution(mol, temperature_K=300)
-Stationary(mol)
-ZeroRotation(mol)
+#MaxwellBoltzmannDistribution(mol, temperature_K=300)
+#Stationary(mol)
+#ZeroRotation(mol)
 
-dyn = NVTBerendsen(mol, args.time_step * units.fs, taut = 50, temperature_K=300, trajectory=path+'ag6_berendsen_md_is{:d}_{:d}.traj'.format(args.mode_label, args.process_id))
-dyn.run(5000)
+#dyn = NVTBerendsen(mol, 5 * units.fs, taut = 50, temperature_K=300, trajectory=path+'ag6_berendsen_md_is{:d}_{:d}.traj'.format(args.mode_label, args.process_id))
+#dyn.run(5000)
 
-mpi.world.barrier()
+#mpi.world.barrier()
 
 from ase.io.trajectory import Trajectory
-
-mol = Trajectory(path + 'ag6_berendsen_md_is{:d}_{:d}.traj'.format(args.mode_label, args.process_id))[-1]
+ids = [2233567, 2233568]
+#mol = Trajectory(path + 'ag6_berendsen_md_is{:d}_{:d}.traj'.format(args.mode_label, args.process_id))[-1]
+mol = Trajectory(path + 'ag6_berendsen_md_is{:d}_{:d}.traj'.format(args.mode_label, ids[args.mode_label]))[-1]
 mol.calc = calc
 
 dyn = Andersen(mol, args.time_step * units.fs, temperature_K=300, andersen_prob=args.andersen_prob, trajectory=path+'ag6_andersen_md_is{:d}_{:d}.traj'.format(args.mode_label, args.process_id))
 dyn.run(args.n_iter)
 
-date_end = time.strftime('%H:%M:%S %d-%m-%Y')
+date_end = time.strftime('%Y-%m-%d %H:%M:%S')
 args.date_end = date_end
 
 argparse_dict = vars(args)
@@ -79,7 +81,7 @@ mpi.world.barrier()
 
 import matplotlib.pyplot as plt
 
-traj_berendsen = Trajectory(path + 'ag6_berendsen_md_is{:d}_{:d}.traj'.format(args.mode_label, args.process_id))
+traj_berendsen = Trajectory(path + 'ag6_berendsen_md_is{:d}_{:d}.traj'.format(args.mode_label, ids[args.mode_label]))
 traj_andersen = Trajectory(path + 'ag6_andersen_md_is{:d}_{:d}.traj'.format(args.mode_label, args.process_id))
 
 temp_berendsen = [config.get_temperature() for config in traj_berendsen]
