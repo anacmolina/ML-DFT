@@ -88,13 +88,13 @@ mlp_hyperparams = {'n_iter': args.n_iter,
 
 train = join_data(xs_train,
                 energies_train,
-                zmat_train[:, 14],
+                zmat_train[:, 13],
                 logdetjacs_train,
                 ).detach()
 
 test = join_data(xs_test,
                 energies_test,
-                zmat_test[:, 14],
+                zmat_test[:, 13],
                 logdetjacs_test).detach()
 
 out = train_mlp(model, train, test, **mlp_hyperparams, 

@@ -80,8 +80,8 @@ xs_test, logdetjacs_test, energies_test = coord_mapping.get_real_centered_from_i
 xs_test = torch.tensor(xs_test, dtype=torch.float32)
 
 # join data
-train = join_data(xs_train, energies_train, logdetjacs_train, zmat_train[:, 13]).detach()
-test = join_data(xs_test, energies_test, logdetjacs_test, zmat_test[:, 13]).detach()
+train = join_data(xs_train, energies_train, zmat_train[:, 13], logdetjacs_train).detach()
+test = join_data(xs_test, energies_test, zmat_test[:, 13], logdetjacs_test).detach()
 
 cov = torch.cov(xs_train.T).detach()
 model = RealNVP_MLP(12,
