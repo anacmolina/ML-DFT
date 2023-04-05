@@ -32,8 +32,7 @@ parser = argparse.ArgumentParser(description='Prepare experiment')
 parser.add_argument('-ml', '--mode-label', type=int, default=0)
 parser.add_argument('-N', '--num-samples', type=int, default=1000)
 parser.add_argument('-id', '--id', type=int, default=0)
-parser.add_argument('-inpath', '--input-path', type=str, default='database/')
-parser.add_argument('-outpath', '--output-path', type=str, default='database/')
+parser.add_argument('-path', '--folder-path', type=str, default='database/')
 
 args = parser.parse_args()
 args.date_start = date_start
@@ -41,11 +40,11 @@ args.num_seed = num_seed
 
 mode_label = args.mode_label
 N = args.num_samples
-input_path = get_project_path() + args.input_path
-output_path = get_project_path() + args.output_path
+path = get_project_path() + args.folder_path
+
 filename = 'is{:d}_flow_dic_training_{:d}.pkl'.format(mode_label, args.id)
 
-flow_model = load_pickle_file(filename, path=input_path)['model']
+flow_model = load_pickle_file(filename, path=path)['model']
 
 mpi.world.barrier()
 coord_mapping = Coordinates_mapping()
@@ -69,12 +68,12 @@ mpi.world.barrier()
 internal_coordinates = coord_mapping.get_internal_from_trajectory(flow_configurations, isomer=mode_label, temperature=300)
 
 mpi.world.barrier()
-save_ase_molecules_as_traj(flow_configurations, 'ag6_flow_is{:d}_{:d}.traj'.format(mode_label, args.id), output_path)
+save_ase_molecules_as_traj(flow_configurations, 'ag6_flow_is{:d}_{:d}.traj'.format(mode_label, args.id), path)
 
 mpi.world.barrier()
 save_internal_coordinates_to_csv(internal_coordinates,
             get_construction_table(),
-            filename='ag6_flow_zmat_is{:d}_{:d}.csv'.format(mode_label, args.id), path=output_path)
+            filename='ag6_flow_zmat_is{:d}_{:d}.csv'.format(mode_label, args.id), path=path)
 
 mpi.world.barrier()
 date_end = time.strftime('%H:%M:%S %d-%m-%Y')

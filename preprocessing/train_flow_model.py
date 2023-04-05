@@ -46,6 +46,7 @@ parser.add_argument('-rs', '--random-seed', type=str, default=str(num_seed))
 parser.add_argument('-path', '--folder-path', type=str, default='database/')
 parser.add_argument('-pid', '--process-id', type=int, default=int(process_id))
 parser.add_argument('-ncs', '--n-chains-steps', type=int, nargs='+', default=[50, 100] )
+parser.add_argument('-udft', '--use-dft', type=bool, default=False)
 
 args = parser.parse_args()
 
@@ -116,7 +117,7 @@ out = train_flow(
     step_schedule=100,
     save_splits=10,
     grad_clip=1e4,
-    use_dft=True,
+    use_dft=args.use_dft,
     compute_ratios=True,
     mlp_model=mlp,
     n_chains=args.n_chains_steps[0],
