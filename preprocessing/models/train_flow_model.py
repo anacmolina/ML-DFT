@@ -45,10 +45,13 @@ parser.add_argument('-id', '--id', type=int, default=22249210)
 parser.add_argument('-rs', '--random-seed', type=str, default=str(num_seed))
 parser.add_argument('-path', '--folder-path', type=str, default='database/')
 parser.add_argument('-pid', '--process-id', type=int, default=int(process_id))
+parser.add_argument('-ncs', '--n-chains-steps', type=int, nargs='+', default=[50, 100] )
 
 args = parser.parse_args()
 
 args.date_start = date_start
+
+print(args.n_chains_steps, args.n_chains_steps[0], args.n_chains_steps[1])
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -113,11 +116,11 @@ out = train_flow(
     step_schedule=100,
     save_splits=10,
     grad_clip=1e4,
-    use_dft=False,
+    use_dft=True,
     compute_ratios=True,
     mlp_model=mlp,
-    n_chains=100,
-    n_steps=200,
+    n_chains=args.n_chains_steps[0],
+    n_steps=args.n_chains_steps[1],
     with_tqdm=False,
 )
 
