@@ -49,9 +49,9 @@ mol.calc = calc
 #opt = BFGS(mol, trajectory=path+'ag6_opt_is{:d}_{:d}.traj'.format(args.mode_label, args.process_id), logfile=path+'qn_{:d}.log'.format(args.process_id))
 #opt.run(0.01)
 
-#MaxwellBoltzmannDistribution(mol, temperature_K=300)
-#Stationary(mol)
-#ZeroRotation(mol)
+MaxwellBoltzmannDistribution(mol, temperature_K=300)
+Stationary(mol)
+ZeroRotation(mol)
 
 #dyn = NVTBerendsen(mol, 5 * units.fs, taut = 50, temperature_K=300, trajectory=path+'ag6_berendsen_md_is{:d}_{:d}.traj'.format(args.mode_label, args.process_id))
 #dyn.run(5000)
@@ -59,10 +59,10 @@ mol.calc = calc
 #mpi.world.barrier()
 
 from ase.io.trajectory import Trajectory
-ids = [2233567, 2233568]
+#ids = [2233567, 2233568]
 #mol = Trajectory(path + 'ag6_berendsen_md_is{:d}_{:d}.traj'.format(args.mode_label, args.process_id))[-1]
-mol = Trajectory(path + 'ag6_berendsen_md_is{:d}_{:d}.traj'.format(args.mode_label, ids[args.mode_label]))[-1]
-mol.calc = calc
+#mol = Trajectory(path + 'ag6_berendsen_md_is{:d}_{:d}.traj'.format(args.mode_label, ids[args.mode_label]))[-1]
+#mol.calc = calc
 
 dyn = Andersen(mol, args.time_step * units.fs, temperature_K=300, andersen_prob=args.andersen_prob, trajectory=path+'ag6_andersen_md_is{:d}_{:d}.traj'.format(args.mode_label, args.process_id))
 dyn.run(args.n_iter)
@@ -81,15 +81,16 @@ mpi.world.barrier()
 
 import matplotlib.pyplot as plt
 
-traj_berendsen = Trajectory(path + 'ag6_berendsen_md_is{:d}_{:d}.traj'.format(args.mode_label, ids[args.mode_label]))
+#traj_berendsen = Trajectory(path + 'ag6_berendsen_md_is{:d}_{:d}.traj'.format(args.mode_label, ids[args.mode_label]))
 traj_andersen = Trajectory(path + 'ag6_andersen_md_is{:d}_{:d}.traj'.format(args.mode_label, args.process_id))
 
-temp_berendsen = [config.get_temperature() for config in traj_berendsen]
+#temp_berendsen = [config.get_temperature() for config in traj_berendsen]
 temp_andersen = [config.get_temperature() for config in traj_andersen]
 
 fig, ax = plt.subplots(figsize=(10, 6))
-ax.plot(list(range(0, len(temp_berendsen))), temp_berendsen, '.-', label='Berendsen')
-ax.plot(list(range(len(temp_berendsen), len(temp_berendsen)+len(temp_andersen))), temp_andersen, '.-', label='Andersen')
+#ax.plot(list(range(0, len(temp_berendsen))), temp_berendsen, '.-', label='Berendsen')
+#ax.plot(list(range(len(temp_berendsen), len(temp_berendsen)+len(temp_andersen))), temp_andersen, '.-', label='Andersen')
+ax.plot(list(range(0, len(temp_andersen))), temp_andersen, '.-', label='Andersen')
 ax.set_title('prob: T = {:.1e}'.format(args.andersen_prob) )
 ax.set_xlabel('time step')
 ax.set_ylabel('temperature')
