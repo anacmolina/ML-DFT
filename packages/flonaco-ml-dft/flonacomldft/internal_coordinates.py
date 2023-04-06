@@ -462,7 +462,7 @@ class Coordinates_mapping():
             logdetjacs = 0
 
         zmats, logdetjacs_angle = self.angles_mappings.reals_to_rads(reals)
-        logdetjacs += logdetjacs_angle
+        logdetjacs = logdetjacs + logdetjacs_angle.requires_grad_(True)
 
         zmats = reals + self.zmat_minima[isomer]
 

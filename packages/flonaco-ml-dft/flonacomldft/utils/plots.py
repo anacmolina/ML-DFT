@@ -19,7 +19,7 @@ def plot_sample(x, title, figsize=(8, 6)):
    
    fig, ax = plt.subplots(1, 1, figsize=figsize)
    ag6 = Coordinates_mapping()
-   plot_atoms(ag6.get_molecule_from_internal(x), ax)
+   plot_atoms(ag6.build_molecule_from_internal(x), ax)
    ax.set_title(title)
    ax.set_xlabel('x coordinate')
    ax.set_ylabel('y coordinate')
