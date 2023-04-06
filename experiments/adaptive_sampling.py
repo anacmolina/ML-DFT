@@ -41,7 +41,7 @@ parser.add_argument('-ids', '--ids', type=int, nargs='+', default=[None, None])
 parser.add_argument('-rs', '--random-seed', type=str, default=str(num_seed))
 parser.add_argument('-path', '--folder-path', type=str, default='database/')
 parser.add_argument('-pid', '--process-id', type=int, default=int(process_id))
-parser.add_argument('-nruns', '--n-runs', type=int, default=20)
+parser.add_argument('-nruns', '--n-runs', type=int, default=5)
 parser.add_argument('-ncs', '--n-chains-steps', type=int, nargs='+', default=[50, 20] )
 parser.add_argument('-etype', '--energy-type', type=str, default='mlp')
 
@@ -108,19 +108,13 @@ def get_dataset(name, path, mode_labels):
                                     energies=zmat_test[:, 12]
                                     ) for mode_label, zmat_test in zip(mode_labels, zmats)]
 
-    print('internal: ', xs)
-
-    xs = torch.stack([torch.cat((x[0], x[2].reshape(-1, 1), zmat[:, 13].reshape(-1, 1)), x[2].reshape(-1, 1), dim=1) for x, zmat in zip(xs, zmats)])
+    xs = torch.stack([torch.cat((x[0], x[2].reshape(-1, 1), zmat[:, 13].reshape(-1, 1), x[1].reshape(-1, 1)), dim=1) for x, zmat in zip(xs, zmats)])
     xs = xs.flatten(start_dim=0, end_dim=1).to(torch.float32)
 
     return xs, zmats
 
 flow_xs_train, flow_zmat_train = get_dataset('md_train', args.folder_path, mode_labels)
 flow_xs_test, flow_zmat_test = get_dataset('md_test', args.folder_path, mode_labels)
-
-print(flow_xs_test)
-
-exit()
 
 mlp_xs_train, mlp_zmat_train = get_dataset('mlp_train', args.folder_path, mode_labels)
 mlp_xs_test, mlp_zmat_test = get_dataset('mlp_test', args.folder_path, mode_labels)
@@ -130,27 +124,25 @@ mlp_xs_test, mlp_zmat_test = get_dataset('mlp_test', args.folder_path, mode_labe
 # mlp models
 
 mlps_dic = [load_pickle_file(args.folder_path + 'is{:d}_mlp_dic_training_{:d}.pkl'.format(mode_label, id_)) for mode_label, id_ in zip(mode_labels, ids[:len(mode_labels)]) ]
-mlp_models = np.array([mlp_dic['model'] for mlp_dic in mlps_dic])
 
-print('# models: ', len(mlp_models))
+print('# models: ', len(mlps_dic))
 
 # flow models
 
 flows_dic = [load_pickle_file(args.folder_path + 'is{:d}_flow_dic_training_{:d}.pkl'.format(mode_label, id_)) for mode_label, id_ in zip(mode_labels, ids[len(mode_labels):]) ]
-flow_models = np.array([flow_dic['model'] for flow_dic in flows_dic])
 
 # run adaptive sampling
 
 out = adaptative_sampling(
-    flow_init_train=flow_xs_train[0],
-    flow_init_test=flow_xs_test[1],
+    flow_init_train=flow_xs_train,
+    flow_init_test=flow_xs_test,
     n_runs=n_runs,
     n_chains=n_chains,
     n_steps=n_steps,
     energy_type=energy_type,
     dict_flows_init=flows_dic,
     flow_hyperparams=[flow_hyperparams_is0, flow_hyperparams_is1],
-    retraining_mlp=True,
+    retraining_mlp=False,
     dict_mlps_init=mlps_dic,
     mlp_hyperparams=[mlp_hyperparams_is0, mlp_hyperparams_is1],
     mlp_init_train=mlp_xs_train,
@@ -160,7 +152,7 @@ out = adaptative_sampling(
 date_end = time.strftime('%Y-%m-%d %H:%M:%S')
 args.date_end = date_end
 
-args.algorithm = 'full_adaptive_sampling.py'
+args.algorithm = 'adaptive_sampling.py'
 
 argparse_dict = vars(args)
 out['args'] = argparse_dict

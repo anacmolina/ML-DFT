@@ -75,7 +75,8 @@ def train_mlp(
         if use_scheduler:
             scheduler.step()
 
-        if t % (n_iter / save_splits) == 0 or n_iter <= save_splits:
+        if t % (n_iter / save_splits) == 0 or n_iter <= save_splits and with_tqdm==False:
+            print("t={:0.1e} \t loss train: {:.4f} \t loss test: {:.4f}".format(t,losses_train[-1], losses_test[-1]))
             models.append(copy.deepcopy(model))
 
     to_return = {

@@ -19,10 +19,10 @@ from flonacomldft.internal_coordinates import (
 
 from flonacomldft.models.mlp import MLP
 from flonacomldft.train_mlp_from_data import train_mlp
-#from flonacomldft.parallel import set_seed
+from flonacomldft.parallel import set_seed
 
-#num_seed = set_seed()
-num_seed = np.random.randint(0, 100)
+num_seed = set_seed()
+#num_seed = np.random.randint(0, 100)
 
 # for naming files
 date_start = time.strftime('%Y-%m-%d %H:%M:%S')
@@ -98,7 +98,7 @@ test = join_data(xs_test,
                 logdetjacs_test).detach()
 
 out = train_mlp(model, train, test, **mlp_hyperparams, 
-              with_tqdm=True)
+              with_tqdm=False)
 
 date_end = time.strftime('%H:%M:%S %d-%m-%Y')
 args.date_end = date_end

@@ -13,6 +13,7 @@ from ase.parallel import parprint as print
 
 kb = 8.617333262e-5
 
+#change name
 def compute_ratio(u_new, u_init, nll_x, nll_x_init, beta):
     ratio = -beta * u_new + nll_x
     ratio += beta * u_init - nll_x_init
@@ -20,11 +21,13 @@ def compute_ratio(u_new, u_init, nll_x, nll_x_init, beta):
     ratio = torch.min(ratio, torch.ones_like(ratio))
     return ratio
 
+# fix this
 def compute_pariticpation_ratio(x_new, u_new, nll, beta):
     log_weight = (- u_new * beta).squeeze() + nll.squeeze()
     log_ratio = torch.logsumexp(2 * log_weight, dim=0) - 2 * torch.logsumexp(log_weight, dim=0) 
     return torch.exp(-log_ratio) / x_new.shape[0]
 
+# ratios and sampling in just one
 def get_all_ratios(
     model,
     init,
@@ -143,8 +146,8 @@ def train_flow(
     use_dft=False,
     compute_ratios=True,
     mlp_model=None,
-    n_chains=5,
-    n_steps=1,
+    n_chains=20,
+    n_steps=50,
     T=300,
 ):
 
@@ -235,7 +238,7 @@ def train_flow(
                 "t={:0.1e}".format(t), "loss: {:3.2f}".format(loss.item()), end="  \t"
             )
 
-            if compute_ratio:
+            if compute_ratios:
                 ratio = ratios_["mlp"]["acc_ratios"][-1].mean() 
                 print("ratio: {:.3f}".format(ratio.item()), end="\t")
 
@@ -256,7 +259,7 @@ def train_flow(
         "grad_norms": grad_norms,
     }
 
-    if compute_ratio:
+    if compute_ratios:
         to_return["ratios"] = ratios
 
     return to_return

@@ -12,7 +12,6 @@ from flonacomldft.train_mlp_from_data import train_mlp
 def Transpose(x):
     return x.permute(*torch.arange(x.ndim - 1, -1, -1))
 
-
 def adaptative_sampling(
     flow_init_train,
     flow_init_test,
@@ -128,10 +127,12 @@ def adaptative_sampling(
                 (xs_for_flows_train_is0, is0_from_chains)
             )
 
+            #add mlps
             dict_new_flow_is0 = train_flow(
                 dict_flows_training[i][0]['model'],
                 xs_for_flows_train_is0,
                 xs_for_flows_test_is0,
+                mlp_model=get_models(dict_mlps_training[-1])[0],
                 **flow_hyperparams[0],
                 )
             
@@ -145,11 +146,12 @@ def adaptative_sampling(
             xs_for_flows_train_is1 = torch.cat(
                 (xs_for_flows_train_is1, is1_from_chains)
             )  
-            
+            # add mlps
             dict_new_flow_is1 = train_flow(
                 dict_flows_training[i][1]['model'],
                 xs_for_flows_train_is1,
                 xs_for_flows_test_is1,
+                mlp_model=get_models(dict_mlps_training[-1])[1],
                 **flow_hyperparams[1],)
 
         else:
