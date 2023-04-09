@@ -1,8 +1,8 @@
 # TODO: Add this to package
 # TODO: Run this script again
 
+### Import modules
 import argparse
-#import json
 import time
 import numpy as np
 
@@ -11,39 +11,39 @@ from ase.optimize import BFGS
 
 from flonacomldft.utils.silver_isomers_utils import (
     isomers,
-    get_molecule_isomer_minima
+    get_molecule_isomer_minima,
+    get_process_id
 )
 from flonacomldft.utils.io_utils import save_json_args
 
-# for naming files
-date_start = time.strftime('%H:%M:%S %d-%m-%Y')
-random_id = str(np.random.randint(100))
-print('random id!', random_id)
+### Get start time and process id
+date_start = time.strftime('%Y-%m-%d %H:%M:%S')
+process_id = get_process_id(date_start)
 
 ### Define arguments to parse from command line
 parser = argparse.ArgumentParser(description='Prepare experiment')
 parser.add_argument('-ml', '--mode-label', type=int, default=0)
 parser.add_argument('-gpwmd', '--gpaw-mode', type=str, default='lcao')
-parser.add_argument('-id', '--slurm-id', type=str, default=str(random_id))
+parser.add_argument('-id', '--process-id', type=str, default=str(process_id))
 
 args = parser.parse_args()
-
 args.date_start = date_start
-args.random_seed = random_id
 
 print(args)
 
-isomer = list(isomers.keys())[args.mode_label]
-mode = args.gpaw_mode
+### Get molecule
+molecule = get_molecule_isomer_minima('is{:d}'.format(args.mode_label))
 
-molecule = get_molecule_isomer_minima(isomer)
+### Set mode calculation and parameters
+mode = args.gpaw_mode
 
 molecule.set_cell([16, 16, 16])
 molecule.set_pbc(True)
 molecule.center()
 
-name = isomer + "_" + mode + "_" + args.slurm_id
+name = "is{:d}_{:s}_{:d}".format(args.mode_label, args.gpaw_mode, args.process_id)
 
+### Set calculator
 calc = GPAW(
     mode=args.gpaw_mode,
     h=0.2,
@@ -55,17 +55,17 @@ calc = GPAW(
     txt=name + ".out",
 )
 
-molecule.set_calculator(calc)
+molecule.calc = calc
+
+### Run optimization
 opt = BFGS(molecule, trajectory = name + ".traj", logfile = name + ".log")
 opt.run(0.01)
 
-date_end = time.strftime('%H:%M:%S %d-%m-%Y')
+### Get end time
+date_end = time.strftime('%Y-%m-%d %H:%M:%S')
 args.date_end = date_end
 
 args.algorithm = 'optimization.py'
 
+### Save minimization parameters
 save_json_args(args)
-#argparse_dict = vars(args)
-
-#with open('args_'+args.slurm_id, "w") as outfile:
-#    json.dump(argparse_dict, outfile)
