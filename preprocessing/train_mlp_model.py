@@ -38,7 +38,7 @@ parser.add_argument('-ml', '--mode-label', type=int, default=0)
 parser.add_argument('-hdm', '--hidden-dim', type=int, default=64)
 parser.add_argument('-hdp', '--hidden-depth', type=int, default=3)
 parser.add_argument('-rs', '--random-seed', type=str, default=str(num_seed))
-parser.add_argument('-path', '--folder-path', type=str, default='database/')
+parser.add_argument('-path', '--folder-path', type=str, default='berendsen/datasets/')
 parser.add_argument('-pid', '--process-id', type=int, default=process_id)
 args = parser.parse_args()
 

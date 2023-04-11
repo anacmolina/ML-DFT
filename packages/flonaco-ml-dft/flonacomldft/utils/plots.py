@@ -7,6 +7,8 @@ from flonacomldft.collective_variables import get_CVs
 from flonacomldft.utils.io_utils import get_path
 from flonacomldft.FES.plotter2 import Plotter
 
+#TODO: Build a class to plot the results of the molecular dynamics, ML model, and FES
+
 ### Define class to plot molecular dynamics results
 class plot_molecular_dynamics:
     """Class to plot the molecular dynamics of a system."""

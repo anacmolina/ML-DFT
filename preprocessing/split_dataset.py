@@ -17,7 +17,7 @@ process_id = get_process_id(date_start)
 
 ### Define arguments to parse from command line
 parser = argparse.ArgumentParser(description="Prepare split dataset")
-parser.add_argument("-path", "--file-path", type=str)
+parser.add_argument("-file", "--file", type=str)
 parser.add_argument("-ml", "--mode-label", type=int, default=0)
 parser.add_argument("-fm", "--for-model", type=str, default="flow")
 parser.add_argument("-ts", "--train-size", type=float, default=0.8)
@@ -30,7 +30,7 @@ train_size = args.train_size
 sk_seed = args.sk_seed
 
 ### Load full dataset
-zmat = load_csv_file(args.file_path)
+zmat = load_csv_file(args.file, path = os.getcwd() + '/')
 zmat_train_test = list(split_data_from_dataframe(zmat, train_size, sk_seed))
 
 for zmat_, split_type in zip(zmat_train_test, ["train", "test"]):
