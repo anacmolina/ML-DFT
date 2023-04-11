@@ -1,125 +1,71 @@
+### Import modules
 import copy
 import tqdm
-
 import torch
 from torch.nn.utils import clip_grad_norm_
 # from ray import tune
 
 from ase.parallel import parprint as print
 
-def get_ratio_acc(
-            model,
-            init,
-            n_chains,
-            training_step,
-            mlp_model=None,
-            T=300,
-    ):
-
-    assert init.shape[0] == n_chains
-
-    kb = 8.617333262e-5
-    beta = 1 / (kb * T)
-
-    x_init = init[:, :12]
-    isomer_init = init[:, 13]
-
-    x_new = model.sample(n_chains)
-    isomer_new = isomer_init
-
-    x_new = x_new.clone().detach().float()
-    isomer_new = isomer_new.clone().detach().float()
-
-    nll_x = model.nll(x_new)
-    nll_x_init = model.nll(x_init)
-
-    u_new = torch.zeros((n_chains, 1))
-
-    if mlp_model is None:
-        u_init = init[:, 12]
-
-        from flonacomldft.dft_calculator import DFTCalculator
-        from flonacomldft.internal_coordinates import Coordinates_mapping
-        
-        coord_maps = Coordinates_mapping()
-        calculator = DFTCalculator()
-        calculator.initialize_calculator()
-
-        for i in range(len(x_new)):
-            molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer_new[i].item())
-            u_ = calculator.calculate_potential_energy(
-                                molecule, 
-                                filename='ag6_'+str(training_step)+'_'+str(i)+'.out'
-                                                )
-            u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
-
-    else:
-        u_init = mlp_model(x_init)
-        u_init = u_init.squeeze().float()
-        u_new = mlp_model(x_new)
-        u_new = u_new.squeeze().float()
-
-    #u_init = u_init.detach()
-    #u_new = u_new.detach()
-
-    ratio = -beta * u_new + nll_x
-    ratio += beta * u_init - nll_x_init
-    ratio = torch.exp(ratio)
-
-    u = torch.rand_like(ratio)
-    ratio = torch.min(ratio, torch.ones_like(ratio))
-    acc = u < ratio
-
-    return ratio, acc
-
+### Flow training function
 def train_flow(
     model,
     train,
     test,
     n_iter=100,
     lr=5e-3,
-    use_scheduler=False,
-    step_schedule=100,
+    use_scheduler=True,
+    step_schedule=1000,
     save_splits=10,
     grad_clip=1e4,
     with_tqdm=False,
     use_tune=False,
-    compute_ratio_acc=True,
-    mlp_model=None,
-    n_chains=100,
-    T=300,
 ):
+    """Train a flow model on a dataset.
 
-    # setting up the loss
+    Args:
+        model: flow model
+        train: training dataset
+        test: test dataset
+        n_iter: number of iterations
+        lr: learning rate
+        use_scheduler: use scheduler
+        step_schedule: step size for scheduler
+        save_splits: number of splits to save
+        grad_clip: gradient clipping
+        with_tqdm: use tqdm
+        use_tune: use tune
+
+    Returns:
+        model: trained flow model
+        losses: losses
+        models: models
+        grad_norms: gradient norms
+    """
+    
+
+    ### Setting up the Loss function with data centered
     def loss_func(x):
-        return (model.nll(x)).mean()
+        return (model.nll(x)).mean() ### negative log likelihood
 
-    # setting the optimizer
+    ### Setting the optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     if use_scheduler:
         scheduler = torch.optim.lr_scheduler.StepLR(
             optimizer, step_size=step_schedule, gamma=0.5
         )
-        
+
+    ### Input data   
     x_train = train[:, :12]
     x_test = test[:, :12]
 
-    # logs
+    ### Logs
     losses_train = []
     losses_test = []
     models = [copy.deepcopy(model)]
     grad_norms = []
-
-    if compute_ratio_acc:
-        isomer=train[0, 13].to(torch.int64).item()
-        T=T
-        n_chains=n_chains
-        ratios = []
-        acc_rates = []
-        #from flonacomldft.utils.io_utils import load_pickle_file 
-        #mlp = load_pickle_file("models/is{:d}_mlp_dic_training.pkl".format(isomer))['model']
-
+        
     x = x_train.detach().requires_grad_()
 
     if with_tqdm:
@@ -127,41 +73,29 @@ def train_flow(
     else:
         pbar = range(n_iter)
 
+    ### Training loop
     for t in pbar:
-        optimizer.zero_grad()
 
+        optimizer.zero_grad()
         loss = loss_func(x)
 
         if torch.isinf(loss).any():
             print("Stopped because loss became inf!")
             return model, losses_train
 
+        ### Backpropagation
         loss.backward()
         clip_grad_norm_(model.parameters(), max_norm=grad_clip)
         optimizer.step()
 
+        ### Appending logs
         losses_train.append(loss.item())
         losses_test.append(loss_func(x_test).item())
 
         if with_tqdm:
             pbar.set_description(f"Loss: {losses_train[-1]:.4f}")
-
-        if compute_ratio_acc==True and t % (n_iter / save_splits) == 0:
-
-            n_chains = n_chains
-            ratio, acc_rate = get_ratio_acc(model=model,
-                    init=test[:n_chains],
-                    n_chains=n_chains,
-                    training_step=t,
-                    mlp_model=mlp_model,
-                    T=T)
-
-            ratio = (ratio.cpu().detach().numpy() * 1).mean()
-            ratios.append(ratio)
         
-            acc_rate = (acc_rate.cpu().detach().numpy() * 1).mean()
-            acc_rates.append(acc_rate)
-
+        ### Gradient norms
         if t % (n_iter / 100) == 0:
             total_norm = 0
             for p in model.parameters():
@@ -170,29 +104,26 @@ def train_flow(
             total_norm = total_norm**0.5
             grad_norms.append(total_norm)
 
+        ### Learning rate scheduler
         if use_scheduler:
             scheduler.step()
+            lr = scheduler.get_last_lr()
 
+        ### Saving models and printing logs
         if t % (n_iter / save_splits) == 0 or n_iter <= save_splits:
             models.append(copy.deepcopy(model))
 
             # prints
 
             print(
-                "t={:0.1e}".format(t), "loss: {:3.2f}".format(loss.item()), end="  \t"
+                "t={:0.1e}".format(t), "\t loss: {:3.2f}".format(loss.item()), end="\t"
             )
-
-            if compute_ratio_acc:
-                print("ratio: {:.3f}".format(ratio), end="\t")
-
-                print("acc: {:.3f}".format(acc_rate), end="\t")
 
             print("Gd: {:0.0e}".format(total_norm), end="\t")
 
             for param_group in optimizer.param_groups:
-                print("lr: {:0.2e}".format(param_group["lr"]), end="\t")
+                print("lr: {:0.2e}".format(param_group["lr"]), end="\n")
 
-            print("")
             # if use_tune:
             #     tune.report({"loss":loss.item(), "grad_norm":total_norm})
 
@@ -202,9 +133,5 @@ def train_flow(
         "models": models,
         "grad_norms": grad_norms,
     }
-
-    if compute_ratio_acc:
-        to_return["acc_rates"] = acc_rates
-        to_return["ratios"] = ratios
 
     return to_return

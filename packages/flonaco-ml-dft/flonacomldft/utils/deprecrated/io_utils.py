@@ -12,22 +12,22 @@ from ase.io.trajectory import Trajectory
 
 
 # path to database folder (initial trajectories)
-def get_project_path():
-    if os.path.isdir('/mnt/home/amolina/ceph/ml-dft/'):
-        ceph_home = '/mnt/home/amolina/ceph/ml-dft/'
-    elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'):
-        ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'
-    elif os.path.isdir('/home/ana/ml-dft/'):
-        ceph_home = '/home/ana/ml-dft/'
-    elif os.path.isdir('/home/amolina/ml-dft/'):
-        ceph_home = '/home/amolina/ml-dft/'    
+def get_path():
+    if os.path.isdir('/mnt/home/amolina/ceph/database/'):
+        ceph_home = '/mnt/home/amolina/ceph/database/'
+    elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/database/'):
+        ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/database/'
+    elif os.path.isdir('/home/ana/assisting_sampling/database/'):
+        ceph_home = '/home/ana/assisting_sampling/database/'
+    elif os.path.isdir('/home/amolina/assisting_sampling/database/'):
+        ceph_home = '/home/amolina/assisting_sampling/database/'    
     else:
         raise RuntimeError('Data path not understood')
     return ceph_home
 
-# get database folder path
-def get_path():
-    return get_project_path() + 'database/'
+# get working folder path
+def get_project_path():
+    return get_path().split('database')[0]
 
 # created to save all the information of the simulations
 def create_simulation_folder(name='flowMC', path=os.getcwd()):
@@ -44,27 +44,28 @@ def get_simulation_folder_path(name, path=os.getcwd()):
     else:
         raise RuntimeError('Folder not found')
 
+#TODO: change to get_project_path
 # load pickle file
-def load_pickle_file(filename, path=get_project_path()):
+def load_pickle_file(filename, path=get_path()):
     file_loaded = open(path + filename, 'rb')
     _ = pickle.load(file_loaded)
     file_loaded.close()
     return _
 
 # save pickle file
-def save_pickle_file(data, filename, path=os.getcwd() + '/'):
+def save_pickle_file(data, filename, path=get_path()):
     outfile = open(path + filename, 'wb')
     pickle.dump(data, outfile)
     outfile.close()
 
 # function that load csv data 
-def load_csv_file(filename, path=get_project_path(), dtype=torch.float32):
+def load_csv_file(filename, path=get_path(), dtype=torch.float32):
     path =  path + filename
     zmat = torch.tensor(pd.read_csv(path).to_numpy()).to(dtype)
     return zmat
 
 # function that saves data to csv
-def save_csv_file(dataframe, filename, path=os.getcwd() + '/'):
+def save_csv_file(dataframe, filename, path=os.getcwd()):
     dataframe.to_csv(path + filename)
 
 
@@ -73,14 +74,10 @@ def save_ase_molecules_as_traj(configs, filename='configs.traj', path=os.getcwd(
    traj.close()
 
 # add type of algorithm to args filename
-def save_json_args(args, script_name, id, path=os.getcwd() + "/"):
+def save_json_args(args, path=os.getcwd()):
     import json
 
-    filename_args = "args_{:s}_{:d}.json".format(script_name, id)
+    filename_args = "args_" + args.slurm_id + ".json"
 
-    with open(path + filename_args, "w") as outfile:
+    with open(get_path() + "models/flow_tracking/" + filename_args, "w") as outfile:
         json.dump(vars(args), outfile)
-
-def get_process_id(date):
-    id = date.replace(' ', '').replace(':', '').replace('-', '')
-    return int(id)

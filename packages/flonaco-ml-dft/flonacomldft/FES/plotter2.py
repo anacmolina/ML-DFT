@@ -13,7 +13,7 @@ from flonacomldft.FES.minimizator_path import Path_
 from flonacomldft.utils.io_utils import get_path
 from pytest import approx
 
-
+# TODO:
 class Plotter():
     def __init__(self, bins, cluster, shift=0):
         bins += 1
@@ -247,9 +247,9 @@ class Plotter():
             
         if bar:
             cbar=fig.colorbar(im, ax = ax, format='%1.{}f'.format(deci),orientation=orientation, pad=pad, shrink=shrink)
-            cbar.set_label(label = labbar, fontsize=labels)
+            #cbar.set_label(label = labbar, fontsize=labels)
             cbar.set_ticks(np.arange(mini,maxi,delta2))
-            cbar.ax.tick_params(labelsize=(ticks+labels)/2, rotation=rotation)
+            #cbar.ax.tick_params(labelsize=(ticks+labels)/2, rotation=rotation)
 
         if lim:
             ax.set_xlim(lim[0])
@@ -274,7 +274,7 @@ class Plotter():
             k = 0.95
             posx = (1-k)*self.xs[0] + k*self.xs[1]
             posy = (1-k)*self.ys[0] + k*self.ys[1]
-            ax.text(posx, posy, '{}K'.format(temp), fontsize=labels*1.2, fontweight='bold', ha='right', va='top')
+            #ax.text(posx, posy, '{}K'.format(temp), fontsize=labels*1.2, fontweight='bold', ha='right', va='top')
         
         if save:
             plt.savefig(save)

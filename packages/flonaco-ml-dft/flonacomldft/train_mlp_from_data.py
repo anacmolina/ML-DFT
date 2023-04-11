@@ -1,35 +1,56 @@
+### Import modules
 import copy
 import tqdm
 import torch
-from torch.nn.utils import clip_grad_norm_
 import torch.optim as optim
 
-from flonacomldft.internal_coordinates import Coordinates_mapping
+from ase.parallel import parprint as print
 
+### MLP training function
 def train_mlp(
     model,
     train,
     test,
     n_iter=100,
     lr=1e-4,
-    use_scheduler=False,
-    step_schedule=100,
+    use_scheduler=True,
+    step_schedule=1000,
     save_splits=10,
     with_tqdm=False,
 ):
+    """Train a MLP model on a dataset.
 
-    # mse: loss function with data centered
+    Args:
+        model: MLP model
+        train: training dataset
+        test: test dataset
+        n_iter: number of iterations
+        lr: learning rate
+        use_scheduler: use scheduler
+        step_schedule: step size for scheduler
+        save_splits: number of splits to save
+        with_tqdm: use tqdm
+
+    Returns:
+        model: trained MLP model
+        losses: losses
+        models: models
+        grad_norms: gradient norms
+    """
+    
+    ### MSE: Loss function with data centered
     def loss_func(x, y):
-        # x and y centered
+        ### x and y centered
         return ((model(x).squeeze() - y) ** 2).mean()
 
-    # setting the optimizer
+    ### Setting the optimizer
     optimizer = optim.Adam(model.parameters(), lr=lr)
     if use_scheduler:
         scheduler = torch.optim.lr_scheduler.StepLR(
             optimizer, step_size=step_schedule, gamma=0.5
         )
 
+    ### Input and output data
     xs_train, us_train = train[:, :12], train[:, 12]
     xs_test, us_test = test[:, :12], test[:, 12] #(nsample_train, dims), (nsamples)
     
@@ -39,31 +60,34 @@ def train_mlp(
         pbar = range(n_iter)
 
 
-    # logs
+    ### Logs
     losses_train = []
     losses_test = []
     grad_norms = []
     models = [copy.deepcopy(model)]
 
+    ### Training loop
     for t in pbar:
-        optimizer.zero_grad()
 
+        optimizer.zero_grad()
         loss = loss_func(xs_train, us_train)
 
         if torch.isinf(loss).any():
             print("Stopped because loss became inf!")
             return model, losses_train
 
+        ### Backpropagation
         loss.backward()
         optimizer.step()
 
+        ### Losses
         losses_train.append(loss.item())
         losses_test.append(loss_func(xs_test, us_test).item())
-
 
         if with_tqdm:
             pbar.set_description(f"loss train: {losses_train[-1]:.4f}, loss test: {losses_test[-1]:.4f}")
 
+        ### Gradient norms
         if t % (n_iter / 100) == 0:
             total_norm = 0
             for p in model.parameters():
@@ -72,10 +96,14 @@ def train_mlp(
             total_norm = total_norm**0.5
             grad_norms.append(total_norm)
 
+        ### Learning rate scheduler
         if use_scheduler:
             scheduler.step()
+            lr = scheduler.get_last_lr()
 
-        if t % (n_iter / save_splits) == 0 or n_iter <= save_splits:
+        ### Save models and print logs
+        if t % (n_iter / save_splits) == 0 or n_iter <= save_splits and with_tqdm==False:
+            print("t={:0.1e} \t loss train: {:.3e} \t loss test: {:.3e} \t lr: {:.2e}".format(t,losses_train[-1], losses_test[-1], lr))
             models.append(copy.deepcopy(model))
 
     to_return = {

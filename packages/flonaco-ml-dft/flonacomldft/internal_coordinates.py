@@ -1,9 +1,10 @@
+import os
 import torch
 import numpy as np
 import pandas as pd
 import chemcoord as cc
 
-from flonacomldft.utils.io_utils import get_path
+from flonacomldft.utils.io_utils import get_project_path
 from flonacomldft.utils.silver_isomers_utils import get_construction_table, get_molecule_isomer_minima 
 
 #TODO: Add new description
@@ -64,8 +65,8 @@ class Coordinates_mapping():
         self.Natoms = len(self.symbols) 
         self.angles_mappings = Angles_mapping()    
         self.zmat_minima = {
-            0: self.get_internal_from_molecule(get_molecule_isomer_minima('ag6_planar'))[0],
-            1: self.get_internal_from_molecule(get_molecule_isomer_minima('ag6_3d'))[0]
+            0: self.get_internal_from_molecule(get_molecule_isomer_minima('is0'))[0],
+            1: self.get_internal_from_molecule(get_molecule_isomer_minima('is1'))[0]
         } 
         self.kb = 8.617333262e-5 # eV/K
 
@@ -462,7 +463,7 @@ class Coordinates_mapping():
             logdetjacs = 0
 
         zmats, logdetjacs_angle = self.angles_mappings.reals_to_rads(reals)
-        logdetjacs += logdetjacs_angle
+        logdetjacs = logdetjacs + logdetjacs_angle.requires_grad_(True)
 
         zmats = reals + self.zmat_minima[isomer]
 
@@ -502,7 +503,7 @@ def get_labels_from_construction_table(construction_table, all_labels=False):
 
         return labels
 
-def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_energy=True, add_logdetjac=True, add_isomer=True, filename='traj.csv', path=get_path()):
+def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_energy=True, add_logdetjac=True, add_isomer=True, filename='traj.csv', path=os.getcwd()):
 
         labels = get_labels_from_construction_table(construction_table)
             

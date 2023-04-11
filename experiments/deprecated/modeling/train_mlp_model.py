@@ -12,11 +12,11 @@ torch.manual_seed(100)
 
 # load data
 
-mode_label = 1 #1
+mode_label = 0 #1
 dataset_labels = ['md', 'flow']
 
-zmat_train = torch.cat([load_csv_file("datasets/is{:d}_{:s}_train.csv".format(mode_label, dataset_label)) for dataset_label in dataset_labels])
-zmat_test = torch.cat([load_csv_file("datasets/is{:d}_{:s}_test.csv".format(mode_label, dataset_label)) for dataset_label in dataset_labels])
+zmat_train = torch.cat([load_csv_file("database/datasets/is{:d}_{:s}_train.csv".format(mode_label, dataset_label)) for dataset_label in dataset_labels])
+zmat_test = torch.cat([load_csv_file("database/datasets/is{:d}_{:s}_test.csv".format(mode_label, dataset_label)) for dataset_label in dataset_labels])
 
 # real centered frame
 
@@ -36,12 +36,12 @@ xs_test, logdetjacs_test, energies_test = coord_mapping.get_real_centered_from_i
                                     )
 
 
-n_hidden = 256
-n_layers = 16
+n_hidden = 56
+n_layers = 8
 model = MLP([xs_train.shape[1]] +  [n_hidden] * n_layers + [1])
 
-mlp_hyperparams = {'n_iter': 1000,
-    'lr': 1e-4,
+mlp_hyperparams = {'n_iter': 5000,
+    'lr': 1e-5,
     'use_scheduler': False,
     'step_schedule': 100,
 }
@@ -79,5 +79,5 @@ plot_correlation_target_and_predict_value(
 plt.show()
 
 
-f = "models/is{:d}_mlp_dic_training.pkl".format(mode_label)
-save_pickle_file(out, f)
+#f = "models/is{:d}_mlp_dic_training.pkl".format(mode_label)
+#save_pickle_file(out, f)
