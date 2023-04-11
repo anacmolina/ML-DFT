@@ -52,7 +52,7 @@ def load_pickle_file(filename, path=get_project_path()):
     return _
 
 # save pickle file
-def save_pickle_file(data, filename, path=get_project_path()):
+def save_pickle_file(data, filename, path=os.getcwd() + '/'):
     outfile = open(path + filename, 'wb')
     pickle.dump(data, outfile)
     outfile.close()
@@ -64,7 +64,7 @@ def load_csv_file(filename, path=get_project_path(), dtype=torch.float32):
     return zmat
 
 # function that saves data to csv
-def save_csv_file(dataframe, filename, path=os.getcwd()):
+def save_csv_file(dataframe, filename, path=os.getcwd() + '/'):
     dataframe.to_csv(path + filename)
 
 
@@ -73,7 +73,7 @@ def save_ase_molecules_as_traj(configs, filename='configs.traj', path=os.getcwd(
    traj.close()
 
 # add type of algorithm to args filename
-def save_json_args(args, script_name, id, path=os.getcwd()):
+def save_json_args(args, script_name, id, path=os.getcwd() + "/"):
     import json
 
     filename_args = "args_{:s}_{:d}.json".format(script_name, id)
