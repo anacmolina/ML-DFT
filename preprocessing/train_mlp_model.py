@@ -38,7 +38,7 @@ parser.add_argument('-ml', '--mode-label', type=int, default=0)
 parser.add_argument('-hdm', '--hidden-dim', type=int, default=64)
 parser.add_argument('-hdp', '--hidden-depth', type=int, default=3)
 parser.add_argument('-rs', '--random-seed', type=str, default=str(num_seed))
-parser.add_argument('-path', '--folder-path', type=str, default='berendsen/datasets/')
+parser.add_argument('-path', '--folder-path', type=str, default='database/berendsen/datasets/')
 parser.add_argument('-pid', '--process-id', type=int, default=process_id)
 args = parser.parse_args()
 
@@ -54,8 +54,8 @@ torch.manual_seed(num_seed)
 ### Load data
 mode_label = args.mode_label
 
-zmat_train = load_csv_file(args.folder_path + "is{:d}_mlp_train.csv".format(mode_label))
-zmat_test = load_csv_file(args.folder_path + "is{:d}_mlp_test.csv".format(mode_label))
+zmat_train = load_csv_file(args.folder_path + "is{:d}_flow_train.csv".format(mode_label))
+zmat_test = load_csv_file(args.folder_path + "is{:d}_flow_test.csv".format(mode_label))
 
 ### Get real centered coordinates
 
@@ -98,7 +98,7 @@ out = train_mlp(model,
                 n_iter=args.n_iter,
                 lr=args.learning_rate,
                 use_scheduler=True,
-                step_schedule=1000,
+                step_schedule=int(args.n_iter/10),
                 with_tqdm=False)
 
 date_end = time.strftime('%Y-%m-%d %H:%M:%S')
@@ -117,12 +117,12 @@ save_json_args(args, 'train_mlp_model', args.process_id)
 
 ### Plot training results
 import matplotlib.pyplot as plt
-from flonacomldft.utils.plots import plot_mlp_training
+from flonacomldft.utils.plots import Flonaco_Plotter
 
-plot_training_results = plot_mlp_training(out)
+mlp_plotter = Flonaco_Plotter()
 
 fig, axs = plt.subplots(1, 2, figsize=(12, 6))
 axs[0].set_title('Mode {:d}'.format(mode_label))
-plot_training_results.plot_loss(ax=axs[0])
-plot_training_results.plot_correlation([train, test], ax=axs[1])
+mlp_plotter.plot_losses(out['losses'], ax=axs[0])
+mlp_plotter.plot_correlation(out['model'], [train, test], ax=axs[1])
 plt.savefig('is{:d}_mlp_training_{:d}.png'.format(mode_label, args.process_id))

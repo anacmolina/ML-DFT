@@ -107,7 +107,6 @@ def train_flow(
         ### Learning rate scheduler
         if use_scheduler:
             scheduler.step()
-            lr = scheduler.get_last_lr()
 
         ### Saving models and printing logs
         if t % (n_iter / save_splits) == 0 or n_iter <= save_splits:

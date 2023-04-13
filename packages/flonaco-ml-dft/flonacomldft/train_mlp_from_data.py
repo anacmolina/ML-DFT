@@ -99,11 +99,15 @@ def train_mlp(
         ### Learning rate scheduler
         if use_scheduler:
             scheduler.step()
-            lr = scheduler.get_last_lr()
-
+        
         ### Save models and print logs
         if t % (n_iter / save_splits) == 0 or n_iter <= save_splits and with_tqdm==False:
-            print("t={:0.1e} \t loss train: {:.3e} \t loss test: {:.3e} \t lr: {:.2e}".format(t,losses_train[-1], losses_test[-1], lr))
+            
+            for param_group in optimizer.param_groups:
+                lr = param_group["lr"]
+            
+            print("t={:0.1e} \t loss train: {:2.2e} \t loss test: {:2.2e} \t lr: {:.2e}".format(t, losses_train[-1], losses_test[-1], lr))
+            
             models.append(copy.deepcopy(model))
 
     to_return = {
