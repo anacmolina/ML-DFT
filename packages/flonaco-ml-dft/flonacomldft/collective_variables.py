@@ -1,10 +1,15 @@
+#TODO: Try to parallelize this code
+
+### Import modules
 import torch
 import numpy as np
 from flonacomldft.internal_coordinates import Coordinates_mapping
 
+### Define collective variables constants    
 d=2.8
 rij_d = lambda rij: rij/d
 
+### Define collective variables function: Switching function
 def X_i(i, r):
    
    value=0
@@ -17,12 +22,14 @@ def X_i(i, r):
    
    return value
 
+### Define collective variables function: Coordination number
 def compute_C(atoms):
    
    r = atoms.get_all_distances()
    
    return np.array([X_i(i, r) for i in range(atoms.get_global_number_of_atoms())]).sum()
 
+### Define collective variables function: Radius of gyration
 def compute_R(atoms):
    
    r_rcm = atoms.get_positions() - atoms.get_center_of_mass()
@@ -30,6 +37,7 @@ def compute_R(atoms):
    
    return result 
 
+### Define collective variables function: Get collective variables from internal coordinates
 def get_CVs(data):
    
    C_vals = []

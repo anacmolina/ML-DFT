@@ -17,7 +17,7 @@ from flonacomldft.internal_coordinates import (
 
 from flonacomldft.models.real_nvp import RealNVP_MLP
 from flonacomldft.train_flow_from_data import train_flow
-from flonacomldft.parallel import set_seed
+#from flonacomldft.parallel import set_seed
 from flonacomldft.utils.io_utils import get_process_id
 
 
@@ -40,7 +40,7 @@ parser.add_argument('-nb', '--n-blocks', type=int, default=4)
 parser.add_argument('-hdm', '--hidden-dim', type=int, default=64)
 parser.add_argument('-hdp', '--hidden-depth', type=int, default=3)
 parser.add_argument('-rs', '--random-seed', type=str, default=str(num_seed))
-parser.add_argument('-path', '--folder-path', type=str, default='database/')
+parser.add_argument('-path', '--folder-path', type=str, default='database/berendsen/datasets/')
 parser.add_argument('-pid', '--process-id', type=int, default=int(process_id))
 
 args = parser.parse_args()
@@ -121,24 +121,21 @@ save_pickle_file(out, "is{:d}_flow_dic_training_{:d}.pkl".format(mode_label, arg
 ### Save arguments to json file
 save_json_args(args, 'train_flow_model', args.process_id)
 
+import numpy as np
 import matplotlib.pyplot as plt
-from flonacomldft.utils.plots import plot_flow_training
+from flonacomldft.collective_variables import get_CVs
+from flonacomldft.utils.plots import Flonaco_Plotter
 
-#plot_training_results = plot_flow_training(out, )
+xs = out['model'].sample(50)
+zmats = coord_mapping.get_internal_from_real_centered(xs, isomer=0)[0]
+cvs = np.array(get_CVs(zmats))
 
-# from flonacomldft.utils.plots import (
-#     plot_losses,
-# )
-# 
-# path = get_project_path() + args.folder_path
-# 
-# plot_losses(out['losses'][0], out['losses'][1], log_yscale=False)
-# plt.savefig(path + 'loss_flow_is{:d}_{:d}.png'.format(mode_label, args.process_id))
-# 
-# acc_ratios = [torch.stack(out['ratios'][i]['mlp']['acc_ratios']).mean(dim=1)[-1].detach().numpy() for i in range(10)]
-# part_ratios = [torch.stack(out['ratios'][i]['mlp']['part_ratios'])[-1].detach().numpy() for i in range(10)]
-# plt.figure()
-# plt.plot(acc_ratios, label='acceptance')
-# plt.plot(part_ratios, label='participation')
-# plt.legend()
-# plt.savefig(path + 'acc_part_ratios_{:d}.png'.format(args.process_id))
+flow_plotter = Flonaco_Plotter()
+
+fig, axs = plt.subplots(1, 2, figsize=(12, 4))
+flow_plotter.plot_losses(out['losses'], yscale=False, ax=axs[0])
+flow_plotter.plot_collective_variables_on_time(cvs.T, ax=axs[1])
+plt.savefig('is0_flow_training_{:d}.png'.format(args.process_id))
+
+flow_plotter.plot_collective_variables_on_fes(cvs.T, label='Flow samples is{:d}'.format(mode_label))
+plt.savefig('is0_flow_fes_{:d}.png'.format(args.process_id))
