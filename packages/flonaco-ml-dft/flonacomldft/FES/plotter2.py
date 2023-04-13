@@ -761,8 +761,8 @@ def cvs_points():
         path_data_points = get_path() 
     elif os.path.isdir(str(Path.home())+'/flonaco-ml-dft/flonacomldft/FES/'):
         path_data_points = str(Path.home())+'/flonaco-ml-dft/flonacomldft/FES/'
-    elif os.path.isdir(str(Path.home())+'/ML-DFT/flonaco-ml-dft/flonacomldft/FES/'):
-        path_data_points = str(Path.home())+'/ML-DFT/flonaco-ml-dft/flonacomldft/FES/'
+    elif os.path.isdir(str(Path.home())+'/ML-DFT/packages/flonaco-ml-dft/flonacomldft/FES/'):
+        path_data_points = str(Path.home())+'/ML-DFT/packages/flonaco-ml-dft/flonacomldft/FES/'
     elif os.path.isdir(str(Path.home())+'/ceph/ML-DFT/packages/flonaco-ml-dft/flonacomldft/FES/'):
         path_data_points = str(Path.home())+'/ceph/ML-DFT/packages/flonaco-ml-dft/flonacomldft/FES/'
     else:
