@@ -122,7 +122,7 @@ from flonacomldft.utils.plots import Flonaco_Plotter
 mlp_plotter = Flonaco_Plotter()
 
 fig, axs = plt.subplots(1, 2, figsize=(12, 6))
-axs[0].set_title('Mode {:d}'.format(mode_label))
+axs[0].set_title('Mode {:d}, hdm: {:d}, hdp: {:d}'.format(mode_label, args.hidden_dim, args.hidden_depth))
 mlp_plotter.plot_losses(out['losses'], ax=axs[0])
 mlp_plotter.plot_correlation(out['model'], [train, test], ax=axs[1])
 plt.savefig('is{:d}_mlp_training_{:d}.png'.format(mode_label, args.process_id))
