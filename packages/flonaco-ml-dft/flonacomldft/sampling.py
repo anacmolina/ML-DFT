@@ -24,6 +24,8 @@ def run_metropolis(
     mixture=False,
     T=300,
     with_tqdm=False,
+    return_ratio = False,
+    return_proposals = False,
 ):
     """
     Run Metropolis-Hastings algorithm to sample from a model.
@@ -84,6 +86,12 @@ def run_metropolis(
             else:
                 model_mlp_is1 = mlp_models
 
+    if return_ratio:
+        ratios = []
+
+    if return_proposals:
+        xs_props = [init[:, :12]]
+
     xs = []
     us = []
     accs = []
@@ -105,6 +113,9 @@ def run_metropolis(
 
         x_new = x_new.clone().detach().float()
         isomer_new = isomer_new.clone().detach().float()
+
+        if return_proposals:
+            xs_props.append(x_new)
 
         nll_x = model.nll(x_new)
         nll_x_init = model.nll(x_init)
@@ -167,6 +178,10 @@ def run_metropolis(
         ratio = -beta * u_new + nll_x
         ratio += beta * u_init - nll_x_init
         ratio = torch.exp(ratio)
+
+        if return_ratio:
+            ratios.append(torch.min(ratio.clone(), torch.ones_like(ratio)))
+
         u = torch.rand_like(ratio)
 
         acc = u < torch.min(ratio, torch.ones_like(ratio))
@@ -200,15 +215,20 @@ def run_metropolis(
         if with_tqdm:
             pbar.set_description(f'acc: {acc.float().mean():.2f}')
 
-        #print("acc: {:0.2f}".format(acc.float().mean()))
+        print("dt: {:d} \t acc: {:0.2f}".format(dt, acc.float().mean()))
 
     to_return = {
         "xs": torch.stack(xs),
         "us": torch.stack(us),
         "accs": torch.stack(accs),
         "isomers": torch.stack(isomers),
-
     }
+
+    if return_ratio:
+        to_return["ratios"] = torch.stack(ratios)
+
+    if return_proposals:
+        to_return["xs_props"] = torch.stack(xs_props)
 
     if use_dft:
         to_return["inds_dft"] = torch.stack(inds_dft)
