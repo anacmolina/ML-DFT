@@ -4,7 +4,7 @@ import torch
 from flonacomldft.sampling import run_metropolis
 
 
-def get_acceptance_ratio(init, flow_model, n_chains=5, n_steps=10, energy_type='dft', mlp_model=None, T=300, return_ratios=True):
+def get_acceptance_ratio(init, flow_model, n_chains=5, n_steps=10, id_run=None, energy_type='dft', mlp_model=None, T=300, return_ratios=True):
     """
     Compute acceptance ratio for a given flow model
 
@@ -26,7 +26,7 @@ def get_acceptance_ratio(init, flow_model, n_chains=5, n_steps=10, energy_type='
             init=init,
             n_chains=n_chains,
             n_steps=n_steps,
-            name_run="", # TODO: number of runs
+            id_run=id_run, 
             energy_type=energy_type,
             frac_dft=0.2,
             mlp_models=mlp_model,

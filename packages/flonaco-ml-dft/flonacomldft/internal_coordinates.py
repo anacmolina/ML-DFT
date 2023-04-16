@@ -1,16 +1,21 @@
+### Import modules
+
 import os
 import torch
 import numpy as np
 import pandas as pd
 import chemcoord as cc
 
-from flonacomldft.utils.io_utils import get_project_path
 from flonacomldft.utils.silver_isomers_utils import get_construction_table, get_molecule_isomer_minima 
 
-#TODO: Add new description
-
-# add a phase for some internal coordinates angles
+### Add phase to the angles from internal coordinates
 def add_phase(tensor, phase = 2 * torch.pi):
+    """Shift the angles by phase to avoid discontinuities
+    Args:
+        tensor (torch.tensor): tensor of angles
+        phase (float): phase to add to the angles
+    Returns:
+        tensor (torch.tensor): tensor of angles with phase added"""
     return tensor - phase
 
 
@@ -42,7 +47,7 @@ class Angles_mapping():
         log_det_jac -= torch.log(1 + x_reals[:, self.idx_first_angle:]**2).sum(-1)
         return x_rads, log_det_jac
 
-# class for mapping in all frame
+### Class for mapping in all frame
 class Coordinates_mapping():
     """
     Coordinates_mapping (Object)
