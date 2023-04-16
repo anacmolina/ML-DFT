@@ -156,11 +156,10 @@ fig = plt.figure(figsize=(10, 8))
 ax1 = plt.subplot(222)
 plot_acceptance_ratio_models(acceptance_ratios.detach().numpy()[:, -1], 'o-', ax=ax1)
 
-
 ax2 = plt.subplot(221)
 plot_participation_ratio(participation_ratios.detach().numpy(), ax=ax2)
 
 ax3 = plt.subplot(212)
 plot_acceptance_ratio_nsteps(acceptance_ratios.detach().numpy()[8:], ax=ax3)
 
-plt.show()
+plt.savefig('acceptance_participation_ratios_{:d}.png'.format(args.process_id))
