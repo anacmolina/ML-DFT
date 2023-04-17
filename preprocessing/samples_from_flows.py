@@ -1,6 +1,7 @@
 #TODO: add docstring
 
 ### Import modules
+import os
 import time
 import argparse
 import gpaw.mpi as mpi
@@ -31,8 +32,8 @@ process_id = get_process_id(date_start)
 ### Define arguments to parse from command line
 parser = argparse.ArgumentParser(description='Prepare experiment')
 parser.add_argument('-ml', '--mode-label', type=int, default=0)
-parser.add_argument('-N', '--num-samples', type=int, default=1000)
-parser.add_argument('-id', '--id', type=int, default=0)
+parser.add_argument('-N', '--num-samples', type=int, default=5)
+parser.add_argument('-pid', '--process-id', type=int, default=process_id)
 parser.add_argument('-path', '--file-path', type=str)
 
 args = parser.parse_args()
@@ -43,7 +44,7 @@ args.num_seed = num_seed
 mode_label = args.mode_label
 N = args.num_samples
 
-flow_model = load_pickle_file(args.file_path)['model']
+flow_model = load_pickle_file(args.file_path, path=os.getcwd() + '/')['model']
 
 mpi.world.barrier()
 
@@ -95,4 +96,4 @@ args.algorithm = 'samples_from_flow.py'
 mpi.world.barrier()
 
 ### Save arguments
-save_json_args(args)
+save_json_args(args, 'samples_from_flow', args.process_id, path=os.getcwd() + '/')
