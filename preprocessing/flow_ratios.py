@@ -53,8 +53,8 @@ args.date_start = date_start
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 ### Set number of threads
-torch.set_num_threads(args.num_procs)
-print('n_thread_set: ', args.num_procs)
+# torch.set_num_threads(args.num_procs)
+# print('n_thread_set: ', args.num_procs)
 
 ### Set parameters
 mode_label = args.mode_label
