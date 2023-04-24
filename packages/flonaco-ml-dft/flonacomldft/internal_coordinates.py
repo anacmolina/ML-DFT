@@ -470,7 +470,7 @@ class Coordinates_mapping():
         zmats, logdetjacs_angle = self.angles_mappings.reals_to_rads(reals)
         logdetjacs = logdetjacs + logdetjacs_angle.requires_grad_(True)
 
-        zmats = reals + self.zmat_minima[isomer]
+        zmats = zmats + self.zmat_minima[isomer] #reals + self.zmat_minima[isomer] #TODO: Check if this is correct
 
         if energies is not None:
             energies = energies - (self.kb * temperature) * logdetjacs_angle
