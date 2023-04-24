@@ -160,6 +160,6 @@ ax2 = plt.subplot(221)
 plot_participation_ratio(participation_ratios.detach().numpy(), ax=ax2)
 
 ax3 = plt.subplot(212)
-plot_acceptance_ratio_nsteps(acceptance_ratios.detach().numpy()[8:], ax=ax3)
+plot_acceptance_ratio_nsteps(acceptance_ratios.detach().numpy(), ax=ax3)
 
 plt.savefig('acceptance_participation_ratios_{:d}.png'.format(args.process_id))
