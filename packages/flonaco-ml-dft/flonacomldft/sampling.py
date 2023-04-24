@@ -17,7 +17,7 @@ def run_metropolis(
     init,
     n_chains,
     n_steps,
-    name_run="",
+    id_run=None,
     energy_type=None,
     frac_dft=0.2,
     mlp_models=None,
@@ -35,7 +35,7 @@ def run_metropolis(
         init (torch.Tensor): initial positions of shape (n_chains, n_dim + 2) - xs, us, isomers
         n_chains (int): number of chains to run
         n_steps (int): number of steps to run
-        name_run (str): name of the run
+        id_run (int): id of the run
         energy_type (str): type of energy to use (dft, mlp, dft+mlp)
         frac_dft (float): fraction of chains for which to use DFT per step
         mlp_models (torch.nn.Module): MLP model to use for energy calculation
@@ -159,12 +159,12 @@ def run_metropolis(
 
                         #TODO: BUILD molecule from internal, return logdet
 
-                        molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), int(isomer_new[i].item()))
+                        molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer=int(isomer_new[i].item()))
                         u_ = calculator.calculate_potential_energy(
                             molecule, 
-                            filename='ag6_'+str(name_run)+'_'+str(dt)+'_'+str(i)+'.out'
+                            filename='ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
                                             )
-                        
+
                         u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
                         #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
                         xs_dft.append(x_new[i])
@@ -215,7 +215,8 @@ def run_metropolis(
         if with_tqdm:
             pbar.set_description(f'acc: {acc.float().mean():.2f}')
 
-        print("dt: {:d} \t acc: {:0.2f}".format(dt, acc.float().mean()))
+        if dt % 10 == 0:
+            print("step: {:d} \t acc: {:0.2f}".format(dt, acc.float().mean()))
 
     to_return = {
         "xs": torch.stack(xs),

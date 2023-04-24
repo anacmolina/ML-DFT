@@ -126,18 +126,18 @@ import matplotlib.pyplot as plt
 from flonacomldft.collective_variables import get_CVs
 from flonacomldft.utils.plots import Flonaco_Plotter
 
-xs = out['model'].sample(100)
-zmats = coord_mapping.get_internal_from_real_centered(xs, isomer=0)[0]
+xs = out['model'].sample(150)
+zmats = coord_mapping.get_internal_from_real_centered(xs, isomer=args.mode_label)[0]
 cvs = np.array(get_CVs(zmats))
 
 flow_plotter = Flonaco_Plotter()
 
 fig, axs = plt.subplots(1, 2, figsize=(12, 4))
-plt.title("ml: {:d}, nb: {:d}, hdm: {:d}, hdp: {:d}".format(args.mode_label, args.n_blocks, args.hidden_dim, args.hidden_depth))
+axs[0].set_title("ml: {:d}, nb: {:d}, hdm: {:d}, hdp: {:d}".format(args.mode_label, args.n_blocks, args.hidden_dim, args.hidden_depth))
 flow_plotter.plot_losses(out['losses'], yscale=False, ax=axs[0])
 flow_plotter.plot_collective_variables_on_time(cvs.T, ax=axs[1])
-plt.savefig('is0_flow_training_{:d}.png'.format(args.process_id))
+plt.savefig('is{:d}_flow_training_{:d}.png'.format(args.mode_label, args.process_id))
 
-plt.title("ml: {:d}, nb: {:d}, hdm: {:d}, hdp: {:d}".format(args.mode_label, args.n_blocks, args.hidden_dim, args.hidden_depth))
 flow_plotter.plot_collective_variables_on_fes(cvs.T, label='Flow samples is{:d}'.format(mode_label))
-plt.savefig('is0_flow_fes_{:d}.png'.format(args.process_id))
+plt.title("ml: {:d}, nb: {:d}, hdm: {:d}, hdp: {:d}".format(args.mode_label, args.n_blocks, args.hidden_dim, args.hidden_depth))
+plt.savefig('is{:d}_flow_fes_{:d}.png'.format(args.mode_label, args.process_id))

@@ -1,3 +1,4 @@
+### Import modules
 import os
 from ase import units
 from ase.io import Trajectory
