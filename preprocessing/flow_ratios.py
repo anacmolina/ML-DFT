@@ -36,7 +36,7 @@ print('seed: ', num_seed)
 ### Define arguments to parse from command line
 parser = argparse.ArgumentParser(description='Prepare experiment')
 parser.add_argument('-np', '--num-procs', type=int, default=1)
-parser.add_argument('-ml', '--mode-label', type=int, default=0)
+parser.add_argument('-isomer', '--mode-label', type=int, default=0)
 parser.add_argument('-nc', '--n-chains', type=int, default=5)
 parser.add_argument('-ns', '--n-steps', type=int, default=10)
 parser.add_argument('-etype', '--energy-type', type=str, default='dft')
@@ -89,7 +89,7 @@ else:
     mlp_model = None
 
 ### Flow model
-flow_models = load_pickle_file(args.flow_file, path = os.getcwd() + '/')['models'][::2]
+flow_models = load_pickle_file(args.flow_file, path = os.getcwd() + '/')['models']
 
 ### Run MH simulation and compute acceptance ratio
 
@@ -99,7 +99,7 @@ acceptance_ratios = torch.stack([get_acceptance_ratio(xs, flow_model, n_chains, 
 from flonacomldft.utils.diagnostics import Target_Log_Prob
 
 target_log_prob = Target_Log_Prob(energy_type=args.energy_type, mode_label=mode_label, mlp_model=mlp_model).target_log_prob
-participation_ratios = torch.stack([get_participation_ratio(flow_model, target_log_prob, n_prop=n_chains*n_steps) for flow_model in flow_models])
+participation_ratios = torch.stack([get_participation_ratio(flow_model, target_log_prob, n_prop=n_steps) for flow_model in flow_models])
 
 ### Save results
 
