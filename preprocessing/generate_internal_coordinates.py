@@ -23,7 +23,7 @@ N = args.num_samples
 
 ### Load trajectory
 input_file = args.file
-traj = Trajectory(input_file) 
+traj = Trajectory(input_file)[5000:] 
 
 ### Generate internal coordinates
 coord_mapping = Coordinates_mapping()

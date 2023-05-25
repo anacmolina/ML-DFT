@@ -98,7 +98,7 @@ out = train_flow(
     test,
     n_iter=args.n_iter,
     lr=args.learning_rate,
-    use_scheduler=True,
+    use_scheduler=False,
     step_schedule=int(args.n_iter/10),
     save_splits=10,
     grad_clip=1e4,
@@ -134,7 +134,7 @@ flow_plotter = Flonaco_Plotter()
 
 fig, axs = plt.subplots(1, 2, figsize=(12, 4))
 axs[0].set_title("ml: {:d}, nb: {:d}, hdm: {:d}, hdp: {:d}".format(args.mode_label, args.n_blocks, args.hidden_dim, args.hidden_depth))
-flow_plotter.plot_losses(out['losses'], yscale=False, ax=axs[0])
+flow_plotter.plot_losses(np.array(out['losses'])*(-1), yscale=True, ax=axs[0])
 flow_plotter.plot_collective_variables_on_time(cvs.T, ax=axs[1])
 plt.savefig('is{:d}_flow_training_{:d}.png'.format(args.mode_label, args.process_id))
 
