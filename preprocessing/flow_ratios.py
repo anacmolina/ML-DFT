@@ -93,7 +93,7 @@ flow_models = load_pickle_file(args.flow_file, path = os.getcwd() + '/')['models
 
 ### Run MH simulation and compute acceptance ratio
 
-acceptance_ratios = torch.stack([get_acceptance_ratio(xs, flow_model, n_chains, n_steps, id_run, energy_type, mlp_model, return_ratios=True) for id_run, flow_model in enumerate(flow_models)])
+acceptance_ratios = torch.stack([get_acceptance_ratio(xs, flow_model, n_chains, n_steps, id_run, energy_type, mlp_model, return_ratios=False) for id_run, flow_model in enumerate(flow_models)])
 
 ### Compute participation ratio
 from flonacomldft.utils.diagnostics import Target_Log_Prob
