@@ -13,6 +13,9 @@ from ase.io.trajectory import Trajectory
 
 # path to database folder (initial trajectories)
 def get_project_path():
+    """
+    Get the path to the project folder.
+    """
     if os.path.isdir('/mnt/home/amolina/ceph/ml-dft/'):
         ceph_home = '/mnt/home/amolina/ceph/ml-dft/'
     elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft/'):
@@ -27,6 +30,9 @@ def get_project_path():
 
 # get database folder path
 def get_path():
+    """
+    Get the path to the database folder.
+    """
     return get_project_path() + 'database/'
 
 # created to save all the information of the simulations
