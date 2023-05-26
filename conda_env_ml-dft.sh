@@ -37,3 +37,7 @@ python -m pip install chemcoord
 #INSTALLING pythorch and scikit-learn
 conda install pytorch torchvision torchaudio cpuonly -c pytorch
 conda install -c conda-forge scikit-learn
+
+
+# INSTALLING the local flonaco requires: 
+# conda install pytorch::pytorch torchvision torchaudio -c pytorch
