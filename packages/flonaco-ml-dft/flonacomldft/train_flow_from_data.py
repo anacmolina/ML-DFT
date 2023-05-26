@@ -12,6 +12,7 @@ def train_flow(
     model,
     train,
     test,
+    dim=12,
     n_iter=100,
     lr=5e-3,
     use_scheduler=True,
@@ -57,8 +58,8 @@ def train_flow(
         )
 
     ### Input data   
-    x_train = train[:, :12]
-    x_test = test[:, :12]
+    x_train = train[:, :dim]
+    x_test = test[:, :dim]
 
     ### Logs
     losses_train = []

@@ -17,6 +17,7 @@ def run_metropolis(
     init,
     n_chains,
     n_steps,
+    dim=12,
     id_run=None,
     energy_type=None,
     frac_dft=0.2,
@@ -47,11 +48,18 @@ def run_metropolis(
         dictionary reporting all the progress
     """
 
+    # add data dimension and data structure compatibility
+
     assert init.shape[0] == n_chains
 
-    x_init = init[:, :12]
-    u_init = init[:, 12]
-    isomer_init = init[:, 13]
+    # this is for silver six only
+    #x_init = init[:, :12]
+    #u_init = init[:, 12]
+    #isomer_init = init[:, 13]
+
+    x_init = init[:, :dim]
+    u_init = init[:, dim]
+    isomer_init = init[:, dim+1]
 
     beta = 1 / (kb * T)
 
@@ -90,7 +98,7 @@ def run_metropolis(
         ratios = []
 
     if return_proposals:
-        xs_props = [init[:, :12]]
+        xs_props = [init[:, :dim]]
 
     xs = []
     us = []
