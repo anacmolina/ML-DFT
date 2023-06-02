@@ -27,8 +27,8 @@ xs = coord_mapping.get_real_centered_from_internal(zmat[:, :12], zmat[:, 14], is
 xs = torch.cat((xs[0], xs[2].reshape(-1, 1), zmat[:, 13].reshape(-1, 1), xs[1].reshape(-1, 1)), dim=1)
 xs = xs[torch.randperm(xs.size()[0])] 
 
-n_chains = 50
-n_steps = 100
+n_chains = 5
+n_steps = 10
 
 xs_init = xs[:n_chains]
 

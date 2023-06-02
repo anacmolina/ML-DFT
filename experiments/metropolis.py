@@ -8,6 +8,8 @@ import time
 import torch
 import numpy as np
 
+from ase.parallel import parprint as print
+
 from flonacomldft.utils.io_utils import (
     load_pickle_file,
     load_csv_file,
@@ -38,17 +40,19 @@ print('seed: ', num_seed)
 ### Define arguments to parse from command line
 parser = argparse.ArgumentParser(description='Prepare experiment')
 parser.add_argument('-np', '--num-procs', type=int, default=1)
-parser.add_argument('-ml', '--mode-label', type=int, nargs='+', default=0)
+parser.add_argument('-isomer', '--mode-label', type=int, nargs='+', default=0)
 parser.add_argument('-ids', '--ids', type=int, nargs='+', default=[None, None])
 parser.add_argument('-rs', '--random-seed', type=str, default=str(num_seed))
 parser.add_argument('-path', '--folder-path', type=str, default='database/')
 parser.add_argument('-pid', '--process-id', type=int, default=int(process_id))
-parser.add_argument('-ncs', '--n-chains-steps', type=int, nargs='+', default=[50, 100] )
+parser.add_argument('-s', '--n-chains-steps', type=int, nargs='+', default=[5, 10] )
 parser.add_argument('-etype', '--energy-type', type=str, default='mlp')
 
 args = parser.parse_args()
 
 args.date_start = date_start
+
+print('args: ', args)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -70,39 +74,52 @@ coord_mapping = Coordinates_mapping()
 
 # load data
 
-zmats_test = [load_csv_file(args.folder_path + "is{:d}_md_test.csv".format(mode_label)) for mode_label in mode_labels] 
-
+zmats_test = [load_csv_file(args.folder_path + "converged/is{:d}_flow_test.csv".format(mode_label)) for mode_label in mode_labels] 
+print('zmats_test: ', zmats_test)
 xs = [coord_mapping.get_real_centered_from_internal(
                                     zmat_test[:, :12],
                                     zmat_test[:, 14],
                                     isomer=mode_label,
                                     energies=zmat_test[:, 12]
                                     ) for mode_label, zmat_test in zip(mode_labels, zmats_test)]
-
-xs = torch.stack([torch.cat((x[0], x[1].reshape(-1, 1), x[2].reshape(-1, 1), zmat_test[:, 14].reshape(-1, 1)), dim=1) for x, zmat_test in zip(xs, zmats_test)])
+print('xs: ', xs)
+xs = torch.stack([torch.cat((x[0], x[2].reshape(-1, 1), zmat_test[:, 13].reshape(-1, 1), x[1].reshape(-1, 1)), dim=1) for x, zmat_test in zip(xs, zmats_test)])
 xs = xs.flatten(start_dim=0, end_dim=1).to(torch.float32)
 
+print('xs together: ', xs)
 # configs to initialize the chains
 
 xs = xs[torch.randperm(xs.size()[0])]
 xs = xs[:n_chains]
 
-# mlp models
+if args.energy_type == 'mlp':
 
-mlps_dic = [load_pickle_file(args.folder_path + 'is{:d}_mlp_dic_training_{:d}.pkl'.format(mode_label, id_)) for mode_label, id_ in zip(mode_labels, ids[:len(mode_labels)]) ]
-mlp_models = np.array([mlp_dic['model'] for mlp_dic in mlps_dic])
+    # mlp models
 
-print('# models: ', len(mlp_models))
+    mlps_dic = [load_pickle_file(args.folder_path + 'models/is{:d}_mlp_dic_training_{:d}.pkl'.format(mode_label, id_)) for mode_label, id_ in zip(mode_labels, ids[:len(mode_labels)]) ]
+    mlp_models = np.array([mlp_dic['model'] for mlp_dic in mlps_dic])
+    print('# models: ', len(mlp_models))
+
+else:
+
+    mlp_models = None
+
 
 # flow models
 
-flows_dic = [load_pickle_file(args.folder_path + 'is{:d}_flow_dic_training_{:d}.pkl'.format(mode_label, id_)) for mode_label, id_ in zip(mode_labels, ids[len(mode_labels):]) ]
+print('load flow models: ', mode_labels, ids, len(mode_labels) )
+
+flows_dic = [load_pickle_file(args.folder_path + 'models/is{:d}_flow_dic_training_{:d}.pkl'.format(mode_label, id_)) for mode_label, id_ in zip(mode_labels, ids)]
 flow_models = np.array([flow_dic['model'] for flow_dic in flows_dic])
+
+print('# flow models: ', len(flows_dic))
 
 if len(mode_labels)==1:
     mixture = False
     flow_model = flow_models[0]
-    mlp_models = mlp_models[0]
+
+    if "mlp" in energy_type: 
+        mlp_models = mlp_models[0]
 else:
     flow_model = Mixture(flow_models, torch.tensor([0.5, 0.5]).detach())
     mixture = True
@@ -115,13 +132,15 @@ out = run_metropolis(
     init=xs,
     n_chains=n_chains,
     n_steps=n_steps,
-    name_run="", # TODO: number of runs
+    id_run=0, # TODO: number of runs
     energy_type=energy_type,
     frac_dft=0.2,
     mlp_models=mlp_models,
     mixture=mixture,
     T=300,
-    with_tqdm=True,
+    with_tqdm=False,
+    return_ratio = False,
+    return_proposals = False,
 )
 
 date_end = time.strftime('%Y-%m-%d %H:%M:%S')

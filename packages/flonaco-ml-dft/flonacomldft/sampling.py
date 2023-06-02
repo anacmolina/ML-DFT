@@ -172,7 +172,7 @@ def run_metropolis(
                             molecule, 
                             filename='ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
                                             )
-
+    
                         u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
                         #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
                         xs_dft.append(x_new[i])
@@ -186,6 +186,8 @@ def run_metropolis(
         ratio = -beta * u_new + nll_x
         ratio += beta * u_init - nll_x_init
         ratio = torch.exp(ratio)
+
+        print("Ratio: ", ratio)
 
         if return_ratio:
             ratios.append(torch.min(ratio.clone(), torch.ones_like(ratio)))
