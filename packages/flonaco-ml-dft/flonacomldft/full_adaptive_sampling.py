@@ -12,7 +12,7 @@ from flonacomldft.train_mlp_from_data import train_mlp
 def Transpose(x):
     return x.permute(*torch.arange(x.ndim - 1, -1, -1))
 
-def adaptative_sampling(
+def adaptive_sampling(
     flow_init_train,
     flow_init_test,
     n_runs,
@@ -26,6 +26,7 @@ def adaptative_sampling(
     mlp_hyperparams=None, # dict
     mlp_init_train=None,
     mlp_init_test=None,
+    dim=12
 ):
 
     """
@@ -50,19 +51,19 @@ def adaptative_sampling(
 
     # setting up databases for flows and mlps
 
-    xs_for_flows_train_is0 = flow_init_train.clone()[:,:-1][~flow_init_train[:, 13].bool()]
-    xs_for_flows_train_is1 = flow_init_train.clone()[:,:-1][flow_init_train[:, 13].bool()]
- 
-    xs_for_flows_test_is0 = flow_init_test.clone()[:,:-1][~flow_init_test[:, 13].bool()]
-    xs_for_flows_test_is1 = flow_init_test.clone()[:,:-1][flow_init_test[:, 13].bool()]
+    xs_for_flows_train_is0 = flow_init_train.clone()[:,:-1][~flow_init_train[:, dim+1].bool()]
+    xs_for_flows_train_is1 = flow_init_train.clone()[:,:-1][flow_init_train[:, dim+1].bool()]     
+        
+    xs_for_flows_test_is0 = flow_init_test.clone()[:,:-1][~flow_init_test[:, dim+1].bool()]
+    xs_for_flows_test_is1 = flow_init_test.clone()[:,:-1][flow_init_test[:, dim+1].bool()]
      
     if retraining_mlp:
 
-        xs_for_mlps_train_is0 = mlp_init_train.clone()[:,:-1][~mlp_init_train[:, 13].bool()]
-        xs_for_mlps_train_is1 = mlp_init_train.clone()[:,:-1][mlp_init_train[:, 13].bool()]
+        xs_for_mlps_train_is0 = mlp_init_train.clone()[:,:-1][~mlp_init_train[:, dim+1].bool()]
+        xs_for_mlps_train_is1 = mlp_init_train.clone()[:,:-1][mlp_init_train[:, dim+1].bool()]
  
-        xs_for_mlps_test_is0 = mlp_init_test.clone()[:,:-1][~mlp_init_test[:, 13].bool()]
-        xs_for_mlps_test_is1 = mlp_init_test.clone()[:,:-1][mlp_init_test[:, 13].bool()]    
+        xs_for_mlps_test_is0 = mlp_init_test.clone()[:,:-1][~mlp_init_test[:, dim+1].bool()]
+        xs_for_mlps_test_is1 = mlp_init_test.clone()[:,:-1][mlp_init_test[:, dim+1].bool()]    
     
     dict_flows_training = [dict_flows_init, ]
 
@@ -87,10 +88,11 @@ def adaptative_sampling(
             init=init,
             n_chains=n_chains,
             n_steps=n_steps,
-            name_run=i,
+            id_run=i,
             energy_type=energy_type,
             mlp_models=get_models(dict_mlps_training[-1]),
             mixture=True,
+            dim=dim
             )
         
         mcmc_runs.append(mcmc_run)
@@ -132,7 +134,7 @@ def adaptative_sampling(
                 dict_flows_training[i][0]['model'],
                 xs_for_flows_train_is0,
                 xs_for_flows_test_is0,
-                mlp_model=get_models(dict_mlps_training[-1])[0],
+                #mlp_model=get_models(dict_mlps_training[-1])[0],
                 **flow_hyperparams[0],
                 )
             
@@ -151,7 +153,7 @@ def adaptative_sampling(
                 dict_flows_training[i][1]['model'],
                 xs_for_flows_train_is1,
                 xs_for_flows_test_is1,
-                mlp_model=get_models(dict_mlps_training[-1])[1],
+                #mlp_model=get_models(dict_mlps_training[-1])[1],
                 **flow_hyperparams[1],)
 
         else:
@@ -178,7 +180,7 @@ def adaptative_sampling(
 
             mask_mlp = configs_dft_flatten[:, -1].bool()
 
-            print(xs_for_mlps_train_is0, configs_dft_flatten[~mask_mlp])
+            #print(xs_for_mlps_train_is0, configs_dft_flatten[~mask_mlp])
 
             xs_for_mlps_train_is0 = torch.cat((xs_for_mlps_train_is0, configs_dft_flatten[~mask_mlp]))
             xs_for_mlps_train_is1 = torch.cat((xs_for_mlps_train_is1, configs_dft_flatten[mask_mlp]))

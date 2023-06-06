@@ -461,6 +461,7 @@ class Coordinates_mapping():
 
         return reals, logdetjacs
 
+    #TODO: Fix bug, you need the isomer
     def get_internal_from_real_centered(self, reals, logdetjacs=None, isomer=None, 
                                         temperature=300, energies=None):
         

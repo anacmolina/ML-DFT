@@ -57,4 +57,8 @@ def get_models(training):
     """
     Get the models for the mixture from a list of dictionnaries storing the models.
     """
-    return [training[0]['model'], training[1]['model']]
+
+    if training is None:
+        return [None, None]
+    else:
+        return [training[0]['model'], training[1]['model']]

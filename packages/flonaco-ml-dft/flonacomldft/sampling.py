@@ -129,9 +129,12 @@ def run_metropolis(
         nll_x_init = model.nll(x_init)
        
         if "mlp" in energy_type:
-            u_new = torch.zeros((n_chains, 1))
+            u_new = torch.zeros((n_chains, 1)).squeeze()
+
+            #print(u_new, isomer_new.bool())
 
             if mixture:
+                #print(u_new[~(isomer_new.bool())], x_new[~(isomer_new.bool())], model_mlp_is0(x_new[~(isomer_new.bool())]))
                 u_new[~(isomer_new.bool())] = model_mlp_is0(x_new[~(isomer_new.bool())])
                 u_new[isomer_new.bool()] = model_mlp_is1(x_new[isomer_new.bool()])
             else:
@@ -167,14 +170,15 @@ def run_metropolis(
 
                         #TODO: BUILD molecule from internal, return logdet
 
-                        molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer=int(isomer_new[i].item()))
-                        u_ = calculator.calculate_potential_energy(
-                            molecule, 
-                            filename='ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
-                                            )
+                        ### TODO: LINES THAT ACTUALLY WORK!!!!!!!!!!!!!    
+                        #molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer=int(isomer_new[i].item()))
+                        #u_ = calculator.calculate_potential_energy(
+                        #    molecule, 
+                        #    filename='ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
+                        #                    )
     
-                        u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
-                        #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
+                        #u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
+                        u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
                         xs_dft.append(x_new[i])
                         us_dft.append(u_new[i])
                         isomers_dft.append(isomer_new[i])
@@ -187,7 +191,7 @@ def run_metropolis(
         ratio += beta * u_init - nll_x_init
         ratio = torch.exp(ratio)
 
-        print("Ratio: ", ratio)
+        #print("Ratio: ", ratio)
 
         if return_ratio:
             ratios.append(torch.min(ratio.clone(), torch.ones_like(ratio)))

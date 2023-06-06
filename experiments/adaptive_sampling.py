@@ -1,3 +1,8 @@
+import warnings
+warnings.filterwarnings("ignore")
+
+from ase.parallel import parprint as print
+
 import os
 import argparse
 import time
@@ -14,7 +19,7 @@ from flonacomldft.utils.io_utils import (
 )
 
 from flonacomldft.internal_coordinates import Coordinates_mapping, join_data
-from flonacomldft.full_adaptive_sampling import adaptative_sampling
+from flonacomldft.full_adaptive_sampling import adaptive_sampling
 
 #from flonacomldft.parallel import set_seed
 from flonacomldft.utils.io_utils import get_process_id
@@ -34,7 +39,7 @@ print('seed: ', num_seed)
 ### Define arguments to parse from command line
 parser = argparse.ArgumentParser(description='Prepare experiment')
 parser.add_argument('-np', '--num-procs', type=int, default=1)
-parser.add_argument('-ni', '--n-iter', type=int, default=10)
+parser.add_argument('-ni', '--n-iter', type=int, default=1000)
 parser.add_argument('-lr', '--learning-rate', type=float, default=1e-4)
 parser.add_argument('-isomer', '--mode-label', type=int, nargs='+', default=0)
 parser.add_argument('-ids', '--ids', type=int, nargs='+', default=[None, None])
@@ -94,13 +99,19 @@ mlp_hyperparams_is1 = {'n_iter': args.n_iter,
 mode_labels = args.mode_label
 ids = args.ids
 
-dataset_labels = ['md_train', 'md_test', 'flow_train', 'flow_test']
+dataset_labels = ['flow_train', 'flow_test']
+
+if "mlp" in energy_type:
+    
+    dataset_labels = dataset_labels + ['mlp_train', 'mlp_test']
+
+
 
 coord_mapping = Coordinates_mapping()
 
 def get_dataset(name, path, mode_labels):
     
-    zmats = [load_csv_file(args.folder_path + "is{:d}_{:s}.csv".format(mode_label, name)) for mode_label in mode_labels] 
+    zmats = [load_csv_file(args.folder_path + "converged/is{:d}_{:s}.csv".format(mode_label, name)) for mode_label in mode_labels] 
     xs = [coord_mapping.get_real_centered_from_internal(
                                     zmat_test[:, :12],
                                     zmat_test[:, 14],
@@ -113,27 +124,39 @@ def get_dataset(name, path, mode_labels):
 
     return xs, zmats
 
-flow_xs_train, flow_zmat_train = get_dataset('md_train', args.folder_path, mode_labels)
-flow_xs_test, flow_zmat_test = get_dataset('md_test', args.folder_path, mode_labels)
+flow_xs_train, flow_zmat_train = get_dataset('flow_train', args.folder_path, mode_labels)
+flow_xs_test, flow_zmat_test = get_dataset('flow_test', args.folder_path, mode_labels)
 
-mlp_xs_train, mlp_zmat_train = get_dataset('mlp_train', args.folder_path, mode_labels)
-mlp_xs_test, mlp_zmat_test = get_dataset('mlp_test', args.folder_path, mode_labels)
+if "mlp" in energy_type:
 
-# pretrain flows and mlps
+    mlp_xs_train, mlp_zmat_train = get_dataset('mlp_train', args.folder_path, mode_labels)
+    mlp_xs_test, mlp_zmat_test = get_dataset('mlp_test', args.folder_path, mode_labels)
 
-# mlp models
+    # pretrain flows and mlps
 
-mlps_dic = [load_pickle_file(args.folder_path + 'is{:d}_mlp_dic_training_{:d}.pkl'.format(mode_label, id_)) for mode_label, id_ in zip(mode_labels, ids[:len(mode_labels)]) ]
+    # mlp models
 
-print('# models: ', len(mlps_dic))
+    mlps_dic = [load_pickle_file(args.folder_path + 'is{:d}_mlp_dic_training_{:d}.pkl'.format(mode_label, id_)) for mode_label, id_ in zip(mode_labels, ids[:len(mode_labels)]) ]
+
+    print('# models: ', len(mlps_dic))
+
+else:
+
+    mlps_dic = None
+
+    mlp_xs_train = None
+    mlp_xs_test = None
+
+    mlp_zmat_train = None
+    mlp_zmat_test = None
 
 # flow models
 
-flows_dic = [load_pickle_file(args.folder_path + 'is{:d}_flow_dic_training_{:d}.pkl'.format(mode_label, id_)) for mode_label, id_ in zip(mode_labels, ids[len(mode_labels):]) ]
+flows_dic = [load_pickle_file(args.folder_path + 'models/is{:d}_flow_dic_training_{:d}.pkl'.format(mode_label, id_)) for mode_label, id_ in zip(mode_labels, ids) ]
 
 # run adaptive sampling
 
-out = adaptative_sampling(
+out = adaptive_sampling(
     flow_init_train=flow_xs_train,
     flow_init_test=flow_xs_test,
     n_runs=n_runs,
