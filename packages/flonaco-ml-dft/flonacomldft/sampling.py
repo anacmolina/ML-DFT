@@ -171,14 +171,14 @@ def run_metropolis(
                         #TODO: BUILD molecule from internal, return logdet
 
                         ### TODO: LINES THAT ACTUALLY WORK!!!!!!!!!!!!!    
-                        #molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer=int(isomer_new[i].item()))
-                        #u_ = calculator.calculate_potential_energy(
-                        #    molecule, 
-                        #    filename='ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
-                        #                    )
+                        molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer=int(isomer_new[i].item()))
+                        u_ = calculator.calculate_potential_energy(
+                            molecule, 
+                            filename='ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
+                                            )
     
-                        #u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
-                        u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
+                        u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
+                        #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
                         xs_dft.append(x_new[i])
                         us_dft.append(u_new[i])
                         isomers_dft.append(isomer_new[i])
