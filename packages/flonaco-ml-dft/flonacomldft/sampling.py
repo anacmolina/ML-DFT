@@ -139,9 +139,9 @@ def run_metropolis(
                 u_new[isomer_new.bool()] = model_mlp_is1(x_new[isomer_new.bool()])
             else:
                 if(isomer_new.sum()==0):
-                    u_new = model_mlp_is0(x_new)
+                    u_new = model_mlp_is0[0](x_new)
                 else:
-                    u_new = model_mlp_is1(x_new)
+                    u_new = model_mlp_is1[0](x_new)
 
             u_new = u_new.squeeze().float()
 
@@ -176,8 +176,9 @@ def run_metropolis(
                             molecule, 
                             filename='ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
                                             )
-    
+                        #print(u_)
                         u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
+                        #print(u_new[i])
                         #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
                         xs_dft.append(x_new[i])
                         us_dft.append(u_new[i])
@@ -186,6 +187,8 @@ def run_metropolis(
                     except:
                         u_new[i] = 0.
                         ind_not_computed[i] = 1
+
+        #print(u_new, u_init, nll_x, nll_x_init, isomer_new, isomer_init)
 
         ratio = -beta * u_new + nll_x
         ratio += beta * u_init - nll_x_init
@@ -229,7 +232,8 @@ def run_metropolis(
         if with_tqdm:
             pbar.set_description(f'acc: {acc.float().mean():.2f}')
 
-        if dt % 10 == 0:
+        #TODO: Add parameter to save
+        if dt % 5 == 0:
             print("step: {:d} \t acc: {:0.2f}".format(dt, acc.float().mean()))
 
     to_return = {

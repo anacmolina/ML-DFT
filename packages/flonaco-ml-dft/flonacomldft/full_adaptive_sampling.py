@@ -1,73 +1,52 @@
-from ase.parallel import parprint as print
-
 import torch
-
+import copy
 from flonacomldft.train_flow_from_data import train_flow
 from flonacomldft.sampling import run_metropolis
-from flonacomldft.models.mixture import Mixture, get_models
-
+from flonacomldft.models.mixture import Mixture
 from flonacomldft.internal_coordinates import join_data
-from flonacomldft.train_mlp_from_data import train_mlp
+
+def get_weights(isomers):
+
+    labels = torch.unique(isomers)
+
+    weights = torch.zeros_like(labels, dtype=torch.float)
+
+    for i in labels.int():
+        label_size = torch.ones_like(isomers[isomers == i].flatten()).sum().item()
+        weights[i] = label_size/isomers.flatten().shape[0]
+
+    return weights
 
 def Transpose(x):
     return x.permute(*torch.arange(x.ndim - 1, -1, -1))
 
 def adaptive_sampling(
-    flow_init_train,
-    flow_init_test,
-    n_runs,
-    n_chains,
-    n_steps,
-    energy_type,
-    dict_flows_init,
-    flow_hyperparams, # dict
-    retraining_mlp=False,
-    dict_mlps_init=None,
-    mlp_hyperparams=None, # dict
-    mlp_init_train=None,
-    mlp_init_test=None,
-    dim=12
-):
+        flow_init_train,
+        flow_init_test,
+        init_mcmc,
+        dict_flows_init,
+        dict_mlps_init,
+        flow_hyperparams,
+        n_chains,
+        n_steps,
+        n_runs,
+        dim=12,
+        energy_type='mlp',
+        mixture=False,
+        T=300,
+        reweighting=False,
+        weights=None,
+        ):
 
-    """
-    function for sampling
+    modes = torch.unique(flow_init_train[:, dim+1])
 
-    Args:
-        flow_init_train (torch.tensor): training data for flows (xs, us, isomers, logdetjac)
-        flow_init_test (torch.tensor): test data for flows (xs, us, isomers, logdetjac) + chain init
-        n_runs (int): number of sampling-training reps
-        n_chains (int): number of chains
-        n_steps (int): number of steps per sampling phase
-        energy_type (str): type of energy to use ('dft', 'mlp', 'dft+mlp')
-        dict_flows_init (dict): initial flows training dictionaries
-        flow_hyperparams (dict): hyperparameters for flows re-training
-        retraining_mlp (bool): whether to retrain MLPs
-        dict_mlps_init (dict): initial MLPs training dictionaries
-        mlp_hyperparams (dict): hyperparameters for MLPs re-training
-        mlp_init_train (torch.tensor): training data for MLPs (xs, us, isomers, logdetjac)
-        mlp_init_test (torch.tensor): test data for MLPs (xs, us, isomers, logdetjac)
+    xs_for_flows_train = [ flow_init_train[flow_init_train[:, dim+1] == mode] for mode in modes ]
+    xs_for_flows_test = [ flow_init_test[flow_init_test[:, dim+1] == mode] for mode in modes ]
 
-    """
+    dict_flows_training = [copy.deepcopy(dict_flows_init), ]
 
-    # setting up databases for flows and mlps
-
-    xs_for_flows_train_is0 = flow_init_train.clone()[:,:-1][~flow_init_train[:, dim+1].bool()]
-    xs_for_flows_train_is1 = flow_init_train.clone()[:,:-1][flow_init_train[:, dim+1].bool()]     
-        
-    xs_for_flows_test_is0 = flow_init_test.clone()[:,:-1][~flow_init_test[:, dim+1].bool()]
-    xs_for_flows_test_is1 = flow_init_test.clone()[:,:-1][flow_init_test[:, dim+1].bool()]
-     
-    if retraining_mlp:
-
-        xs_for_mlps_train_is0 = mlp_init_train.clone()[:,:-1][~mlp_init_train[:, dim+1].bool()]
-        xs_for_mlps_train_is1 = mlp_init_train.clone()[:,:-1][mlp_init_train[:, dim+1].bool()]
- 
-        xs_for_mlps_test_is0 = mlp_init_test.clone()[:,:-1][~mlp_init_test[:, dim+1].bool()]
-        xs_for_mlps_test_is1 = mlp_init_test.clone()[:,:-1][mlp_init_test[:, dim+1].bool()]    
-    
-    dict_flows_training = [dict_flows_init, ]
-
-    dict_mlps_training = [dict_mlps_init, ] #TODO: Not to use if MLPs models None
+    flow_models = lambda dict_flows: [dict_flow['model'] for dict_flow in dict_flows]
+    mlp_models = lambda dict_mlps: [dict_mlp['model'] for dict_mlp in dict_mlps]
 
     mcmc_runs = []
 
@@ -76,23 +55,33 @@ def adaptive_sampling(
     accs = []
     isomers = []
     
-    init = flow_init_test[:n_chains]
+    init = init_mcmc
+
+    if weights is None:
+        weights = torch.tensor([0.5]*len(modes)).detach()
+    else:
+        weights = torch.tensor(weights).detach()
 
     for i in range(n_runs):
-        
-        weights = torch.tensor([0.5, 0.5]).detach()
-        mixture = Mixture(get_models(dict_flows_training[i]), weights)
+
+        if mixture:
+            if reweighting and i>0:
+                weights = get_weights(isomers[i-1])
+
+            model = Mixture(flow_models(dict_flows_training[i]), weights)
+        else:
+            model = flow_models(dict_flows_training[i])[0]
 
         mcmc_run = run_metropolis(
-            model=mixture,
+            model=model,
             init=init,
             n_chains=n_chains,
             n_steps=n_steps,
             id_run=i,
             energy_type=energy_type,
-            mlp_models=get_models(dict_mlps_training[-1]),
-            mixture=True,
-            dim=dim
+            mlp_models=mlp_models(dict_mlps_init),
+            mixture=mixture,
+            dim=dim,
             )
         
         mcmc_runs.append(mcmc_run)
@@ -102,10 +91,10 @@ def adaptive_sampling(
         accs.append(mcmc_run["accs"])
         isomers.append(mcmc_run["isomers"])
 
-        init = join_data(xs[i][-1], us[i][-1], isomers[i][-1])
-        
-        #"""            
-        #### RETRAINING OF THE FLOWS
+        init = join_data(xs[i][-1].clone(), us[i][-1].clone(), isomers[i][-1].clone())
+
+        #TODO: Chech size of xs_for_flows_train
+
         chains_flatten = Transpose(
             torch.cat(
                 (
@@ -119,101 +108,45 @@ def adaptive_sampling(
 
         chains_flatten = chains_flatten.reshape(n_steps * n_chains, chains_flatten.shape[-1])
 
-        mask_flow = chains_flatten[:, -1].bool()
-        is0_from_chains = chains_flatten[~mask_flow]
+        mask_flow = chains_flatten[:, -1]
 
-        if is0_from_chains.nelement() != 0:
+        dict_new_flows = []
+
+        for mode in modes.detach().numpy().astype(int):
+
+            xs_from_chains = chains_flatten.clone()[mask_flow==mode].clone()
 
             # extend data set for flow training
-            xs_for_flows_train_is0 = torch.cat(
-                (xs_for_flows_train_is0, is0_from_chains)
+
+            xs_for_flows_train[mode] = torch.cat(
+                (xs_for_flows_train[mode].clone(), xs_from_chains.clone())
             )
 
             #add mlps
-            dict_new_flow_is0 = train_flow(
-                dict_flows_training[i][0]['model'],
-                xs_for_flows_train_is0,
-                xs_for_flows_test_is0,
+            dict_new_flow = train_flow(
+                dict_flows_training[i][mode]['model'],
+                xs_for_flows_train[mode],
+                xs_for_flows_test[mode],
                 #mlp_model=get_models(dict_mlps_training[-1])[0],
-                **flow_hyperparams[0],
+                **flow_hyperparams[mode],
+                dim=dim
                 )
             
-        else:
-            dict_new_flow_is0 = dict_flows_training[i][0]
-
-        is1_from_chains = chains_flatten[mask_flow]
-
-        if is1_from_chains.nelement() != 0:
-
-            xs_for_flows_train_is1 = torch.cat(
-                (xs_for_flows_train_is1, is1_from_chains)
-            )  
-            # add mlps
-            dict_new_flow_is1 = train_flow(
-                dict_flows_training[i][1]['model'],
-                xs_for_flows_train_is1,
-                xs_for_flows_test_is1,
-                #mlp_model=get_models(dict_mlps_training[-1])[1],
-                **flow_hyperparams[1],)
-
-        else:
-            dict_new_flow_is1 = dict_flows_training[i][1]
-        #"""
-
-        #### RETRAINING OF THE MLPS
-        if retraining_mlp and ('dft' in energy_type):
-
-            xs_dft = mcmc_run['xs_dft']
-            us_dft = mcmc_run['us_dft']
-            isomers_dft = mcmc_run['isomers_dft']
-
-            configs_dft_flatten = Transpose(
-                torch.cat(
-                    (
-                        Transpose(xs_dft),
-                        us_dft.reshape(1, -1),
-                        isomers_dft.reshape(1, -1),
-                    ),
-                    dim=0,
-                )
-            )
-
-            mask_mlp = configs_dft_flatten[:, -1].bool()
-
-            #print(xs_for_mlps_train_is0, configs_dft_flatten[~mask_mlp])
-
-            xs_for_mlps_train_is0 = torch.cat((xs_for_mlps_train_is0, configs_dft_flatten[~mask_mlp]))
-            xs_for_mlps_train_is1 = torch.cat((xs_for_mlps_train_is1, configs_dft_flatten[mask_mlp]))
-
+            dict_new_flows.append(copy.deepcopy(dict_new_flow))
             
+        else:
+            dict_new_flow = copy.deepcopy(dict_flows_training[i][mode])
+            dict_new_flows.append(dict_new_flow)
 
-            mlp_is0 = train_mlp(dict_mlps_training[-1][0]['model'], 
-                                xs_for_mlps_train_is0,  
-                                xs_for_mlps_test_is0, 
-                                **mlp_hyperparams[0],
-                                with_tqdm=True)
+        dict_flows_training.append(dict_new_flows)
 
-            mlp_is1 = train_mlp(dict_mlps_training[-1][1]['model'], 
-                                xs_for_mlps_train_is1,  
-                                xs_for_mlps_test_is1, 
-                                **mlp_hyperparams[1],
-                                with_tqdm=True)
-
-            dict_mlps_training.append([mlp_is0, mlp_is1])
-
-        dict_flows_training.append([dict_new_flow_is0, dict_new_flow_is1])
-
-    results = {
-        'mcmc': mcmc_runs,
-        'xs': xs,
-        'us': us,
-        'accs': accs,
-        'isomers': isomers,
-        'flows_training': dict_flows_training,
+    to_return = {
+        "dict_flows_training": dict_flows_training,
+        "mcmc_runs": mcmc_runs,
+        "xs": xs,
+        "us": us,
+        "accs": accs,
+        "isomers": isomers,
     }
 
-    if retraining_mlp:
-        results['mlps_training'] = dict_mlps_training,
-    
-    
-    return results
+    return to_return

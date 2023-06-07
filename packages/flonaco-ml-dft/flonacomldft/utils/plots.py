@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from flonacomldft.internal_coordinates import Coordinates_mapping 
 from flonacomldft.utils.io_utils import get_path
 from flonacomldft.FES.plotter2 import Plotter
+from flonacomldft.utils.diagnostics import avg_windows
 
 
 ### Define class to get the properties of a MD trajectory as a function of time
@@ -96,6 +97,23 @@ class MD_Plotter:
         ax.set_xlabel('Steps')
         ax.set_ylabel('Temperature (K)')
         ax.legend()
+
+
+def set_plot_iteration(tensor, avg=True, window_size=10, axis=1, ax=None, init=0, color='k', alpha=0.5, label=None, **kwargs):
+    if ax is None:
+        fig, ax = plt.subplots(1, 1)
+    
+    x = init + np.arange(tensor.shape[0])
+    y = tensor
+
+    if avg:
+        x_avg = np.arange(init + window_size - 1, init + window_size + len(avg_windows(tensor, window_size, axis)) - 1 )
+        y_avg = avg_windows(tensor, window_size, axis)
+        ax.plot(x_avg, y_avg, color=color, label=label+'_avg', **kwargs)
+
+    ax.plot(x, y, alpha=alpha, label=label, **kwargs)
+    
+    return ax
 
 ### Define class to plot the results of the Flonaco training and simulations
 

@@ -3,6 +3,9 @@ import numpy as np
 import torch
 from flonacomldft.sampling import run_metropolis
 
+def avg_windows(x, window_size, axis):
+    return np.lib.stride_tricks.sliding_window_view(x, window_size).mean(axis=axis)
+
 
 def get_acceptance_ratio(init, flow_model, n_chains=5, n_steps=10, id_run=None, energy_type='dft', mlp_model=None, T=300, return_ratios=True):
     """
