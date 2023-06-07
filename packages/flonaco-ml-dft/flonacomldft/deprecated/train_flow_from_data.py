@@ -6,8 +6,8 @@ from torch.nn.utils import clip_grad_norm_
 # from ray import tune
 
 from ase.parallel import parprint as print
-
-kb = 8.617333262e-5
+from ase.units import kB
+#kb = 8.617333262e-5
 
 def compute_ratio(u, u_init, nll, nll_init, beta):
     return torch.exp(-beta * (u - u_init) + nll - nll_init)
@@ -32,7 +32,7 @@ def get_all_ratios(
     u_init = init[:, 12]
     isomer_init = init[:, 13]
 
-    beta = 1 / (kb * T)
+    beta = 1 / (kB * T)
 
     # internal coordinates transformations
     from flonacomldft.internal_coordinates import Coordinates_mapping

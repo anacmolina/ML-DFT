@@ -1,5 +1,7 @@
 from ase.parallel import parprint as print
 
+from ase.units import kB
+
 import torch
 from flonacomldft.utils.io_utils import load_pickle_file, load_csv_file
 from flonacomldft.internal_coordinates import Coordinates_mapping
@@ -32,7 +34,7 @@ n_steps = 10
 
 xs_init = xs[:n_chains]
 
-kb = 8.617333262e-5
+#kb = 8.617333262e-5
 
 def run_metropolis(
     model,
@@ -52,7 +54,7 @@ def run_metropolis(
     id_process = None,
 ):
     
-    beta = 1 / (kb * T)
+    beta = 1 / (kB * T)
 
     from flonacomldft.dft_calculator import DFTCalculator
     

@@ -5,6 +5,7 @@ import torch
 import numpy as np
 import pandas as pd
 import chemcoord as cc
+from ase.units import kB
 
 from flonacomldft.utils.silver_isomers_utils import get_construction_table, get_molecule_isomer_minima 
 
@@ -73,7 +74,8 @@ class Coordinates_mapping():
             0: self.get_internal_from_molecule(get_molecule_isomer_minima('is0'))[0],
             1: self.get_internal_from_molecule(get_molecule_isomer_minima('is1'))[0]
         } 
-        self.kb = 8.617333262e-5 # eV/K
+        #self.kb = 8.617333262e-5 # eV/K
+        self.kB = kB # eV/K
 
     def _get_xyz_from_molecule(self, molecule):
         """"
@@ -326,7 +328,7 @@ class Coordinates_mapping():
         return xyz, logdetjac
 
     def compute_energy_in_new_frame(self, energy, logdetjac, temperature=300):
-        return energy - (self.kb * temperature) * logdetjac
+        return energy - (self.kB * temperature) * logdetjac
 
     def get_internal_from_molecule(self, molecule, return_potential_energy=False,
                                 temperature=300, requires_grad=False):
@@ -456,7 +458,7 @@ class Coordinates_mapping():
         logdetjacs += logdetjacs_angle
 
         if energies is not None:
-            energies = energies - (self.kb * temperature) * logdetjacs_angle
+            energies = energies - (self.kB * temperature) * logdetjacs_angle
             return reals, logdetjacs, energies
 
         return reals, logdetjacs
@@ -474,7 +476,7 @@ class Coordinates_mapping():
         zmats = zmats + self.zmat_minima[isomer] #reals + self.zmat_minima[isomer] #TODO: Check if this is correct
 
         if energies is not None:
-            energies = energies - (self.kb * temperature) * logdetjacs_angle
+            energies = energies - (self.kB * temperature) * logdetjacs_angle
             return zmats, logdetjacs, energies
 
         return zmats, logdetjacs

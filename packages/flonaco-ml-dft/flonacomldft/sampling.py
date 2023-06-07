@@ -8,9 +8,9 @@ import torch
 import tqdm
 
 from ase.parallel import parprint as print
+from ase.units import kB
 
-
-kb = 8.617333262e-5
+#kb = 8.617333262e-5
 
 def run_metropolis(
     model,
@@ -61,7 +61,7 @@ def run_metropolis(
     u_init = init[:, dim]
     isomer_init = init[:, dim+1]
 
-    beta = 1 / (kb * T)
+    beta = 1 / (kB * T)
 
     if "dft" in energy_type:
         from flonacomldft.dft_calculator import DFTCalculator

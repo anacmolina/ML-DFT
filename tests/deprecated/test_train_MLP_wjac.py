@@ -1,6 +1,7 @@
 import torch
 import pandas as pd
 import tqdm
+from ase.units import kB
 
 import matplotlib.pyplot as plt
 
@@ -19,7 +20,7 @@ isomer = 'is1'
 
 sk_seed = 42
 train_size = 0.8
-kb = 8.617333262e-5
+#kb = 8.617333262e-5
 T = 300
 
 n_md = 200 # 5000 steps in total
@@ -40,12 +41,12 @@ u_test = torch.cat((u_test_md, u_test_nf))
 coord_maps = Coordinates_mapping()
 u_train_wjac = []
 for u, x in tqdm.tqdm(zip(u_train, x_train)):
-    u_wjac = u - (kb * T) * coord_maps.logdetjac_internal_to_xyz(x)[1]
+    u_wjac = u - (kB * T) * coord_maps.logdetjac_internal_to_xyz(x)[1]
     u_train_wjac.append(u_wjac)
 
 u_test_wjac = []
 for u, x in tqdm.tqdm(zip(u_test, x_test)):
-    u_wjac = u - (kb * T) * coord_maps.logdetjac_internal_to_xyz(x)[1]
+    u_wjac = u - (kB * T) * coord_maps.logdetjac_internal_to_xyz(x)[1]
     u_test_wjac.append(u_wjac)
 
 u_train_wjac = torch.stack(u_train_wjac)

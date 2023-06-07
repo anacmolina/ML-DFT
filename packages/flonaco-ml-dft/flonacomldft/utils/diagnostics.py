@@ -2,6 +2,7 @@
 import numpy as np
 import torch
 from flonacomldft.sampling import run_metropolis
+from ase.units import kB
 
 def avg_windows(x, window_size, axis):
     return np.lib.stride_tricks.sliding_window_view(x, window_size).mean(axis=axis)
@@ -45,19 +46,19 @@ def get_acceptance_ratio(init, flow_model, n_chains=5, n_steps=10, id_run=None, 
     
 class Target_Log_Prob:
     """Class to compute the target log probability of a model"""
-    def __init__(self, energy_type, mode_label=None, mlp_model=None, T=300, kb=8.617333262e-5):
+    def __init__(self, energy_type, mode_label=None, mlp_model=None, T=300, kB=kB):#kB=8.617333262e-5):
         """Initialize the class
         Args:
             energy_type (str): type of energy to use (dft, mlp, dft+mlp)
             mode_label (int): label of the mode to sample
             T (float): temperature in K
-            kb (float): Boltzmann constant in eV/K
+            kB (float): Boltzmann constant in eV/K from ase units module
         """
         self.energy_type = energy_type
         self.mode_label = mode_label
         self.mlp_model = mlp_model
         self.T = T
-        self.kb = kb
+        self.kB = kB
     
     def __dft_target_log_prob__(self, xs):
         """Compute the target log probability using DFT"""
@@ -74,13 +75,13 @@ class Target_Log_Prob:
             u_ = calculator.calculate_potential_energy(molecule, filename='ag6_{:d}.out'.format(i))                        
             u[i] = coord_mapping.compute_energy_in_new_frame(u_, logdetjac*(-1))
 
-        return - u / (self.kb * self.T)
+        return - u / (self.kB * self.T)
     
     def __mlp_target_log_prob__(self, xs):
         """Compute the target log probability using MLP"""
         if self.mlp_model is None:
             raise ValueError('mlp model not initialized')
-        return - self.mlp_model(xs) / (self.kb * self.T)
+        return - self.mlp_model(xs) / (self.kB * self.T)
 
     def target_log_prob(self, xs):
         """Compute the target log probability"""

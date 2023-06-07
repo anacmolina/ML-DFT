@@ -1,4 +1,7 @@
 import torch
+from ase.units import kB
+
+#TODO: APPARENTLY THIS IS NOT USED ANYMORE
 
 def run_mcmc(energies, steps, Nchains):
     
@@ -14,8 +17,7 @@ def run_mcmc(energies, steps, Nchains):
     accs = []
     
     T=300
-    kb = 8.617333262e-5
-    beta = 1/(kb*T)
+    beta = 1/(kB*T)
     
     for step in range(steps):
         i = torch.randint(0, len(trajectory), (Nchains,))
