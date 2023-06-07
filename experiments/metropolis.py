@@ -18,6 +18,11 @@ from flonacomldft.utils.io_utils import (
     save_json_args
 )
 
+from gpaw.mpi import world
+
+ranks = world.size
+print('ranks: ', ranks)
+
 from flonacomldft.sampling import run_metropolis
 from flonacomldft.models.mixture import Mixture
 from flonacomldft.internal_coordinates import Coordinates_mapping
@@ -41,7 +46,7 @@ print('seed: ', num_seed)
 parser = argparse.ArgumentParser(description='Prepare experiment')
 parser.add_argument('-np', '--num-procs', type=int, default=1)
 parser.add_argument('-isomer', '--mode-label', type=int, nargs='+', default=0)
-parser.add_argument('-ids', '--ids', type=int, nargs='+', default=[None, None])
+parser.add_argument('-ids', '--ids', type=int, nargs='+', default=[None, None]) # Ideally this should load not be here, but its for identifying flow models
 parser.add_argument('-rs', '--random-seed', type=str, default=str(num_seed))
 parser.add_argument('-path', '--folder-path', type=str, default='database/')
 parser.add_argument('-pid', '--process-id', type=int, default=int(process_id))
