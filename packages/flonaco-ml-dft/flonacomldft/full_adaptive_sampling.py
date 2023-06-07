@@ -36,6 +36,7 @@ def adaptive_sampling(
         T=300,
         reweighting=False,
         weights=None,
+        dft_folder_name=None
         ):
 
     modes = torch.unique(flow_init_train[:, dim+1])
@@ -82,6 +83,7 @@ def adaptive_sampling(
             mlp_models=mlp_models(dict_mlps_init),
             mixture=mixture,
             dim=dim,
+            dft_folder_name=dft_folder_name,
             )
         
         mcmc_runs.append(mcmc_run)

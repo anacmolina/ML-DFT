@@ -18,10 +18,10 @@ from flonacomldft.utils.io_utils import (
     save_json_args
 )
 
-from gpaw.mpi import world
+import gpaw.mpi as mpi
 
-ranks = world.size
-print('ranks: ', ranks)
+ranks = mpi.world.size
+print('procs: ', ranks)
 
 from flonacomldft.sampling import run_metropolis
 from flonacomldft.models.mixture import Mixture
@@ -30,7 +30,6 @@ from flonacomldft.internal_coordinates import Coordinates_mapping
 #from flonacomldft.parallel import set_seed
 from flonacomldft.utils.io_utils import get_process_id
 
-#import gpaw.mpi as mpi
 
 num_seed = [42] #set_seed()
 torch.manual_seed(num_seed[0])
@@ -44,14 +43,15 @@ print('seed: ', num_seed)
 
 ### Define arguments to parse from command line
 parser = argparse.ArgumentParser(description='Prepare experiment')
-parser.add_argument('-np', '--num-procs', type=int, default=1)
-parser.add_argument('-isomer', '--mode-label', type=int, nargs='+', default=0)
-parser.add_argument('-ids', '--ids', type=int, nargs='+', default=[None, None]) # Ideally this should load not be here, but its for identifying flow models
+parser.add_argument('-np', '--num-procs', type=int, default=ranks)
+parser.add_argument('-isomer', '--mode-label', type=int, nargs='+', default=[0])
+parser.add_argument('-ids', '--ids', type=int, nargs='+', default=[None]) # Ideally this should load not be here, but its for identifying flow models
 parser.add_argument('-rs', '--random-seed', type=str, default=str(num_seed))
 parser.add_argument('-path', '--folder-path', type=str, default='database/')
 parser.add_argument('-pid', '--process-id', type=int, default=int(process_id))
-parser.add_argument('-s', '--n-chains-steps', type=int, nargs='+', default=[5, 10] )
-parser.add_argument('-etype', '--energy-type', type=str, default='mlp')
+parser.add_argument('-nchains', '--n-chains', type=int, default=5)
+parser.add_argument('-nsteps', '--n-steps', type=int, default=10)
+parser.add_argument('-etype', '--energy-type', type=str, default='dft')
 
 args = parser.parse_args()
 
@@ -72,7 +72,8 @@ ids = args.ids
 
 # mcmc chains parameters
 
-n_chains,n_steps = args.n_chains_steps
+n_chains = args.n_chains
+n_steps = args.n_steps
 energy_type = args.energy_type
 
 coord_mapping = Coordinates_mapping()
@@ -146,6 +147,8 @@ out = run_metropolis(
     with_tqdm=False,
     return_ratio = False,
     return_proposals = False,
+    dft_folder_name="DFTComputations_{:d}".format(args.process_id),
+    scheduler=1,
 )
 
 date_end = time.strftime('%Y-%m-%d %H:%M:%S')

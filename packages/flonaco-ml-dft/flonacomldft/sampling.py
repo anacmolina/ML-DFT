@@ -27,6 +27,8 @@ def run_metropolis(
     with_tqdm=False,
     return_ratio = False,
     return_proposals = False,
+    dft_folder_name = None,
+    scheduler = 1,
 ):
     """
     Run Metropolis-Hastings algorithm to sample from a model.
@@ -69,7 +71,12 @@ def run_metropolis(
         
         coord_maps = Coordinates_mapping()
         calculator = DFTCalculator()
-        calculator.initialize_calculator()
+
+        if dft_folder_name is not None:
+            calculator.initialize_calculator(dft_folder_name)
+        else:
+            calculator.initialize_calculator()
+    
         use_dft = True
 
         xs_dft = []
@@ -233,7 +240,7 @@ def run_metropolis(
             pbar.set_description(f'acc: {acc.float().mean():.2f}')
 
         #TODO: Add parameter to save
-        if dt % 5 == 0:
+        if dt % scheduler == 0:
             print("step: {:d} \t acc: {:0.2f}".format(dt, acc.float().mean()))
 
     to_return = {
