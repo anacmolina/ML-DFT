@@ -1,4 +1,4 @@
-#TODO: Try to parallelize this code
+#TODO: Try to vectorize this code
 
 ### Import modules
 import torch

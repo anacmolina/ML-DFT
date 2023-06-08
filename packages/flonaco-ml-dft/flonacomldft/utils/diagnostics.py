@@ -46,7 +46,7 @@ def get_acceptance_ratio(init, flow_model, n_chains=5, n_steps=10, id_run=None, 
     
 class Target_Log_Prob:
     """Class to compute the target log probability of a model"""
-    def __init__(self, energy_type, mode_label=None, mlp_model=None, T=300, kB=kB):#kB=8.617333262e-5):
+    def __init__(self, energy_type, mode_label=None, mlp_model=None, T=300, kB=kB, folder=None):#kB=8.617333262e-5):
         """Initialize the class
         Args:
             energy_type (str): type of energy to use (dft, mlp, dft+mlp)
@@ -59,6 +59,7 @@ class Target_Log_Prob:
         self.mlp_model = mlp_model
         self.T = T
         self.kB = kB
+        self.folder = folder
     
     def __dft_target_log_prob__(self, xs):
         """Compute the target log probability using DFT"""
@@ -67,7 +68,7 @@ class Target_Log_Prob:
         
         coord_mapping = Coordinates_mapping()
         calculator = DFTCalculator()
-        calculator.initialize_calculator()
+        calculator.initialize_calculator(foldername=self.folder)
         
         u = torch.zeros(xs.shape[0])
         for i in range(xs.shape[0]):
@@ -106,9 +107,11 @@ def get_participation_ratio(prop, target_log_prob, n_prop):
         Participation ratio, 1 if proposal is equal to target and < 1 otherwise
 
     """
+
     xs = prop.sample(n_prop)
     log_weight = target_log_prob(xs, ).squeeze() + prop.nll(xs)
     log_ratio = torch.logsumexp(2 * log_weight, dim=0) - 2 * torch.logsumexp(log_weight, dim=0) 
+    
     return torch.exp(-log_ratio) / n_prop
 
 def get_ESS(x):

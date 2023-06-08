@@ -21,6 +21,11 @@ def train_flow(
     grad_clip=1e4,
     with_tqdm=False,
     use_tune=False,
+    compute_part_ratio=False,
+    energy_type=None,
+    mlp_model=None,
+    n_prop=None,
+    path=None,
 ):
     """Train a flow model on a dataset.
 
@@ -61,6 +66,17 @@ def train_flow(
     x_train = train[:, :dim]
     x_test = test[:, :dim]
 
+    if compute_part_ratio:
+        from flonacomldft.utils.diagnostics import Target_Log_Prob
+        from flonacomldft.utils.diagnostics import get_participation_ratio
+
+        mode_label = train[:, dim+1].unique().int()
+        
+        energy_type = energy_type
+        mlp_model = mlp_model
+
+        part_ratios = []
+
     ### Logs
     losses_train = []
     losses_test = []
@@ -73,6 +89,8 @@ def train_flow(
         pbar = tqdm.tqdm(range(n_iter))
     else:
         pbar = range(n_iter)
+
+    num_model = 0   
 
     ### Training loop
     for t in pbar:
@@ -122,13 +140,34 @@ def train_flow(
             print("Gd: {:0.0e}".format(total_norm), end="\t")
 
             for param_group in optimizer.param_groups:
-                print("lr: {:0.2e}".format(param_group["lr"]), end="\n")
+                if compute_part_ratio: 
+                    line="\t"
+                else:
+                    line="\n"
+                print("lr: {:0.2e}".format(param_group["lr"]), end=line)
 
             # if use_tune:
             #     tune.report({"loss":loss.item(), "grad_norm":total_norm})
 
-    ##TODO: Add ratios metropolis
-    ##TODO: Add participation ratio
+            if compute_part_ratio:
+                
+                #TODO: Check if this is necessary
+                import gpaw.mpi as mpi
+                    
+                target_log_prob = Target_Log_Prob(energy_type=energy_type, mode_label=mode_label, mlp_model=mlp_model, folder=path+'/DFTComputations_{:d}'.format(num_model)).target_log_prob
+                part_ratio = get_participation_ratio(model, target_log_prob, n_prop=n_prop)
+
+                if mpi.rank == 0:
+                    num_model += 1
+
+                mpi.world.barrier()
+
+                part_ratios.append(part_ratio)
+
+                print("part ratio: {:0.2e}".format(part_ratio), end="\n")
+
+        ##TODO: Add acceptance ratio
+        ##TODO: Add participation ratio
 
     to_return = {
         "model": model,
@@ -136,5 +175,8 @@ def train_flow(
         "models": models,
         "grad_norms": grad_norms,
     }
+
+    if compute_part_ratio:
+        to_return["part_ratios"] = part_ratios
 
     return to_return

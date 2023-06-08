@@ -87,6 +87,6 @@ def save_json_args(args, script_name, id, path=os.getcwd() + "/"):
     with open(path + filename_args, "w") as outfile:
         json.dump(vars(args), outfile)
 
-def get_process_id(date):
+def set_str_date_to_int(date):
     id = date.replace(' ', '').replace(':', '').replace('-', '')
     return int(id)

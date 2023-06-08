@@ -1,12 +1,15 @@
+import warnings
+warnings.filterwarnings("ignore")
+
 ### Import modules
 import argparse
+import os
 import time
 import torch
 
 from flonacomldft.utils.io_utils import (
     load_csv_file, 
     save_pickle_file,
-    get_project_path,
     save_json_args 
 )
 
@@ -15,32 +18,39 @@ from flonacomldft.internal_coordinates import (
     join_data
 )
 
+import gpaw.mpi as mpi
+from ase.parallel import parprint as print
+
 from flonacomldft.models.real_nvp import RealNVP_MLP
 from flonacomldft.train_flow_from_data import train_flow
-#from flonacomldft.parallel import set_seed
-from flonacomldft.utils.io_utils import get_process_id
+from flonacomldft.parallel import set_seed
+from flonacomldft.utils.io_utils import set_str_date_to_int
 
-
+ 
 ### Set equal seed for all ranks for parallel computations
-num_seed = torch.randint(100, (1,)).item() #set_seed()
+#num_seed = torch.randint(100, (1,)).item() 
+num_seed = set_seed()
+
+mpi.world.barrier()
+
 
 ### Get starting time and process id
 date_start = time.strftime('%Y-%m-%d %H:%M:%S')
-process_id = get_process_id(date_start)
+process_id = set_str_date_to_int(date_start)
 
 print('seed: ', num_seed)
 
 ### Define arguments to parse from command line
 parser = argparse.ArgumentParser(description='Prepare experiment')
 parser.add_argument('-np', '--num-procs', type=int, default=1)
-parser.add_argument('-ni', '--n-iter', type=int, default=10)
+parser.add_argument('-ni', '--n-iter', type=int, default=10000)
 parser.add_argument('-lr', '--learning-rate', type=float, default=1e-4)
-parser.add_argument('-ml', '--mode-label', type=int, default=0)
+parser.add_argument('-isomer', '--mode-label', type=int, default=0)
 parser.add_argument('-nb', '--n-blocks', type=int, default=4)
 parser.add_argument('-hdm', '--hidden-dim', type=int, default=64)
 parser.add_argument('-hdp', '--hidden-depth', type=int, default=3)
 parser.add_argument('-rs', '--random-seed', type=str, default=str(num_seed))
-parser.add_argument('-path', '--folder-path', type=str, default='database/berendsen/datasets/')
+parser.add_argument('-path', '--folder-path', type=str, default='database/berendsen/converged/')
 parser.add_argument('-pid', '--process-id', type=int, default=int(process_id))
 
 args = parser.parse_args()
@@ -56,6 +66,10 @@ print('n_thread_set: ', args.num_procs, torch.get_num_threads())
 mode_label = args.mode_label
 zmat_train = load_csv_file(args.folder_path + "is{:d}_flow_train.csv".format(mode_label))
 zmat_test = load_csv_file(args.folder_path + "is{:d}_flow_test.csv".format(mode_label))
+
+### Folder to save results
+if not os.path.exists('results_is{:d}_flow_{:d}'.format(mode_label, args.process_id)):
+    save_folder = os.mkdir('results_is{:d}_flow_{:d}'.format(mode_label, args.process_id))
 
 ### Get real center coordinates
 coord_mapping = Coordinates_mapping()
@@ -81,7 +95,7 @@ test = join_data(xs_test, energies_test, zmat_test[:, 13], logdetjacs_test).deta
 
 ### Initialize Flow model
 cov = torch.cov(xs_train.T).detach()
-model = RealNVP_MLP(12,
+model = RealNVP_MLP(dim=xs_train.shape[1],
                     n_blocks=args.n_blocks,
                     block_depth=1,
                     init_weight_scale=1e-3,
@@ -91,8 +105,10 @@ model = RealNVP_MLP(12,
                     device=device,
                     )
 
+mpi.world.barrier()
+
 ### Train Flow model
-out = train_flow(
+flow_dic = train_flow(
     model,
     train,
     test,
@@ -103,7 +119,12 @@ out = train_flow(
     save_splits=10,
     grad_clip=1e4,
     with_tqdm=False,
+    compute_part_ratio=True,
+    energy_type='dft',
+    n_prop=10,
 )
+
+mpi.world.barrier()
 
 ### Save end time
 date_end = time.strftime('%Y-%m-%d %H:%M:%S')
@@ -113,20 +134,20 @@ args.algorithm = 'train_flow_model.py'
 
 ### Save arguments to output file
 argparse_dict = vars(args)
-out['args'] = argparse_dict
+flow_dic['args'] = argparse_dict
 
 ### Save output to pickle file
-save_pickle_file(out, "is{:d}_flow_dic_training_{:d}.pkl".format(mode_label, args.process_id))
+save_pickle_file(flow_dic, save_folder + "is{:d}_flow_dic_training_{:d}.pkl".format(mode_label, args.process_id))
 
 ### Save arguments to json file
-save_json_args(args, 'train_flow_model', args.process_id)
+save_json_args(args, 'train_flow_model', args.process_id, path=os.getcwd()+'/results_is{:d}_flow_{:d}'.format(mode_label, args.process_id))
 
 import numpy as np
 import matplotlib.pyplot as plt
 from flonacomldft.collective_variables import get_CVs
 from flonacomldft.utils.plots import Flonaco_Plotter
 
-xs = out['model'].sample(150)
+xs = flow_dic['model'].sample(150)
 zmats = coord_mapping.get_internal_from_real_centered(xs, isomer=args.mode_label)[0]
 cvs = np.array(get_CVs(zmats))
 
@@ -134,10 +155,20 @@ flow_plotter = Flonaco_Plotter()
 
 fig, axs = plt.subplots(1, 2, figsize=(12, 4))
 axs[0].set_title("ml: {:d}, nb: {:d}, hdm: {:d}, hdp: {:d}".format(args.mode_label, args.n_blocks, args.hidden_dim, args.hidden_depth))
-flow_plotter.plot_losses(np.array(out['losses'])*(-1), yscale=True, ax=axs[0])
+flow_plotter.plot_losses(np.array(flow_dic['losses'])*(-1), yscale=True, ax=axs[0])
 flow_plotter.plot_collective_variables_on_time(cvs.T, ax=axs[1])
-plt.savefig('is{:d}_flow_training_{:d}.png'.format(args.mode_label, args.process_id))
+plt.savefig(save_folder + 'is{:d}_flow_training_{:d}.png'.format(args.mode_label, args.process_id))
 
 flow_plotter.plot_collective_variables_on_fes(cvs.T, label='Flow samples is{:d}'.format(mode_label))
 plt.title("ml: {:d}, nb: {:d}, hdm: {:d}, hdp: {:d}".format(args.mode_label, args.n_blocks, args.hidden_dim, args.hidden_depth))
-plt.savefig('is{:d}_flow_fes_{:d}.png'.format(args.mode_label, args.process_id))
+plt.savefig(save_folder + 'is{:d}_flow_fes_{:d}.png'.format(args.mode_label, args.process_id))
+
+from flonacomldft.utils.plots import set_plot_iteration
+
+fig, ax = plt.subplots(1,1, figsize=(6,4))
+set_plot_iteration(torch.stack(flow_dic['part_ratios']).detach(), avg=True, window_size=5, axis=1, ax=ax, label='part_ratio')
+ax.set_xlabel('Training steps')
+ax.set_ylabel('Participation ratio')
+ax.legend()
+plt.savefig(save_folder + 'is{:d}_flow_part_ratio_{:d}.png'.format(args.mode_label, args.process_id))
+

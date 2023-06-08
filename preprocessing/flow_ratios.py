@@ -8,7 +8,7 @@ import numpy as np
 import torch
 
 from flonacomldft.parallel import set_seed
-from flonacomldft.utils.io_utils import get_process_id
+from flonacomldft.utils.io_utils import set_str_date_to_int
 from flonacomldft.utils.io_utils import (
     load_pickle_file,
     load_csv_file,
@@ -29,7 +29,7 @@ mpi.world.barrier()
 
 ### Get start time and process id
 date_start = time.strftime('%Y-%m-%d %H:%M:%S')
-process_id = get_process_id(date_start)
+process_id = set_str_date_to_int(date_start)
 
 print('seed: ', num_seed)
 
