@@ -127,6 +127,9 @@ def train_flow(
             # if use_tune:
             #     tune.report({"loss":loss.item(), "grad_norm":total_norm})
 
+    ##TODO: Add ratios metropolis
+    ##TODO: Add participation ratio
+
     to_return = {
         "model": model,
         "losses": (losses_train, losses_test),
