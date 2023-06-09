@@ -2,7 +2,7 @@ import torch
 import copy
 from flonacomldft.train_flow_from_data import train_flow
 from flonacomldft.sampling import run_metropolis
-from flonacomldft.models.mixture import Mixture
+from flonacomldft.models.mixture import Mixture, get_models
 from flonacomldft.internal_coordinates import join_data
 
 def get_weights(isomers):
@@ -46,8 +46,10 @@ def adaptive_sampling(
 
     dict_flows_training = [copy.deepcopy(dict_flows_init), ]
 
-    flow_models = lambda dict_flows: [dict_flow['model'] for dict_flow in dict_flows]
-    mlp_models = lambda dict_mlps: [dict_mlp['model'] for dict_mlp in dict_mlps]
+    if 'mlp' in energy_type:
+        mlp_models = get_models(dict_mlps_init)
+    else:
+        mlp_models = [None]
 
     mcmc_runs = []
 
@@ -69,9 +71,9 @@ def adaptive_sampling(
             if reweighting and i>0:
                 weights = get_weights(isomers[i-1])
 
-            model = Mixture(flow_models(dict_flows_training[i]), weights)
+            model = Mixture(get_models(dict_flows_training[i]), weights)
         else:
-            model = flow_models(dict_flows_training[i])[0]
+            model = get_models(dict_flows_training[i])[0]
 
         mcmc_run = run_metropolis(
             model=model,
@@ -80,7 +82,7 @@ def adaptive_sampling(
             n_steps=n_steps,
             id_run=i,
             energy_type=energy_type,
-            mlp_models=mlp_models(dict_mlps_init),
+            mlp_models=mlp_models,
             mixture=mixture,
             dim=dim,
             dft_folder_name=dft_folder_name,

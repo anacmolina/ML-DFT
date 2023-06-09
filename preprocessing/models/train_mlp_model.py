@@ -1,3 +1,5 @@
+# TODO: add parser like train_flow_model.py
+
 ### Import modules
 import argparse
 

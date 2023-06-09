@@ -80,12 +80,25 @@ def save_ase_molecules_as_traj(configs, filename='configs.traj', path=os.getcwd(
 
 # add type of algorithm to args filename
 def save_json_args(args, script_name, id, path=os.getcwd() + "/"):
+
     import json
+    import numpy as np
+
+    class NpEncoder(json.JSONEncoder):
+        def default(self, obj):
+            if isinstance(obj, np.integer):
+                return int(obj)
+            if isinstance(obj, np.floating):
+                return float(obj)
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+            return super(NpEncoder, self).default(obj)
+
 
     filename_args = "args_{:s}_{:d}.json".format(script_name, id)
 
     with open(path + filename_args, "w") as outfile:
-        json.dump(vars(args), outfile)
+        json.dump(vars(args), outfile, cls=NpEncoder)
 
 def set_str_date_to_int(date):
     id = date.replace(' ', '').replace(':', '').replace('-', '')

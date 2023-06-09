@@ -1,114 +1,99 @@
 import warnings
 warnings.filterwarnings("ignore")
 
-from ase.parallel import parprint as print
-
+# standard library imports
 import os
-import argparse
 import time
+import argparse
 
+# scientific library imports
 import torch
 import numpy as np
 
+# parallelization set up
+import gpaw.mpi as mpi
+from ase.parallel import parprint as print
+
+# flonaco imports
+# io handling
 from flonacomldft.utils.io_utils import (
     load_csv_file,
     load_pickle_file,
     save_pickle_file,
-    get_project_path,
-    save_json_args
+    save_json_args,
+    set_str_date_to_int,
 )
-
-from flonacomldft.internal_coordinates import Coordinates_mapping, join_data
+# coordinates handling
+from flonacomldft.internal_coordinates import Coordinates_mapping
+# sampling and training
 from flonacomldft.full_adaptive_sampling import adaptive_sampling
 
-#from flonacomldft.parallel import set_seed
-from flonacomldft.utils.io_utils import get_process_id
+ranks = np.arange(0, mpi.world.size)
+rank = mpi.rank
+comm = mpi.world.new_communicator(ranks)
 
-#import gpaw.mpi as mpi
+num_seed = np.array([0])
+date_start = np.array([0])
 
-num_seed = [42] #set_seed()
-torch.manual_seed(num_seed[0])
-#mpi.world.barrier()
+# only rank 0 generates the seed and date_start
+if rank == 0:
+    num_seed = np.random.randint(0, 100, (1,))
+    date_start = np.array([set_str_date_to_int(time.strftime('%Y-%m-%d %H:%M:%S'))])
 
-# for naming files
-date_start = time.strftime('%Y-%m-%d %H:%M:%S')
-process_id = get_process_id(date_start)
+mpi.world.barrier()
 
-print('seed: ', num_seed)
+comm.broadcast(num_seed, 0)
+comm.broadcast(date_start, 0)
 
-### Define arguments to parse from command line
+num_seed = num_seed[0]
+date_start = date_start[0]
+
+print('seed: ', num_seed, rank)
+print('date_start: ', date_start, rank)
+
 parser = argparse.ArgumentParser(description='Prepare experiment')
-parser.add_argument('-np', '--num-procs', type=int, default=1)
+# execution params
+parser.add_argument('-np', '--num-procs', type=int, default=(len(ranks)))
+parser.add_argument('-pid', '--process-id', type=int, default=date_start)
+parser.add_argument('-rs', '--random-seed', type=int, default=num_seed)
+parser.add_argument('-path', '--folder-path', type=str, default='database/berendsen/')
+# training params
+parser.add_argument('-isomer', '--mode-label', type=int, nargs='+', default=[0])
+parser.add_argument('-ids', '--ids', type=int, nargs='+', default=[None, None])
 parser.add_argument('-ni', '--n-iter', type=int, default=1000)
 parser.add_argument('-lr', '--learning-rate', type=float, default=1e-4)
-parser.add_argument('-isomer', '--mode-label', type=int, nargs='+', default=0)
-parser.add_argument('-ids', '--ids', type=int, nargs='+', default=[None, None])
-parser.add_argument('-rs', '--random-seed', type=str, default=str(num_seed))
-parser.add_argument('-path', '--folder-path', type=str, default='database/')
-parser.add_argument('-pid', '--process-id', type=int, default=int(process_id))
+# adaptive sampling params
 parser.add_argument('-nruns', '--n-runs', type=int, default=5)
-parser.add_argument('-s', '--n-chains-steps', type=int, nargs='+', default=[50, 20] )
-parser.add_argument('-etype', '--energy-type', type=str, default='mlp')
+parser.add_argument('-nchains', '--n-chains', type=int, default=5)
+parser.add_argument('-nsteps', '--n-steps', type=int, default=10)
+parser.add_argument('-etype', '--energy-type', type=str, default='dft')
 
 args = parser.parse_args()
+args.date_start = str(date_start)
 
-args.date_start = date_start
-
+# torch settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-#torch.set_num_threads(args.num_procs)
-print('n_thread_set: ', args.num_procs)
+if len(ranks) > 1:
+    torch.set_num_threads(int(args.num_procs))
+    torch.manual_seed(args.random_seed)
 
-# TODO: Check the mlp is1 training loss
-
-energy_type = args.energy_type
-
-# mcmc params
-n_runs = args.n_runs
-n_chains, n_steps = args.n_chains_steps
-
-#--------------------------------------------------
-
-flow_hyperparams_is0 = {'n_iter': args.n_iter,
-    'lr': args.learning_rate,
-    'use_scheduler': False,
-    'step_schedule': 100,
-    'save_splits': 10,
-    'grad_clip': 1e4}
-
-flow_hyperparams_is1 = {'n_iter': args.n_iter,
-    'lr': args.learning_rate,
-    'use_scheduler': False,
-    'step_schedule': 100,
-    'save_splits': 10,
-    'grad_clip': 1e4}
-
-mlp_hyperparams_is0 = {'n_iter': args.n_iter,
-    'lr': args.learning_rate,
-    'use_scheduler': False,
-    'step_schedule': 100,
-}
-
-mlp_hyperparams_is1 = {'n_iter': args.n_iter,
-    'lr': args.learning_rate,
-    'use_scheduler': False,
-    'step_schedule': 100,
-}
-#--------------------------------------------------
-
+# isomer labels
 mode_labels = args.mode_label
 ids = args.ids
 
-dataset_labels = ['flow_train', 'flow_test']
+# mcmc chains parameters
+n_runs = args.n_runs
+n_chains = args.n_chains
+n_steps = args.n_steps
+energy_type = args.energy_type
 
-if "mlp" in energy_type:
-    
-    dataset_labels = dataset_labels + ['mlp_train', 'mlp_test']
-
-
+# real center coordinates
 
 coord_mapping = Coordinates_mapping()
 
+# TODO: is this the best way to get the dataset?
+# TODO: real center data in a file already, add collective varibles to csv file 
 def get_dataset(name, path, mode_labels):
     
     zmats = [load_csv_file(args.folder_path + "converged/is{:d}_{:s}.csv".format(mode_label, name)) for mode_label in mode_labels] 
@@ -119,29 +104,49 @@ def get_dataset(name, path, mode_labels):
                                     energies=zmat_test[:, 12]
                                     ) for mode_label, zmat_test in zip(mode_labels, zmats)]
 
-    xs = torch.stack([torch.cat((x[0], x[2].reshape(-1, 1), zmat[:, 13].reshape(-1, 1), x[1].reshape(-1, 1)), dim=1) for x, zmat in zip(xs, zmats)])
+    xs = torch.stack([torch.cat((x[0], x[2].reshape(-1, 1), 
+                                 zmat[:, 13].reshape(-1, 1), 
+                                 #x[1].reshape(-1, 1),
+                                 ), dim=1) for x, zmat in zip(xs, zmats)])
     xs = xs.flatten(start_dim=0, end_dim=1).to(torch.float32)
 
     return xs, zmats
 
+dataset_labels = ['flow_train', 'flow_test']
+
 flow_xs_train, flow_zmat_train = get_dataset('flow_train', args.folder_path, mode_labels)
 flow_xs_test, flow_zmat_test = get_dataset('flow_test', args.folder_path, mode_labels)
 
+# flow models
+flows_dic = [load_pickle_file(args.folder_path + 'models/is{:d}_flow_dic_training_{:d}.pkl'.format(mode_label, id_)) for mode_label, id_ in zip(mode_labels, ids) ]
+
+# retraining hyperparameters
+flow_hyperparams = {'n_iter': args.n_iter,
+    'lr': args.learning_rate,
+    'use_scheduler': False,
+    'step_schedule': 100,
+    'save_splits': 10,
+    'grad_clip': 1e4}
+
+# if mlp models are used
 if "mlp" in energy_type:
+
+    dataset_labels = dataset_labels + ['mlp_train', 'mlp_test']
 
     mlp_xs_train, mlp_zmat_train = get_dataset('mlp_train', args.folder_path, mode_labels)
     mlp_xs_test, mlp_zmat_test = get_dataset('mlp_test', args.folder_path, mode_labels)
 
-    # pretrain flows and mlps
-
-    # mlp models
-
-    mlps_dic = [load_pickle_file(args.folder_path + 'is{:d}_mlp_dic_training_{:d}.pkl'.format(mode_label, id_)) for mode_label, id_ in zip(mode_labels, ids[:len(mode_labels)]) ]
+    mlps_dic = [load_pickle_file(args.folder_path + 'models/is{:d}_mlp_dic_training_{:d}.pkl'.format(mode_label, id_)) for mode_label, id_ in zip(mode_labels, ids[:len(mode_labels)]) ]
 
     print('# models: ', len(mlps_dic))
 
+    mlp_hyperparams = {'n_iter': args.n_iter,
+        'lr': args.learning_rate,
+        'use_scheduler': False,
+        'step_schedule': 100,
+    }
 else:
-
+    mlp_hyperparams = None
     mlps_dic = None
 
     mlp_xs_train = None
@@ -150,27 +155,24 @@ else:
     mlp_zmat_train = None
     mlp_zmat_test = None
 
-# flow models
-
-flows_dic = [load_pickle_file(args.folder_path + 'models/is{:d}_flow_dic_training_{:d}.pkl'.format(mode_label, id_)) for mode_label, id_ in zip(mode_labels, ids) ]
+# init chains
+shuffle = torch.randperm(flow_xs_test.shape[0])
+init_mcmc = flow_xs_test[shuffle].clone()[:n_chains]
 
 # run adaptive sampling
-
+# TODO: include results folder and filename argument for mcmc
 out = adaptive_sampling(
     flow_init_train=flow_xs_train,
     flow_init_test=flow_xs_test,
+    init_mcmc=init_mcmc,
     n_runs=n_runs,
     n_chains=n_chains,
     n_steps=n_steps,
     energy_type=energy_type,
     dict_flows_init=flows_dic,
-    flow_hyperparams=[flow_hyperparams_is0, flow_hyperparams_is1],
-    retraining_mlp=False,
+    flow_hyperparams=[flow_hyperparams, flow_hyperparams], # TODO: generalize for more flows
     dict_mlps_init=mlps_dic,
-    mlp_hyperparams=[mlp_hyperparams_is0, mlp_hyperparams_is1],
-    mlp_init_train=mlp_xs_train,
-    mlp_init_test=mlp_xs_test,
-)
+    )
 
 date_end = time.strftime('%Y-%m-%d %H:%M:%S')
 args.date_end = date_end
