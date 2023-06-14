@@ -97,7 +97,7 @@ def adaptive_sampling(
 
         init = join_data(xs[i][-1].clone(), us[i][-1].clone(), isomers[i][-1].clone())
 
-        #TODO: Chech size of xs_for_flows_train
+        #TODO: Chech size of xs_for_flows_train, if rewriting first and last element in the list
 
         chains_flatten = Transpose(
             torch.cat(
@@ -133,7 +133,8 @@ def adaptive_sampling(
                 xs_for_flows_test[mode],
                 #mlp_model=get_models(dict_mlps_training[-1])[0],
                 **flow_hyperparams[mode],
-                dim=dim
+                dim=dim,
+                path=dft_folder_name,
                 )
             
             dict_new_flows.append(copy.deepcopy(dict_new_flow))

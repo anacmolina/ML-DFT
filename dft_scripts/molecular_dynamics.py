@@ -10,11 +10,11 @@ from ase.md.velocitydistribution import (MaxwellBoltzmannDistribution,
                                          Stationary, ZeroRotation)
 
 from flonacomldft.utils.silver_isomers_utils import get_molecule_isomer_minima
-from flonacomldft.utils.io_utils import get_process_id
+from flonacomldft.utils.io_utils import set_str_date_to_int
 
 ### Get start date and process id
 date_start = time.strftime('%Y-%m-%d %H:%M:%S') 
-process_id = get_process_id(date_start)
+process_id = set_str_date_to_int(date_start)
 
 ### Define arguments to parse from command line
 parser = argparse.ArgumentParser(description='Prepare simulation params')
@@ -24,7 +24,7 @@ parser.add_argument('-ns', '--n-steps', type=int, default=10)
 parser.add_argument('-ts', '--time-step', type=float, default=5)
 parser.add_argument('-T', '--temperature', type=float, default=300)
 parser.add_argument('-taut', '--taut', type=float, default=50)
-parser.add_argument('-f', '--friction', type=float, default=0.01)
+parser.add_argument('-f', '--friction', type=float, default=None)
 parser.add_argument('-ap', '--andersen-prob', type=float, default=2e-3)
 parser.add_argument('-pid', '--process-id', type=int, default=process_id)
 
@@ -48,9 +48,10 @@ calc = GPAW(mode="lcao", h=0.2, basis="pvalence.dz", spinpol=True, xc="PBE", sym
 mol.calc = calc
 
 ### Set initial conditions
-MaxwellBoltzmannDistribution(mol, temperature_K=300)
-Stationary(mol)
-ZeroRotation(mol)
+if args.thermostat_type == 'langenvin':
+    MaxwellBoltzmannDistribution(mol, temperature_K=300)
+    Stationary(mol)
+    ZeroRotation(mol)
 
 params_thermostat = {'time_step': args.time_step,
                      'temperature': args.temperature,

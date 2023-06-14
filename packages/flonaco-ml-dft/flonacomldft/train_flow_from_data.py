@@ -22,9 +22,9 @@ def train_flow(
     with_tqdm=False,
     use_tune=False,
     compute_part_ratio=False,
-    energy_type=None,
+    energy_type='dft',
     mlp_model=None,
-    n_prop=None,
+    n_prop=25,
     path=None,
 ):
     """Train a flow model on a dataset.

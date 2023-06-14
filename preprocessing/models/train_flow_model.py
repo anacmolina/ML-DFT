@@ -65,15 +65,17 @@ parser.add_argument('-isomer', '--mode-label', type=int, default=0)
 parser.add_argument('-ni', '--n-iter', type=int, default=10)
 parser.add_argument('-lr', '--learning-rate', type=float, default=1e-3)
 parser.add_argument('-nb', '--n-blocks', type=int, default=4)
-parser.add_argument('-hdm', '--hidden-dim', type=int, default=64)
-parser.add_argument('-hdp', '--hidden-depth', type=int, default=3)
+parser.add_argument('-node', '--hidden-dim', type=int, default=64)
+parser.add_argument('-layer', '--hidden-depth', type=int, default=3)
 # sampling params
-parser.add_argument('-doratios', '--do-ratios', type=bool, default=False)
+parser.add_argument('-r', '--do-ratios', type=bool, default=False)
 parser.add_argument('-etype', '--energy-type', type=str, default='dft')
-parser.add_argument('-nprop', '--n-prop', type=int, default=5)
+parser.add_argument('-prop', '--n-prop', type=int, default=5)
 
 args = parser.parse_args()
 args.date_start = str(date_start)
+
+print('args: ', args, rank)
 
 # torch settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
