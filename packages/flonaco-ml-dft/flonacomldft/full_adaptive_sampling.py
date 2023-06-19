@@ -36,7 +36,7 @@ def adaptive_sampling(
         T=300,
         reweighting=False,
         weights=None,
-        dft_folder_name=None
+        path=None
         ):
 
     modes = torch.unique(flow_init_train[:, dim+1])
@@ -85,7 +85,7 @@ def adaptive_sampling(
             mlp_models=mlp_models,
             mixture=mixture,
             dim=dim,
-            dft_folder_name=dft_folder_name,
+            dft_folder_name=path + '/DFTAdaptive',
             )
         
         mcmc_runs.append(mcmc_run)
@@ -126,6 +126,15 @@ def adaptive_sampling(
                 (xs_for_flows_train[mode].clone(), xs_from_chains.clone())
             )
 
+            # n_runs/save_splits
+            if i % 5 == 0:
+
+            #TODO: do this only for some number of runs
+                if flow_hyperparams[mode]['compute_part_ratio']:
+                    flow_hyperparams[mode]['path'] = path + '/DFTRatios_{:d}'.format(i)
+            else:
+                flow_hyperparams[mode]['compute_part_ratio'] = False
+
             #add mlps
             dict_new_flow = train_flow(
                 dict_flows_training[i][mode]['model'],
@@ -134,13 +143,12 @@ def adaptive_sampling(
                 #mlp_model=get_models(dict_mlps_training[-1])[0],
                 **flow_hyperparams[mode],
                 dim=dim,
-                path=dft_folder_name,
                 )
             
-            dict_new_flows.append(copy.deepcopy(dict_new_flow))
+            dict_new_flows.append(dict_new_flow)
             
         else:
-            dict_new_flow = copy.deepcopy(dict_flows_training[i][mode])
+            dict_new_flow = dict_flows_training[i][mode]
             dict_new_flows.append(dict_new_flow)
 
         dict_flows_training.append(dict_new_flows)

@@ -12,11 +12,12 @@ import numpy as np
 
 # parallelization set up
 import gpaw.mpi as mpi
-from ase.parallel import parprint as print
+#from ase.parallel import parprint as print
 
 # flonaco imports
 # io handling
 from flonacomldft.utils.io_utils import (
+    get_path,
     load_csv_file,
     load_pickle_file,
     save_pickle_file,
@@ -56,7 +57,7 @@ parser = argparse.ArgumentParser(description='Prepare experiment')
 parser.add_argument('-np', '--num-procs', type=int, default=(len(ranks)))
 parser.add_argument('-pid', '--process-id', type=int, default=date_start)
 parser.add_argument('-rs', '--random-seed', type=int, default=num_seed)
-parser.add_argument('-path', '--folder-path', type=str, default='database/berendsen/')
+parser.add_argument('-path', '--folder-path', type=str, default='berendsen/')
 # training params
 parser.add_argument('-isomer', '--mode-label', type=int, nargs='+', default=[0])
 parser.add_argument('-ids', '--ids', type=int, nargs='+', default=[None, None])
@@ -78,6 +79,10 @@ if len(ranks) > 1:
     torch.set_num_threads(int(args.num_procs))
     torch.manual_seed(args.random_seed)
 
+print(torch.get_num_threads(), args.num_procs, rank)
+
+mpi.world.barrier()
+
 # isomer labels
 mode_labels = args.mode_label
 ids = args.ids
@@ -88,6 +93,8 @@ n_chains = args.n_chains
 n_steps = args.n_steps
 energy_type = args.energy_type
 
+path_datasets = get_path() + '/' + args.folder_path
+
 # real center coordinates
 
 coord_mapping = Coordinates_mapping()
@@ -96,7 +103,7 @@ coord_mapping = Coordinates_mapping()
 # TODO: real center data in a file already, add collective varibles to csv file 
 def get_dataset(name, path, mode_labels):
     
-    zmats = [load_csv_file(args.folder_path + "converged/is{:d}_{:s}.csv".format(mode_label, name)) for mode_label in mode_labels] 
+    zmats = [load_csv_file("converged/is{:d}_{:s}.csv".format(mode_label, name), path) for mode_label in mode_labels] 
     xs = [coord_mapping.get_real_centered_from_internal(
                                     zmat_test[:, :12],
                                     zmat_test[:, 14],
@@ -114,11 +121,40 @@ def get_dataset(name, path, mode_labels):
 
 dataset_labels = ['flow_train', 'flow_test']
 
-flow_xs_train, flow_zmat_train = get_dataset('flow_train', args.folder_path, mode_labels)
-flow_xs_test, flow_zmat_test = get_dataset('flow_test', args.folder_path, mode_labels)
+flow_xs_train, flow_zmat_train = get_dataset('flow_train', path_datasets, mode_labels)
+flow_xs_test, flow_zmat_test = get_dataset('flow_test', path_datasets, mode_labels)
 
 # flow models
-flows_dic = [load_pickle_file(args.folder_path + 'models/is{:d}_flow_dic_training_{:d}.pkl'.format(mode_label, id_)) for mode_label, id_ in zip(mode_labels, ids) ]
+flows_dic = [load_pickle_file("models/is{:d}_flow_dic_training_{:d}.pkl".format(mode_label, id_), path_datasets) for mode_label, id_ in zip(mode_labels, ids) ]
+
+mpi.world.barrier()
+
+# whether to use a mixture of flows
+if len(mode_labels)==1:
+    mixture = False
+    flow_model = flows_dic[0]
+
+    if "mlp" in energy_type: 
+        ## ADD MLP MODEL
+        pass
+        #mlp_models = mlp_models[0]
+else:
+    mixture = True
+
+if mixture:
+    simulation_name = "mixture"
+else:
+    simulation_name = "is{:d}".format(mode_labels[0])
+
+# path to save results
+folder_to_save_results = 'results_adaptive_{:s}_{:d}'.format(simulation_name, args.process_id)
+path_to_save_results = os.getcwd() + '/' + folder_to_save_results
+if rank == 0:
+    if not os.path.exists(path_to_save_results):
+        os.makedirs(path_to_save_results)
+
+mpi.world.barrier()
+
 
 # retraining hyperparameters
 flow_hyperparams = {'n_iter': args.n_iter,
@@ -174,6 +210,7 @@ out = adaptive_sampling(
     dict_flows_init=flows_dic,
     flow_hyperparams=[flow_hyperparams, flow_hyperparams], # TODO: generalize for more flows
     dict_mlps_init=mlps_dic,
+    path=path_to_save_results,
     )
 
 date_end = time.strftime('%Y-%m-%d %H:%M:%S')
@@ -184,7 +221,7 @@ args.algorithm = 'adaptive_sampling.py'
 argparse_dict = vars(args)
 out['args'] = argparse_dict
 
-save_json_args(args, 'adaptive_sampling', args.process_id, os.getcwd() + '/')
+save_json_args(args, 'adaptive_sampling', args.process_id, path_to_save_results)
 
 f = "adaptative_sampling_{:d}.pkl".format(args.process_id)
-save_pickle_file(out, f, path = os.getcwd() + '/')
+save_pickle_file(out, f, path = path_to_save_results)

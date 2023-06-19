@@ -187,7 +187,7 @@ class Flonaco_Plotter:
         """ Plot the collective variables of the system on the free energy surface."""
 
         plotter = Plotter(400, 'Ag6', )
-        plotter.readfile(get_path() + 'unrotated_300.txt')
+        plotter.readfile(get_path() + '/' + 'unrotated_300.txt')
 
         fig, ax = plotter.plot_fes(0.1, 300, delta2=1, shift=1.5)
         

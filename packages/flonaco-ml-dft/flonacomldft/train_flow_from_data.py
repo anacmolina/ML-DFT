@@ -15,7 +15,7 @@ def train_flow(
     dim=12,
     n_iter=100,
     lr=5e-3,
-    use_scheduler=True,
+    use_scheduler=False,
     step_schedule=1000,
     save_splits=10,
     grad_clip=1e4,
@@ -24,7 +24,7 @@ def train_flow(
     compute_part_ratio=False,
     energy_type='dft',
     mlp_model=None,
-    n_prop=25,
+    n_prop=5,
     path=None,
 ):
     """Train a flow model on a dataset.
@@ -90,7 +90,7 @@ def train_flow(
     else:
         pbar = range(n_iter)
 
-    num_model = 0   
+    # num_model = 0   
 
     ### Training loop
     for t in pbar:
@@ -151,16 +151,16 @@ def train_flow(
 
             if compute_part_ratio:
                 
-                #TODO: Check if this is necessary
-                import gpaw.mpi as mpi
+                ##TODO: Check if this is necessary
+                #import gpaw.mpi as mpi
                     
-                target_log_prob = Target_Log_Prob(energy_type=energy_type, mode_label=mode_label, mlp_model=mlp_model, folder=path+'/DFTComputations_{:d}'.format(num_model)).target_log_prob
+                target_log_prob = Target_Log_Prob(energy_type=energy_type, mode_label=mode_label, mlp_model=mlp_model, folder=path+'/DFTComputations_{:d}'.format(t)).target_log_prob
                 part_ratio = get_participation_ratio(model, target_log_prob, n_prop=n_prop)
 
-                if mpi.rank == 0:
-                    num_model += 1
+                #if mpi.rank == 0:
+                #    num_model += 1
 
-                mpi.world.barrier()
+                #mpi.world.barrier()
 
                 part_ratios.append(part_ratio)
 
@@ -171,12 +171,12 @@ def train_flow(
 
     to_return = {
         "model": model,
-        "losses": (losses_train, losses_test),
+        "losses": torch.FloatTensor([losses_train, losses_test]).detach(),
         "models": models,
         "grad_norms": grad_norms,
     }
 
     if compute_part_ratio:
-        to_return["part_ratios"] = part_ratios
+        to_return["part_ratios"] = torch.stack(part_ratios).detach()
 
     return to_return

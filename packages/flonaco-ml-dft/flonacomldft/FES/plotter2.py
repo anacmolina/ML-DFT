@@ -225,7 +225,7 @@ class Plotter():
             maxi = minmax[1]
 
         F_grid = F.reshape((self.bins, self.bins))
-        print(type(minmax))
+        #print(type(minmax))
 
         im = ax.contourf(C.astype(float), R.astype(float), F_grid.astype(float), np.arange(mini,maxi,delta), cmap=cmap, 
                          vmin=minmax[0], vmax=minmax[1])
