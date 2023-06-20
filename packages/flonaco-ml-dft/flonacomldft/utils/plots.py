@@ -107,7 +107,7 @@ def set_plot_iteration(tensor, avg=True, window_size=10, axis=1, ax=None, init=0
     y = tensor
 
     if avg:
-        x_avg = np.arange(init + window_size - 1, init + window_size + len(avg_windows(tensor, window_size, axis)) - 1 )
+        x_avg = np.arange(init + window_size - 1, init + window_size + len(avg_windows(tensor, window_size, axis)) - 1)
         y_avg = avg_windows(tensor, window_size, axis)
         ax.plot(x_avg, y_avg, color=color, label=label+'_avg', **kwargs)
 

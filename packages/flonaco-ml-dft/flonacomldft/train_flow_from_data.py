@@ -24,7 +24,7 @@ def train_flow(
     compute_part_ratio=False,
     energy_type='dft',
     mlp_model=None,
-    n_prop=5,
+    n_prop=50,
     path=None,
 ):
     """Train a flow model on a dataset.

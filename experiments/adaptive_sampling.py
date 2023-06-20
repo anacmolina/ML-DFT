@@ -161,7 +161,7 @@ flow_hyperparams = {'n_iter': args.n_iter,
     'lr': args.learning_rate,
     'use_scheduler': False,
     'step_schedule': 100,
-    'save_splits': 3,
+    'save_splits': 5,
     'grad_clip': 1e4,
     'compute_part_ratio': True,
     }

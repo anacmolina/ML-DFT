@@ -1,5 +1,8 @@
 ### Import modules
 
+import warnings
+warnings.filterwarnings("ignore")
+
 import os
 import argparse
 import time
@@ -89,16 +92,20 @@ else:
     mlp_model = None
 
 ### Flow model
-flow_models = load_pickle_file(args.flow_file, path = os.getcwd() + '/')['models']
+#flow_models = load_pickle_file(args.flow_file, path = os.getcwd() + '/')['models']
+dics = load_pickle_file(args.flow_file, path = os.getcwd() + '/')['dict_flows_training']
+print(len(dics))
+flow_models = [dic_[0]['model']
+    for dic_ in dics]
 
 ### Run MH simulation and compute acceptance ratio
 
-acceptance_ratios = torch.stack([get_acceptance_ratio(xs, flow_model, n_chains, n_steps, id_run, energy_type, mlp_model, return_ratios=False) for id_run, flow_model in enumerate(flow_models)])
+#acceptance_ratios = torch.stack([get_acceptance_ratio(xs, flow_model, n_chains, n_steps, id_run, energy_type, mlp_model, return_ratios=False) for id_run, flow_model in enumerate(flow_models)])
 
 ### Compute participation ratio
 from flonacomldft.utils.diagnostics import Target_Log_Prob
 
-target_log_prob = Target_Log_Prob(energy_type=args.energy_type, mode_label=mode_label, mlp_model=mlp_model).target_log_prob
+target_log_prob = Target_Log_Prob(energy_type=args.energy_type, mode_label=mode_label, mlp_model=mlp_model, folder=os.getcwd()+'/').target_log_prob
 participation_ratios = torch.stack([get_participation_ratio(flow_model, target_log_prob, n_prop=n_steps) for flow_model in flow_models])
 
 ### Save results
@@ -112,14 +119,14 @@ save_json_args(args, 'compute_ratios', args.process_id, os.getcwd() + '/')
 
 f = "is{:d}_mh_ratios_{:d}.pkl".format(mode_label, args.process_id)
 
-out = {'acc_ratios': acceptance_ratios, 
+out = {#'acc_ratios': acceptance_ratios, 
        'part_ratios': participation_ratios}
 
 save_pickle_file(out, f, path = os.getcwd() + '/')
 
 import matplotlib.pyplot as plt
 
-print(acceptance_ratios)
+#print(acceptance_ratios)
 print(participation_ratios)
 
 def plot_acceptance_ratio_nsteps(acceptance_ratios, split=10, alpha=0.2, ax=None):
@@ -154,12 +161,12 @@ def plot_acceptance_ratio_models(acceptance_ratios, marker='o-', ax=None):
 fig = plt.figure(figsize=(10, 8))
 
 ax1 = plt.subplot(222)
-plot_acceptance_ratio_models(acceptance_ratios.detach().numpy()[:, -1], 'o-', ax=ax1)
+#plot_acceptance_ratio_models(acceptance_ratios.detach().numpy()[:, -1], 'o-', ax=ax1)
 
 ax2 = plt.subplot(221)
 plot_participation_ratio(participation_ratios.detach().numpy(), ax=ax2)
 
 ax3 = plt.subplot(212)
-plot_acceptance_ratio_nsteps(acceptance_ratios.detach().numpy(), ax=ax3)
+#plot_acceptance_ratio_nsteps(acceptance_ratios.detach().numpy(), ax=ax3)
 
 plt.savefig('acceptance_participation_ratios_{:d}.png'.format(args.process_id))

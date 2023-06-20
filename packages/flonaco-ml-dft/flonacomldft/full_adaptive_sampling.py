@@ -128,10 +128,9 @@ def adaptive_sampling(
 
             # n_runs/save_splits
             if i % 5 == 0:
-
-            #TODO: do this only for some number of runs
-                if flow_hyperparams[mode]['compute_part_ratio']:
-                    flow_hyperparams[mode]['path'] = path + '/DFTRatios_{:d}'.format(i)
+                #TODO: do this only for some number of runs
+                flow_hyperparams[mode]['compute_part_ratio'] = True
+                flow_hyperparams[mode]['path'] = path + '/DFTRatios_{:d}'.format(i)
             else:
                 flow_hyperparams[mode]['compute_part_ratio'] = False
 
