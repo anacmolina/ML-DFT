@@ -17,6 +17,7 @@ def train_mlp(
     step_schedule=1000,
     save_splits=10,
     with_tqdm=False,
+    dim=12
 ):
     """Train a MLP model on a dataset.
 
@@ -51,8 +52,8 @@ def train_mlp(
         )
 
     ### Input and output data
-    xs_train, us_train = train[:, :12], train[:, 12]
-    xs_test, us_test = test[:, :12], test[:, 12] #(nsample_train, dims), (nsamples)
+    xs_train, us_train = train[:, :dim], train[:, dim]
+    xs_test, us_test = test[:, :dim], test[:, dim] #(nsample_train, dims), (nsamples)
     
     if with_tqdm:
         pbar = tqdm.tqdm(range(n_iter))

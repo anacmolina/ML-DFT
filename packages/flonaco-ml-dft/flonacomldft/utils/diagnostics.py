@@ -107,7 +107,6 @@ def get_participation_ratio(prop, target_log_prob, n_prop):
         Participation ratio, 1 if proposal is equal to target and < 1 otherwise
 
     """
-
     xs = prop.sample(n_prop)
     log_weight = target_log_prob(xs, ).squeeze() + prop.nll(xs)
     log_ratio = torch.logsumexp(2 * log_weight, dim=0) - 2 * torch.logsumexp(log_weight, dim=0) 
