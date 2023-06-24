@@ -17,11 +17,11 @@ def get_project_path():
     Get the path to the project folder.
     """
     if os.path.isdir('/mnt/home/amolina/ceph/ml-dft/'):
-        ceph_home = '/mnt/home/amolina/ceph/ml-dft/'
+        ceph_home = '/mnt/home/amolina/ceph/ml-dft'
     elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft'):
         ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft'
     elif os.path.isdir('/home/ana/ml-dft/'):
-        ceph_home = '/home/ana/ml-dft/'
+        ceph_home = '/home/ana/ml-dft'
     elif os.path.isdir('/home/amolina/ml-dft/'):
         ceph_home = '/home/amolina/ml-dft'    
     else:
