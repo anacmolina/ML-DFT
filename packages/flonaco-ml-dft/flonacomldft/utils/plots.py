@@ -115,6 +115,41 @@ def set_plot_iteration(tensor, avg=True, window_size=10, axis=1, ax=None, init=0
     
     return ax
 
+#TODO: Fix this function to add device and lims as optional arguments
+lims = {'x_min':9.5, 'x_max':11., 'y_min':2.35, 'y_max':2.55}
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+def set_plot(ax, n_points, target_log_prob, prop_log_prob=None, lims=lims):
+    
+    x_range = torch.linspace(lims['x_min'], lims['x_max'], n_points, device=device)
+
+    if lims['y_min'] is None:
+        y_range = x_range.clone()
+    else:
+        y_range = torch.linspace(lims['y_min'], lims['y_max'], n_points, device=device)
+
+    grid = torch.meshgrid(x_range, y_range)
+    xys = torch.stack(grid).reshape(2, n_points ** 2).T.to(device)
+
+    Us_target = target_log_prob(xys).reshape(n_points, n_points).T.detach().cpu().numpy()
+
+    if ax is None:
+        plt.figure()
+    else:
+        plt.sca(ax)
+    #plt.axis('off')
+
+    plt.contourf(x_range, y_range, np.exp(Us_target)
+    # np.log( - Us_target + Us_target.max() + 1)
+    , 10, cmap='GnBu')
+    ax.set_aspect('equal')
+
+    if prop_log_prob is not None:
+        Us_prop = prop_log_prob(xys).reshape(n_points, n_points).T.detach().cpu().numpy()
+
+        plt.contour(x_range, y_range, np.exp(Us_prop), 10, colors='k', linestyles=':', alpha=0.5)
+
+
 ### Define class to plot the results of the Flonaco training and simulations
 
 class Flonaco_Plotter:

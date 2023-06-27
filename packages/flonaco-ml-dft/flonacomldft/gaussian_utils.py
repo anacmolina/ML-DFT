@@ -1,6 +1,7 @@
 import torch
 import torch.distributions as td
 import numpy as np
+from ase.units import kB
 
 class MoG():
     def __init__(self, means, covars, weights=None,
@@ -71,3 +72,42 @@ class MoG():
         loss = self.U(x).sum()
         loss.backward()
         return x.grad.data
+    
+
+def gaussian2d(XY, x0, y0, sigma_xx, sigma_xy, sigma_yx, sigma_yy, A, device=None):
+    if device is None:
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    XY = XY.T
+    XY = torch.tensor(XY, dtype=torch.float64, device=device)
+    dx = XY[0] - x0
+    dy = XY[1] - y0
+    covariance_xx = sigma_xx * dx
+    covariance_xy = sigma_xy * dx
+    covariance_yx = sigma_yx * dy
+    covariance_yy = sigma_yy * dy
+    exponent = -0.5 * (covariance_xx * dx + covariance_xy * dy + covariance_yx * dx + covariance_yy * dy)
+    return A * torch.exp(exponent)
+
+
+class TargetGaussian:
+    def __init__(self, mean, cov, norm, kB=kB, T=300):
+        self.kB = kB
+        self.T = T
+        self.norm = norm
+        self.mean = mean
+        self.cov = cov
+        self.inv_cov = np.linalg.inv(cov)
+        self.popt = np.hstack([self.mean.flatten(), self.inv_cov.flatten(), self.norm])
+    
+    def sample(self, n_samples):
+        samples = np.random.multivariate_normal(self.mean, self.cov, n_samples)
+        return torch.tensor(samples, dtype=torch.float64)
+
+    def prob(self, x):
+        return torch.tensor(gaussian2d(x, *self.popt)).detach()
+
+    def log_prob(self, x):
+        return torch.log(gaussian2d(x, *self.popt)).detach()
+    
+    def U(self, x):
+        return -self.log_prob(x)*(self.T*self.kB)
