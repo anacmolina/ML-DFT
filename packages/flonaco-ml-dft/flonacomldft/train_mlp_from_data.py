@@ -78,7 +78,7 @@ def train_mlp(
             return model, losses_train
 
         ### Backpropagation
-        loss.backward()
+        loss.backward(retain_graph=True)
         optimizer.step()
 
         ### Losses
