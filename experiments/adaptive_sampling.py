@@ -103,7 +103,7 @@ coord_mapping = Coordinates_mapping()
 # TODO: real center data in a file already, add collective varibles to csv file 
 def get_dataset(name, path, mode_labels):
     
-    zmats = [load_csv_file("converged/is{:d}_{:s}.csv".format(mode_label, name), path) for mode_label in mode_labels] 
+    zmats = [load_csv_file("datasets/is{:d}_{:s}.csv".format(mode_label, name), path) for mode_label in mode_labels] 
     xs = [coord_mapping.get_real_centered_from_internal(
                                     zmat_test[:, :12],
                                     zmat_test[:, 14],
@@ -164,6 +164,7 @@ flow_hyperparams = {'n_iter': args.n_iter,
     'save_splits': 5,
     'grad_clip': 1e4,
     'compute_part_ratio': True,
+    'energy_type': args.energy_type,
     }
 
 # if mlp models are used

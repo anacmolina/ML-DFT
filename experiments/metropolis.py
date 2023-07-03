@@ -89,7 +89,7 @@ path_datasets = get_path() + '/' + args.folder_path
 
 # real center coordinates
 coord_mapping = Coordinates_mapping()
-zmats_test = [load_csv_file("converged/is{:d}_flow_test.csv".format(mode_label), path=path_datasets) for mode_label in mode_labels] 
+zmats_test = [load_csv_file("datasets/is{:d}_flow_test.csv".format(mode_label), path=path_datasets) for mode_label in mode_labels] 
 
 xs = [coord_mapping.get_real_centered_from_internal(
                                     zmat_test[:, :12],
@@ -161,7 +161,7 @@ metropolis_dic = run_metropolis(
     return_ratio = False,
     return_proposals = False,
     dft_folder_name=path_to_save_results+'/DFTComputations_{:d}'.format(args.process_id),
-    scheduler=10,
+    scheduler=5,
 )
 
 mpi.world.barrier()

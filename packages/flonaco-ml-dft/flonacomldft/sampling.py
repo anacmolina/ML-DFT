@@ -87,6 +87,14 @@ def run_metropolis(
     else:
         use_dft = False
 
+    #TODO: add emt calculator in the energy computation
+    if "emt" in energy_type:
+        from flonacomldft.dft_calculator import EMTCalculator
+        from flonacomldft.internal_coordinates import Coordinates_mapping
+
+        coord_maps = Coordinates_mapping()
+        calculator = EMTCalculator()
+
     #print("Use DFT: ", use_dft)
 
 
@@ -195,7 +203,18 @@ def run_metropolis(
                         u_new[i] = 0.
                         ind_not_computed[i] = 1
 
+        if "emt" in energy_type:
+
+            u_new = torch.zeros(n_chains)
+            for i in range(n_chains):
+                molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer=int(isomer_new[i].item()))
+                u_ = calculator.calculate_potential_energy(molecule)
+
+                u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
+
+            
         #print(u_new, u_init, nll_x, nll_x_init, isomer_new, isomer_init)
+
 
         ratio = -beta * u_new + nll_x
         ratio += beta * u_init - nll_x_init

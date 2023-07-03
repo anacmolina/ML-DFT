@@ -76,7 +76,7 @@ parser.add_argument('-node', '--hidden-dim', type=int, default=64)
 parser.add_argument('-layer', '--hidden-depth', type=int, default=3)
 parser.add_argument('-us', '--use-scheduler', type=bool, default=False)
 # sampling params
-parser.add_argument('-r', '--do-ratios', type=bool, default=False)
+parser.add_argument('-doratios', '--do-ratios', type=bool, default=False)
 parser.add_argument('-etype', '--energy-type', type=str, default='dft')
 parser.add_argument('-prop', '--n-prop', type=int, default=25)
 
@@ -97,8 +97,8 @@ print('threads: ', torch.get_num_threads(), args.num_procs, len(ranks), rank)
 path_datasets = get_path() + '/' + args.folder_path
 
 # internal coordinates datasets
-zmat_train = load_csv_file("is{:d}_flow_train.csv".format(args.mode_label), path=path_datasets)
-zmat_test = load_csv_file("is{:d}_flow_test.csv".format(args.mode_label), path=path_datasets)
+zmat_train = load_csv_file("is{:d}_flow_train.csv".format(args.mode_label), path=path_datasets)#[:5000]
+zmat_test = load_csv_file("is{:d}_flow_test.csv".format(args.mode_label), path=path_datasets)#[:5000]
 
 
 # real center coordinates datasets
@@ -125,7 +125,8 @@ test = join_data(xs_test, energies_test, zmat_test[:, xs_test.shape[1]+1], logde
 
 # init flow model
 
-cov = torch.cov(xs_train.T).detach()
+cov = torch.cov(xs_train.T).detach() + 1e-5 * torch.eye(xs_train.shape[1]).detach()
+
 model = RealNVP_MLP(dim=xs_train.shape[1],
                     n_blocks=args.n_blocks,
                     block_depth=1,
@@ -159,8 +160,8 @@ flow_dic = train_flow(
     save_splits=10,
     grad_clip=1e4,
     with_tqdm=False,
-    compute_part_ratio=True,
-    energy_type='dft',
+    compute_part_ratio=args.do_ratios,
+    energy_type=args.energy_type,
     n_prop=args.n_prop,
     path=path_to_save_results,
 )

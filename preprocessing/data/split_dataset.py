@@ -9,11 +9,11 @@ from flonacomldft.internal_coordinates import (
     get_construction_table,
     save_internal_coordinates_to_csv,
 )
-from flonacomldft.utils.io_utils import get_process_id
+from flonacomldft.utils.io_utils import set_str_date_to_int
 
 ### Get start time and process id
 date_start = time.strftime("%Y-%m-%d %H:%M:%S")
-process_id = get_process_id(date_start)
+process_id = set_str_date_to_int(date_start)
 
 ### Define arguments to parse from command line
 parser = argparse.ArgumentParser(description="Prepare split dataset")
@@ -30,7 +30,7 @@ train_size = args.train_size
 sk_seed = args.sk_seed
 
 ### Load full dataset
-zmat = load_csv_file(args.file, path = os.getcwd() + '/')
+zmat = load_csv_file(args.file, path = os.getcwd() + '/')#[8000:]
 zmat_train_test = list(split_data_from_dataframe(zmat, train_size, sk_seed))
 
 for zmat_, split_type in zip(zmat_train_test, ["train", "test"]):

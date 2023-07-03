@@ -8,6 +8,7 @@ def avg_windows(x, window_size, axis):
     return np.lib.stride_tricks.sliding_window_view(x, window_size).mean(axis=axis)
 
 
+# TODO: Delete
 def get_acceptance_ratio(init, flow_model, n_chains=5, n_steps=10, id_run=None, energy_type='dft', mlp_model=None, T=300, return_ratios=True):
     """
     Compute acceptance ratio for a given flow model
@@ -43,7 +44,8 @@ def get_acceptance_ratio(init, flow_model, n_chains=5, n_steps=10, id_run=None, 
         return mh_simulation['ratios'].mean(dim=1)
     else:
         return mh_simulation
-    
+
+# TODO: Return energies to plot histograms of proposals    
 class Target_Log_Prob:
     """Class to compute the target log probability of a model"""
     def __init__(self, energy_type, mode_label=None, mlp_model=None, T=300, kB=kB, folder=None):#kB=8.617333262e-5):
@@ -78,6 +80,23 @@ class Target_Log_Prob:
 
         return - u / (self.kB * self.T)
     
+    def __emt_target_log_prob__(self, xs):
+        """Compute the target log probability using EMT"""
+        from flonacomldft.dft_calculator import EMTCalculator
+        from flonacomldft.internal_coordinates import Coordinates_mapping
+        
+        coord_mapping = Coordinates_mapping()
+        calculator = EMTCalculator()
+        
+        u = torch.zeros(xs.shape[0])
+
+        for i in range(xs.shape[0]):
+            molecule, logdetjac = coord_mapping.build_molecule_from_real_centered(xs[i].reshape(1, -1), int(self.mode_label))
+            u_ = calculator.calculate_potential_energy(molecule)                        
+            u[i] = coord_mapping.compute_energy_in_new_frame(u_, logdetjac*(-1))
+
+        return - u / (self.kB * self.T)
+    
     def __mlp_target_log_prob__(self, xs):
         """Compute the target log probability using MLP"""
         if self.mlp_model is None:
@@ -90,8 +109,10 @@ class Target_Log_Prob:
             return self.__dft_target_log_prob__(xs)
         elif self.energy_type == 'mlp':
             return self.__mlp_target_log_prob__(xs)
+        elif self.energy_type == 'emt':
+            return self.__emt_target_log_prob__(xs)
         else:
-            raise ValueError('energy_type must be either dft or mlp')
+            raise ValueError('energy_type must be either emt, dft or mlp')
     
 #def get_participation_ratio(prop, target_log_prob, n_prop):
 def get_participation_ratio(prop, target_log_prob, n_prop):

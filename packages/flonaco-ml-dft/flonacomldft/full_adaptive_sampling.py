@@ -49,7 +49,7 @@ def adaptive_sampling(
     if 'mlp' in energy_type or dict_mlps_init is not None:
         mlp_models = get_models(dict_mlps_init)
     else:
-        mlp_models = [None]
+        mlp_models = [None]*len(modes)
 
     mcmc_runs = []
 
@@ -116,7 +116,7 @@ def adaptive_sampling(
 
         dict_new_flows = []
 
-        for mode in modes.detach().numpy().astype(int):
+        for mode in range(len(modes)):#modes.detach().numpy().astype(int):
 
             xs_from_chains = chains_flatten.clone()[mask_flow==mode].clone()
 
@@ -130,9 +130,14 @@ def adaptive_sampling(
             if i % 5 == 0:
                 #TODO: do this only for some number of runs
                 flow_hyperparams[mode]['compute_part_ratio'] = True
-                flow_hyperparams[mode]['path'] = path + '/DFTRatios_{:d}'.format(i)
+                if "dft" in energy_type:
+                    flow_hyperparams[mode]['path'] = path + '/DFTRatios_{:d}'.format(i)
+                else:
+                    flow_hyperparams[mode]['path'] = ''
             else:
                 flow_hyperparams[mode]['compute_part_ratio'] = False
+
+            print(flow_hyperparams)
 
             #add mlps
             dict_new_flow = train_flow(
@@ -142,7 +147,7 @@ def adaptive_sampling(
                 #mlp_model=get_models(dict_mlps_training[-1])[0],
                 **flow_hyperparams[mode],
                 dim=dim,
-                mlp_model=dict_mlps_init[mode]['model'],
+                mlp_model=mlp_models[mode],
                 )
             
             dict_new_flows.append(dict_new_flow)

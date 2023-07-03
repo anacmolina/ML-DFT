@@ -72,7 +72,7 @@ class Coordinates_mapping():
         self.angles_mappings = Angles_mapping()    
         self.zmat_minima = {
             0: self.get_internal_from_molecule(get_molecule_isomer_minima('is0'))[0],
-            1: self.get_internal_from_molecule(get_molecule_isomer_minima('is1'))[0]
+            1: self.get_internal_from_molecule(get_molecule_isomer_minima('is1'))[0] #TODO: becareful with the silver minima file
         } 
         #self.kb = 8.617333262e-5 # eV/K
         self.kB = kB # eV/K
@@ -470,10 +470,10 @@ class Coordinates_mapping():
         if logdetjacs is None:
             logdetjacs = 0
 
-        zmats, logdetjacs_angle = self.angles_mappings.reals_to_rads(reals)
+        reals, logdetjacs_angle = self.angles_mappings.reals_to_rads(reals)
         logdetjacs = logdetjacs + logdetjacs_angle.requires_grad_(True)
 
-        zmats = zmats + self.zmat_minima[isomer] #reals + self.zmat_minima[isomer] #TODO: Check if this is correct
+        zmats = reals + self.zmat_minima[isomer] #TODO: Check if this is correct
 
         if energies is not None:
             energies = energies - (self.kB * temperature) * logdetjacs_angle
@@ -484,6 +484,7 @@ class Coordinates_mapping():
     def build_molecule_from_real_centered(self, x, isomer):
 
         zmat, logdetjac = self.get_internal_from_real_centered(x, isomer=isomer)
+        #print(zmat.shape, zmat)
         xyz, logdetjac = self.get_cartesian_from_internal(zmat[0], logdetjac)
         molecule = self._build_molecule_from_xyz(xyz)
 

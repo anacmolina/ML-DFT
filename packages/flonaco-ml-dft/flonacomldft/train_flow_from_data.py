@@ -150,11 +150,17 @@ def train_flow(
             #     tune.report({"loss":loss.item(), "grad_norm":total_norm})
 
             if compute_part_ratio:
+
+                if energy_type == 'dft':
+                    path = path+'/DFTComputations_{:d}'.format(t)
+                else:
+                    path = None
+
                 
                 ##TODO: Check if this is necessary
                 #import gpaw.mpi as mpi
                     
-                target_log_prob = Target_Log_Prob(energy_type=energy_type, mode_label=mode_label, mlp_model=mlp_model, folder=path+'/DFTComputations_{:d}'.format(t)).target_log_prob
+                target_log_prob = Target_Log_Prob(energy_type=energy_type, mode_label=mode_label, mlp_model=mlp_model, folder=path).target_log_prob#folder=path+'/DFTComputations_{:d}'.format(t)).target_log_prob
                 part_ratio = get_participation_ratio(model, target_log_prob, n_prop=n_prop)
 
                 #if mpi.rank == 0:

@@ -7,6 +7,19 @@ from ase.md.velocitydistribution import (MaxwellBoltzmannDistribution,
                                          Stationary, ZeroRotation)
 #from ase.parallel import parprint as print
 
+class EMTCalculator:
+    def __init__(self):
+        super().__init__()
+
+        self.calculator = None
+        self.cell = [5, 5, 5]
+    
+        from ase.calculators.emt import EMT
+        self.calculator = EMT()
+
+    def calculate_potential_energy(self, atoms):
+        return self.calculator.get_potential_energy(atoms)
+
 from gpaw import GPAW
 import gpaw.mpi as mpi
 
