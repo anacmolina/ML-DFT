@@ -30,7 +30,7 @@ train_size = args.train_size
 sk_seed = args.sk_seed
 
 ### Load full dataset
-zmat = load_csv_file(args.file, path = os.getcwd() + '/')#[8000:]
+zmat = load_csv_file(args.file, path = os.getcwd() + '/')[:5000]
 zmat_train_test = list(split_data_from_dataframe(zmat, train_size, sk_seed))
 
 for zmat_, split_type in zip(zmat_train_test, ["train", "test"]):
