@@ -1,3 +1,5 @@
+print('Running...')
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -50,10 +52,17 @@ if rank == 0:
     num_seed = np.random.randint(0, 100, (1,))
     date_start = np.array([set_str_date_to_int(time.strftime('%Y-%m-%d %H:%M:%S'))])
 
-mpi.world.barrier()
+
+print(num_seed)
+
 
 comm.broadcast(num_seed, 0)
 comm.broadcast(date_start, 0)
+
+mpi.world.barrier()
+
+print(num_seed)
+
 
 num_seed = num_seed[0]
 date_start = date_start[0]
@@ -76,7 +85,7 @@ parser.add_argument('-node', '--hidden-dim', type=int, default=64)
 parser.add_argument('-layer', '--hidden-depth', type=int, default=3)
 parser.add_argument('-us', '--use-scheduler', type=bool, default=False)
 # sampling params
-parser.add_argument('-doratios', '--do-ratios', type=bool, default=False)
+parser.add_argument('-ratios', '--do-ratios', type=bool, default=False)
 parser.add_argument('-etype', '--energy-type', type=str, default='dft')
 parser.add_argument('-prop', '--n-prop', type=int, default=25)
 
@@ -196,8 +205,9 @@ save_json_args(args, 'train_flow_model', args.process_id, path=path_to_save_resu
 import matplotlib.pyplot as plt
 from flonacomldft.utils.plots import (
     Flonaco_Plotter,
-    set_plot_iteration
 )
+
+from flonacomldft.utils.plots import set_plot_sequential_data as set_plot_iteration
 
 fig, ax = plt.subplots(1, 1, figsize=(12, 4))
 ax.set_title("ml: {:d}, nb: {:d}, hdm: {:d}, hdp: {:d}".format(args.mode_label, args.n_blocks, args.hidden_dim, args.hidden_depth))

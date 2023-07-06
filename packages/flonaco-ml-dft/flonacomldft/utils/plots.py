@@ -321,132 +321,131 @@ def set_plot_probability(n_points, lims, target_log_prob, prop_log_prob=None, ax
 # ================================== DELETE ====================================
 
 #TODO: DELETE THIS FUNCTION
-# class for plotling flow, metropolis and adaptive results
-# class Flonaco_Plotter:
-#     
-#     """Class to plot the results of the Flonaco training and simulations."""
-#     
-#     def __init__(self):
-#         pass
-# 
-#     def plot_losses(self, losses, yscale=True, ax=None):
-#         
-#         """Plot the train and test loss of a DL model."""
-#         
-#         if ax is None:
-#             fig, ax = plt.subplots()
-#         
-#         ax.plot(losses[0], label='loss train')
-#         ax.plot(losses[1], label='loss test')
-#         ax.set_xlabel('Iterations')
-#         ax.set_ylabel('Loss')
-#         
-#         if yscale:
-#             ax.set_yscale('log')
-#         
-#         ax.legend()
-# 
-#     def plot_correlation(self, model, datasets, ax=None):
-#         
-#         """Plot the correlation between the predicted and the true energy of the molecules."""
-#         
-#         train, test = datasets
-#         
-#         x_train = train[:, :12]
-#         x_test = test[:, :12]
-# 
-#         target_train = train[:, 12].detach().numpy()
-#         target_test = test[:, 12].detach().numpy()
-# 
-#         pred_train = model(x_train).detach().numpy()
-#         pred_test = model(x_test).detach().numpy()
-# 
-#         if ax is None:
-#             fig, ax = plt.subplots()
-#             
-#         ax.scatter(target_train, pred_train, label='train')
-#         ax.scatter(target_test, pred_test, label='test')
-# 
-#         min_ = target_train.min()
-#         max_ = target_train.max()
-#         range_ = np.linspace(min_, max_, 2)
-#         ax.plot(range_, range_, 'k--')
-#         ax.set_xlabel('Target energies')
-#         ax.set_ylabel('Predicted energies')
-#         ax.legend()
-#     
-#     def plot_collective_variables_on_time(self, cvs, ax=None):
-# 
-#         """Plot the collective variables of the system as a function of time."""
-# 
-#         if ax is None:
-#             fig, ax = plt.subplots()
-#         ax.plot(cvs[:, 0], label='Coordination Number')
-#         ax.plot(cvs[:, 1], label='Radius of Gyration (Å)')
-#         ax.set_xlabel('Steps')
-#         ax.set_ylabel('Collective Variables')
-#         ax.legend()
-#     
-#     def plot_collective_variables_on_fes(self, cvs, label, marker='o', cmap='autumn'):
-# 
-#         """ Plot the collective variables of the system on the free energy surface."""
-# 
-#         plotter = Plotter(400, 'Ag6', )
-#         plotter.readfile(get_path() + '/' + 'unrotated_300.txt')
-# 
-#         fig, ax = plotter.plot_fes(0.1, 300, delta2=1, shift=1.5)
-#         
-#         ax.scatter(cvs[:, 0], cvs[:, 1], marker=marker, cmap=cmap, label=label)
-#         fig.set_size_inches(10, 6)
-#         size = 12
-#         ax.xaxis.label.set_size(size)
-#         ax.yaxis.label.set_size(size)
-#         plt.xticks(fontsize=size)
-#         plt.yticks(fontsize=size)
-#         ax.legend(fontsize=size);
-#     
-#     def plot_sample(self, zmat, title, ax=None, figsize=(8, 6)):
-# 
-#         """Plot the molecule from the internal coordinates."""
-# 
-#         from ase.visualize.plot import plot_atoms
-# 
-#         ag6 = Coordinates_mapping()
-#         molecule = ag6.build_molecule_from_zmat(zmat)
-# 
-#         if ax is None:
-#             fig, ax = plt.subplots(1, 1, figsize=figsize)
-#             
-#         plot_atoms(molecule, ax)
-#         ax.set_title(title)
-#         ax.set_xlabel('x coordinate')
-#         ax.set_ylabel('y coordinate')
-# 
-#     def plot_internal_coordinates(self, zmats, ax=None):
-#     
-#         """Plot range value of internal coordinates."""
-# 
-#         if ax is None:
-#             fig, ax = plt.subplots(1, 1, figsize=(6, 4))
-# 
-#         ax.plot(zmats.T, 'o')
-#         ax.set_xlabel('Internal coordinates')
-#         ax.set_ylabel('a. u')
+#class for plotling flow, metropolis and adaptive results
+class Flonaco_Plotter:
+    
+    """Class to plot the results of the Flonaco training and simulations."""
+    
+    def __init__(self):
+        pass
 
+    def plot_losses(self, losses, yscale=True, ax=None):
+        
+        """Plot the train and test loss of a DL model."""
+        
+        if ax is None:
+            fig, ax = plt.subplots()
+        
+        ax.plot(losses[0], label='loss train')
+        ax.plot(losses[1], label='loss test')
+        ax.set_xlabel('Iterations')
+        ax.set_ylabel('Loss')
+        
+        if yscale:
+            ax.set_yscale('log')
+        
+        ax.legend()
 
-# TODO: DELETE!!!!!!!!!!!!
+    def plot_correlation(self, model, datasets, ax=None):
+        
+        """Plot the correlation between the predicted and the true energy of the molecules."""
+        
+        train, test = datasets
+        
+        x_train = train[:, :12]
+        x_test = test[:, :12]
 
-# def plotting_fes_db():
-# 
-#    from flonacomldft.utils.io_utils import get_path
-#    from flonacomldft.FES.plotter2 import Plotter
-#    
-#    plotting = Plotter(400, 'Ag6')
-#    plotting.readfile(get_path() + 'unrotated_300.txt')
-#    
-#    fig, ax = plotting.plot_fes(0.1, 300, delta2=1, shift=1.5)
-# 
-#    return fig, ax
+        target_train = train[:, 12].detach().numpy()
+        target_test = test[:, 12].detach().numpy()
+
+        pred_train = model(x_train).detach().numpy()
+        pred_test = model(x_test).detach().numpy()
+
+        if ax is None:
+            fig, ax = plt.subplots()
+            
+        ax.scatter(target_train, pred_train, label='train')
+        ax.scatter(target_test, pred_test, label='test')
+
+        min_ = target_train.min()
+        max_ = target_train.max()
+        range_ = np.linspace(min_, max_, 2)
+        ax.plot(range_, range_, 'k--')
+        ax.set_xlabel('Target energies')
+        ax.set_ylabel('Predicted energies')
+        ax.legend()
+    
+    def plot_collective_variables_on_time(self, cvs, ax=None):
+
+        """Plot the collective variables of the system as a function of time."""
+
+        if ax is None:
+            fig, ax = plt.subplots()
+        ax.plot(cvs[:, 0], label='Coordination Number')
+        ax.plot(cvs[:, 1], label='Radius of Gyration (Å)')
+        ax.set_xlabel('Steps')
+        ax.set_ylabel('Collective Variables')
+        ax.legend()
+    
+    def plot_collective_variables_on_fes(self, cvs, label, marker='o', cmap='autumn'):
+
+        """ Plot the collective variables of the system on the free energy surface."""
+
+        plotter = Plotter(400, 'Ag6', )
+        plotter.readfile(get_path() + '/' + 'unrotated_300.txt')
+
+        fig, ax = plotter.plot_fes(0.1, 300, delta2=1, shift=1.5)
+        
+        ax.scatter(cvs[:, 0], cvs[:, 1], marker=marker, cmap=cmap, label=label)
+        fig.set_size_inches(10, 6)
+        size = 12
+        ax.xaxis.label.set_size(size)
+        ax.yaxis.label.set_size(size)
+        plt.xticks(fontsize=size)
+        plt.yticks(fontsize=size)
+        ax.legend(fontsize=size);
+    
+    def plot_sample(self, zmat, title, ax=None, figsize=(8, 6)):
+
+        """Plot the molecule from the internal coordinates."""
+
+        from ase.visualize.plot import plot_atoms
+
+        ag6 = Coordinates_mapping()
+        molecule = ag6.build_molecule_from_zmat(zmat)
+
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=figsize)
+            
+        plot_atoms(molecule, ax)
+        ax.set_title(title)
+        ax.set_xlabel('x coordinate')
+        ax.set_ylabel('y coordinate')
+
+    def plot_internal_coordinates(self, zmats, ax=None):
+    
+        """Plot range value of internal coordinates."""
+
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+
+        ax.plot(zmats.T, 'o')
+        ax.set_xlabel('Internal coordinates')
+        ax.set_ylabel('a. u')
+        
+# TODO: DELETE!!!!!!!!!!!
+def plotting_fes_db():
+
+   from flonacomldft.utils.io_utils import get_path
+   from flonacomldft.FES.plotter2 import Plotter
+   
+   plotting = Plotter(400, 'Ag6')
+   plotting.readfile(get_path() + 'unrotated_300.txt')
+   
+   fig, ax = plotting.plot_fes(0.1, 300, delta2=1, shift=1.5)
+
+   return fig, ax
+
 # 
 # #===================================================================================================
 # 
