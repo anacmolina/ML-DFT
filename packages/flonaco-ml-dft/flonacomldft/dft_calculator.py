@@ -20,8 +20,6 @@ class EMTCalculator:
     def calculate_potential_energy(self, atoms):
         return self.calculator.get_potential_energy(atoms)
 
-from gpaw import GPAW
-import gpaw.mpi as mpi
 
 class DFTCalculator:
     """
@@ -30,6 +28,9 @@ class DFTCalculator:
     """
     def __init__(self):
         super().__init__()
+
+        from gpaw import GPAW
+        import gpaw.mpi as mpi
 
         self.calculator = None
         self.cell = [16, 16, 16]

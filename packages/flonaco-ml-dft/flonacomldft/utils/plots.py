@@ -12,9 +12,7 @@ import seaborn as sns
 import cmocean.cm as cmo
 
 from ase.units import kB
-
-
-#from flonacomldft.FES.plotter2 import Plotter
+from flonacomldft.FES.plotter2 import Plotter
 
 
 def set_plot_sequential_data(tensor, avg=True, window_size=10, axis=1, ax=None, init=0, color='k', alpha=0.5, label=None, **kwargs):

@@ -10,10 +10,6 @@ import argparse
 import torch
 import numpy as np
 
-# parallelization set up
-import gpaw.mpi as mpi
-#from ase.parallel import parprint as print
-
 # flonaco imports
 # io handling
 from flonacomldft.utils.io_utils import (
@@ -26,66 +22,58 @@ from flonacomldft.utils.io_utils import (
 )
 # coordinates handling
 from flonacomldft.internal_coordinates import Coordinates_mapping
+# nf training
+from flonacomldft.models.real_nvp import RealNVP_MLP
+from flonacomldft.train_flow_from_data import train_flow
 # sampling and training
 from flonacomldft.full_adaptive_sampling import adaptive_sampling
 
-ranks = np.arange(0, mpi.world.size)
-rank = mpi.rank
-comm = mpi.world.new_communicator(ranks)
+num_seed = np.random.randint(0, 100)
+date_start = set_str_date_to_int(time.strftime('%Y-%m-%d %H:%M:%S'))
 
-num_seed = np.array([0])
-date_start = np.array([0])
+print('seed: ', num_seed)
+print('date_start: ', date_start)
 
-# only rank 0 generates the seed and date_start
-if rank == 0:
-    num_seed = np.random.randint(0, 100, (1,))
-    date_start = np.array([set_str_date_to_int(time.strftime('%Y-%m-%d %H:%M:%S'))])
-
-mpi.world.barrier()
-
-comm.broadcast(num_seed, 0)
-comm.broadcast(date_start, 0)
-
-num_seed = num_seed[0]
-date_start = date_start[0]
-
-print('seed: ', num_seed, rank)
-print('date_start: ', date_start, rank)
-
+# define arpase arguments
 parser = argparse.ArgumentParser(description='Prepare experiment')
 # execution params
-parser.add_argument('-np', '--num-procs', type=int, default=(len(ranks)))
+parser.add_argument('-threads', '--threads', type=int, default=None)
 parser.add_argument('-pid', '--process-id', type=int, default=date_start)
 parser.add_argument('-rs', '--random-seed', type=int, default=num_seed)
-parser.add_argument('-path', '--folder-path', type=str, default='berendsen/')
+parser.add_argument('-path', '--folder-path', type=str, default='emt_berendsen/')
 # training params
-parser.add_argument('-isomer', '--mode-label', type=int, nargs='+', default=[0])
-parser.add_argument('-ids', '--ids', type=int, nargs='+', default=[None, None])
-parser.add_argument('-ni', '--n-iter', type=int, default=1000)
+parser.add_argument('-isomer', '--isomer-label', type=int, nargs='+', default=[0])
+#parser.add_argument('-ids', '--ids', type=int, nargs='+', default=[None, None])
+# flow params
+parser.add_argument('-ni', '--n-iter', type=int, default=10)
 parser.add_argument('-lr', '--learning-rate', type=float, default=1e-4)
+parser.add_argument('-bs', '--batch-size', type=int, default=128)
+parser.add_argument('-nb', '--n-blocks', type=int, default=4)
+parser.add_argument('-hdm', '--hidden-dim', type=int, default=64)
+parser.add_argument('-hdp', '--hidden-depth', type=int, default=3)
+parser.add_argument('-us', '--use-scheduler', type=bool, default=False)
+parser.add_argument('-ratios', '--do-ratios', type=bool, default=False)
+parser.add_argument('-prop', '--n-prop', type=int, default=100)
 # adaptive sampling params
 parser.add_argument('-nruns', '--n-runs', type=int, default=5)
 parser.add_argument('-nchains', '--n-chains', type=int, default=5)
 parser.add_argument('-nsteps', '--n-steps', type=int, default=10)
-parser.add_argument('-etype', '--energy-type', type=str, default='dft')
+parser.add_argument('-etype', '--energy-type', type=str, default='emt')
 
 args = parser.parse_args()
 args.date_start = str(date_start)
 
 # torch settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+if args.threads is not None:
+    torch.set_num_threads(args.threads)
 
-if len(ranks) > 1:
-    torch.set_num_threads(int(args.num_procs))
-    torch.manual_seed(args.random_seed)
-
-print(torch.get_num_threads(), args.num_procs, rank)
-
-mpi.world.barrier()
+print('threads: ', torch.get_num_threads())
+torch.manual_seed(args.random_seed)
 
 # isomer labels
-mode_labels = args.mode_label
-ids = args.ids
+isomer_labels = args.isomer_label
+#ids = args.ids
 
 # mcmc chains parameters
 n_runs = args.n_runs
@@ -93,7 +81,7 @@ n_chains = args.n_chains
 n_steps = args.n_steps
 energy_type = args.energy_type
 
-path_datasets = get_path() + '/' + args.folder_path
+path_datasets = get_path() + '/' + args.folder_path + '/' + 'datasets'
 
 # real center coordinates
 
@@ -101,38 +89,38 @@ coord_mapping = Coordinates_mapping()
 
 # TODO: is this the best way to get the dataset?
 # TODO: real center data in a file already, add collective varibles to csv file 
-def get_dataset(name, path, mode_labels):
+def get_dataset(name, path, isomer_labels):
     
-    zmats = [load_csv_file("datasets/is{:d}_{:s}.csv".format(mode_label, name), path) for mode_label in mode_labels] 
+    zmats = [load_csv_file("is{:d}_{:s}.csv".format(isomer_label, name), path) for isomer_label in isomer_labels] 
     xs = [coord_mapping.get_real_centered_from_internal(
                                     zmat_test[:, :12],
                                     zmat_test[:, 14],
-                                    isomer=mode_label,
+                                    isomer=isomer_label,
                                     energies=zmat_test[:, 12]
-                                    ) for mode_label, zmat_test in zip(mode_labels, zmats)]
+                                    ) for isomer_label, zmat_test in zip(isomer_labels, zmats)]
 
-    xs = torch.stack([torch.cat((x[0], x[2].reshape(-1, 1), 
+    xs = [torch.cat((x[0], x[2].reshape(-1, 1), 
                                  zmat[:, 13].reshape(-1, 1), 
                                  #x[1].reshape(-1, 1),
-                                 ), dim=1) for x, zmat in zip(xs, zmats)])
-    xs = xs.flatten(start_dim=0, end_dim=1).to(torch.float32)
+                                 ), dim=1) for x, zmat in zip(xs, zmats)]
+    
+    #xs = xs.flatten(start_dim=0, end_dim=1).to(torch.float32)
 
     return xs, zmats
 
 dataset_labels = ['flow_train', 'flow_test']
 
-flow_xs_train, flow_zmat_train = get_dataset('flow_train', path_datasets, mode_labels)
-flow_xs_test, flow_zmat_test = get_dataset('flow_test', path_datasets, mode_labels)
+flow_xs_train, flow_zmat_train = get_dataset('flow_train', path_datasets, isomer_labels)
+flow_xs_test, flow_zmat_test = get_dataset('flow_test', path_datasets, isomer_labels)
 
-# flow models
-flows_dic = [load_pickle_file("models/is{:d}_flow_dic_training_{:d}.pkl".format(mode_label, id_), path_datasets) for mode_label, id_ in zip(mode_labels, ids) ]
+for i in range(len(isomer_labels)):
+    print('flow_xs_train.shape: ', flow_xs_train[i].shape)
+    print('flow_xs_test.shape: ', flow_xs_test[i].shape)
 
-mpi.world.barrier()
 
 # whether to use a mixture of flows
-if len(mode_labels)==1:
+if len(isomer_labels)==1:
     mixture = False
-    flow_model = flows_dic[0]
 
     if "mlp" in energy_type: 
         ## ADD MLP MODEL
@@ -144,16 +132,57 @@ else:
 if mixture:
     simulation_name = "mixture"
 else:
-    simulation_name = "is{:d}".format(mode_labels[0])
+    simulation_name = "is{:d}".format(isomer_labels[0])
 
 # path to save results
 folder_to_save_results = 'results_adaptive_{:s}_{:d}'.format(simulation_name, args.process_id)
 path_to_save_results = os.getcwd() + '/' + folder_to_save_results
-if rank == 0:
-    if not os.path.exists(path_to_save_results):
-        os.makedirs(path_to_save_results)
 
-mpi.world.barrier()
+if not os.path.exists(path_to_save_results):
+    os.makedirs(path_to_save_results)
+
+
+cov = [torch.cov(flow_xs_train[i][:, :12].T).detach() + 1e-5 * torch.eye(flow_xs_train[i][:, :12].shape[1]).detach() for i in range(len(isomer_labels))]
+print('cov.shape: ', len(cov))
+#torch.cov(xs_train.T).detach() + 1e-5 * torch.eye(xs_train.shape[1]).detach()
+
+models = [RealNVP_MLP(dim=flow_xs_train[i][:, :12].shape[1],
+                    n_blocks=args.n_blocks,
+                    block_depth=1,
+                    init_weight_scale=1e-3,
+                    base_cov=cov[i],
+                    hidden_dim=args.hidden_dim,
+                    hidden_depth=args.hidden_depth,
+                    device=device,
+                    )
+                    for i in range(len(isomer_labels))]
+
+
+
+
+# training flow model
+flows_dic = [train_flow(
+    model,
+    train,
+    test,
+    n_iter=args.n_iter,
+    lr=args.learning_rate,
+    batch_size=args.batch_size,
+    use_scheduler=args.use_scheduler,
+    step_schedule=args.n_iter/5,
+    save_splits=10,
+    grad_clip=1e4,
+    with_tqdm=False,
+    compute_part_ratio=args.do_ratios,
+    energy_type=args.energy_type,
+    n_prop=args.n_prop,
+    path=path_to_save_results,
+) for model, train, test in zip(models, flow_xs_train, flow_xs_test)]
+
+mlps_dic = None
+
+## flow models
+## flows_dic = [load_pickle_file("models/is{:d}_flow_dic_training_{:d}.pkl".format(isomer_label, id_), path_datasets) for isomer_label, id_ in zip(isomer_labels, ids) ]
 
 
 # retraining hyperparameters
@@ -167,36 +196,10 @@ flow_hyperparams = {'n_iter': args.n_iter,
     'energy_type': args.energy_type,
     }
 
-# if mlp models are used
-if "mlp" in energy_type:
-
-    dataset_labels = dataset_labels + ['mlp_train', 'mlp_test']
-
-    mlp_xs_train, mlp_zmat_train = get_dataset('mlp_train', args.folder_path, mode_labels)
-    mlp_xs_test, mlp_zmat_test = get_dataset('mlp_test', args.folder_path, mode_labels)
-
-    mlps_dic = [load_pickle_file(args.folder_path + 'models/is{:d}_mlp_dic_training_{:d}.pkl'.format(mode_label, id_)) for mode_label, id_ in zip(mode_labels, ids[:len(mode_labels)]) ]
-
-    print('# models: ', len(mlps_dic))
-
-    mlp_hyperparams = {'n_iter': args.n_iter,
-        'lr': args.learning_rate,
-        'use_scheduler': False,
-        'step_schedule': 100,
-    }
-else:
-    mlp_hyperparams = None
-    mlps_dic = None
-
-    mlp_xs_train = None
-    mlp_xs_test = None
-
-    mlp_zmat_train = None
-    mlp_zmat_test = None
 
 # init chains
-shuffle = torch.randperm(flow_xs_test.shape[0])
-init_mcmc = flow_xs_test[shuffle].clone()[:n_chains]
+shuffle = torch.randperm(flow_xs_test[0].shape[0]) # this works only for one isomer
+init_mcmc = flow_xs_test[0][shuffle].clone()[:n_chains] # TODO: generalize for more isomers
 
 # run adaptive sampling
 # TODO: include results folder and filename argument for mcmc

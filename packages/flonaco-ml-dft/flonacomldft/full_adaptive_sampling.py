@@ -39,10 +39,13 @@ def adaptive_sampling(
         path=None
         ):
 
-    modes = torch.unique(flow_init_train[:, dim+1])
+    #modes = torch.unique(flow_init_train[:, dim+1])
 
-    xs_for_flows_train = [ flow_init_train[flow_init_train[:, dim+1] == mode] for mode in modes ]
-    xs_for_flows_test = [ flow_init_test[flow_init_test[:, dim+1] == mode] for mode in modes ]
+    modes = torch.tensor(range(len(flow_init_train)))
+    print('modes: ', modes)
+
+    xs_for_flows_train = [ flow_init_train[i] for i in range(len(flow_init_train)) ]
+    xs_for_flows_test = [ flow_init_test[i] for i in range(len(flow_init_test)) ]
 
     dict_flows_training = [copy.deepcopy(dict_flows_init), ]
 
@@ -64,6 +67,9 @@ def adaptive_sampling(
         weights = torch.tensor([0.5]*len(modes)).detach()
     else:
         weights = torch.tensor(weights).detach()
+
+    max_md = xs_for_flows_train[0].shape[0]
+    n_md = 0
 
     for i in range(n_runs):
 
@@ -122,6 +128,9 @@ def adaptive_sampling(
 
             # extend data set for flow training
 
+            print("shape xs_for_flows_train: ", xs_for_flows_train[mode].shape)
+            print("shape xs_from_chains: ", xs_from_chains.shape)
+
             xs_for_flows_train[mode] = torch.cat(
                 (xs_for_flows_train[mode].clone(), xs_from_chains.clone())
             )
@@ -138,11 +147,12 @@ def adaptive_sampling(
                 flow_hyperparams[mode]['compute_part_ratio'] = False
 
             print(flow_hyperparams)
+            print("shape xs_for_flows_train: ", xs_for_flows_train[mode][n_md:].shape)
 
             #add mlps
             dict_new_flow = train_flow(
                 dict_flows_training[i][mode]['model'],
-                xs_for_flows_train[mode],
+                xs_for_flows_train[mode][n_md:],
                 xs_for_flows_test[mode],
                 #mlp_model=get_models(dict_mlps_training[-1])[0],
                 **flow_hyperparams[mode],
@@ -157,6 +167,9 @@ def adaptive_sampling(
             dict_new_flows.append(dict_new_flow)
 
         dict_flows_training.append(dict_new_flows)
+
+        if n_md <= max_md:
+            n_md += n_chains*n_steps
 
     to_return = {
         "dict_flows_training": dict_flows_training,

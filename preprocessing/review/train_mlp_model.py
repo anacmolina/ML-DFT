@@ -1,4 +1,4 @@
-# TODO: add parser like train_flow_model.py
+# TODO: Rewrite like the train_flow_model.py
 
 ### Import modules
 import argparse

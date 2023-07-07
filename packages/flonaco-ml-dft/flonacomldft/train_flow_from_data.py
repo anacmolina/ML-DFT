@@ -1,4 +1,5 @@
 ### Import modules
+import time
 import copy
 import tqdm
 import torch
@@ -15,6 +16,7 @@ def train_flow(
     dim=12,
     n_iter=100,
     lr=5e-3,
+    batch_size=128,
     use_scheduler=False,
     step_schedule=1000,
     save_splits=10,
@@ -22,9 +24,9 @@ def train_flow(
     with_tqdm=False,
     use_tune=False,
     compute_part_ratio=False,
-    energy_type='dft',
+    energy_type='emt',
     mlp_model=None,
-    n_prop=50,
+    n_prop=100,
     path=None,
 ):
     """Train a flow model on a dataset.
@@ -92,20 +94,28 @@ def train_flow(
 
     # num_model = 0   
 
+    time_start = time.time()
+
+    permutation = torch.randperm(x.shape[0])
+
     ### Training loop
     for t in pbar:
 
-        optimizer.zero_grad()
-        loss = loss_func(x)
+        for  k in range(0, x.shape[0], batch_size):
+            indexes = permutation[k:k+batch_size]
+            batch_x = x[indexes]
 
-        if torch.isinf(loss).any():
-            print("Stopped because loss became inf!")
-            return model, losses_train
+            optimizer.zero_grad()
+            loss = loss_func(batch_x)
 
-        ### Backpropagation
-        loss.backward()
-        clip_grad_norm_(model.parameters(), max_norm=grad_clip)
-        optimizer.step()
+            if torch.isinf(loss).any():
+                print("Stopped because loss became inf!")
+                return model, losses_train
+
+            ### Backpropagation
+            loss.backward()
+            clip_grad_norm_(model.parameters(), max_norm=grad_clip)
+            optimizer.step()
 
         ### Appending logs
         losses_train.append(loss.item())
@@ -134,7 +144,7 @@ def train_flow(
             # prints
 
             print(
-                "t={:0.1e}".format(t), "\t loss: {:3.2f}".format(loss.item()), end="\t"
+                "time:{:.2f}".format(time.time()-time_start), "\t epoch={:0.1e}".format(t), "\t loss: {:3.2f}".format(loss.item()), end="\t"
             )
 
             print("Gd: {:0.0e}".format(total_norm), end="\t")
@@ -160,7 +170,7 @@ def train_flow(
                 ##TODO: Check if this is necessary
                 #import gpaw.mpi as mpi
                     
-                target_log_prob = Target_Log_Prob(energy_type=energy_type, mode_label=mode_label, mlp_model=mlp_model, folder=path).target_log_prob#folder=path+'/DFTComputations_{:d}'.format(t)).target_log_prob
+                target_log_prob = Target_Log_Prob(energy_type=energy_type, mode_label=mode_label, mlp_model=mlp_model, folder=path).target_log_prob
                 part_ratio = get_participation_ratio(model, target_log_prob, n_prop=n_prop)
 
                 #if mpi.rank == 0:
@@ -171,9 +181,6 @@ def train_flow(
                 part_ratios.append(part_ratio)
 
                 print("part ratio: {:0.2e}".format(part_ratio), end="\n")
-
-        ##TODO: Add acceptance ratio
-        ##TODO: Add participation ratio
 
     to_return = {
         "model": model,
