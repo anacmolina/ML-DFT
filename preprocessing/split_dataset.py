@@ -22,6 +22,7 @@ parser.add_argument("-fm", "--for-model", type=str, default="flow")
 parser.add_argument("-ts", "--train-size", type=float, default=0.8)
 parser.add_argument("-ss", "--sk-seed", type=int, default=42)
 parser.add_argument("-N", "--num-samples", type=int, default=5000)
+parser.add_argument("-low", "--low-index", type=int, default=0)
 parser.add_argument("-pid", "--process-id", type=int, default=date)
 
 args = parser.parse_args()
@@ -31,7 +32,7 @@ train_size = args.train_size
 sk_seed = args.sk_seed
 
 # full dataset
-zmat = load_csv_file(args.file, path = os.getcwd() + '/')[:args.num_samples]
+zmat = load_csv_file(args.file, path = os.getcwd() + '/')[args.low_index : args.low_index + args.num_samples]
 zmat_train_test = list(split_data_from_dataframe(zmat, train_size, sk_seed))
 
 # save train and test dataset in separate files
