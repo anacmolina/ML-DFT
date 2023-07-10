@@ -13,7 +13,7 @@ from flonacomldft.FES.minimizator_path import Path_
 from flonacomldft.utils.io_utils import get_path
 from pytest import approx
 
-# TODO:
+# TODO: Review what necesary from this class
 class Plotter():
     def __init__(self, bins, cluster, shift=0):
         bins += 1

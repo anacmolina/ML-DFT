@@ -14,6 +14,9 @@ import cmocean.cm as cmo
 from ase.units import kB
 from flonacomldft.FES.plotter2 import Plotter
 
+from flonacomldft.collective_variables import (get_cvs_from_real_centered, 
+                                               get_cvs_from_zmat)
+
 
 def set_plot_sequential_data(tensor, avg=True, window_size=10, axis=1, ax=None, init=0, color='k', alpha=0.5, label=None, **kwargs):
     """
@@ -141,7 +144,7 @@ def plot_energy_surface(C=None, R=None, F=None, bins=401, shift=2.0, delta=4 * (
     im = ax.contourf(C_grid, R_grid, F_grid, np.arange(mini, maxi, delta), cmap=cmap, vmin=mini, vmax=maxi)
 
     if fig is not None and add_colorbar:
-        fig.colorbar(im, label = 'Free energy (eV)')
+        fig.colorbar(im, ax=ax, label = 'Free energy (eV)')
     elif fig is None:
         print('No figure provided. Cannot add colorbar.')
 
@@ -315,6 +318,164 @@ def set_plot_probability(n_points, lims, target_log_prob, prop_log_prob=None, ax
         us_prop = prop_log_prob(xys).reshape(n_points, n_points).T.detach().cpu().numpy()
 
         plt.contour(x_range, y_range, np.exp(us_prop), 10, colors='k', linestyles=':', alpha=0.5)
+
+# ================================== ADAPTIVE PLOTS ====================================
+
+class Adaptive_Plotter:
+
+    def __init__(self, adaptive):
+        self.adaptive = adaptive
+        self.xs = None
+        self.us = None
+        self.accs = None
+        self.isomers = None
+        self.isomer_labels = None
+        self.dict_flows_training = None
+        self.losses = None
+        self.part_ratio = None
+        self.cvs = None
+        self.args = self.adaptive["args"]
+
+        self.get_values()
+        
+    def get_values(self):    
+        self.xs = self.get_xs()
+        self.us = self.get_us()
+        self.accs = self.get_accs()
+        self.isomers = self.get_isomers()
+        self.isomer_labels = self.get_isomer_labels()
+        self.dict_flows_training = self.get_flow_dicts()
+        self.losses = self.get_losses()
+        self.part_ratio = self.get_part_ratio()
+        self.cvs = self.get_collective_variables()
+
+    # do a function, loop over the keys
+    def get_xs(self):
+        return torch.stack(self.adaptive["xs"]).squeeze()
+
+    def get_us(self):
+        return torch.stack(self.adaptive["us"]).squeeze()
+    
+    def get_accs(self):
+        return torch.stack(self.adaptive["accs"]).squeeze()
+
+    def get_isomers(self):
+        return torch.stack(self.adaptive["isomers"]).squeeze()
+    
+    def get_isomer_labels(self):
+        return torch.stack(self.adaptive["isomers"]).squeeze().unique()
+
+    def get_flow_dicts(self):
+        return self.adaptive["dict_flows_training"]
+    
+    def get_losses(self):
+        self.isomer_labels = self.get_isomer_labels()
+        losses = torch.cat([flow[i]["losses"] for i in range(len(self.isomer_labels)) for flow in self.dict_flows_training], dim=1)
+        return {"train": losses[0], "test": losses[1]}
+
+    def get_part_ratio(self):
+        return torch.cat([
+        flow[i]["part_ratios"] for i in range(len(self.isomer_labels)) 
+        for flow in self.dict_flows_training if "part_ratios" in flow[i].keys()
+        ])
+
+    def get_collective_variables(self, random=True, n=2):
+        inds = torch.randint(0, self.xs.shape[1], (n,))
+        some_chains = self.xs[:, inds]
+        some_chains_flatten = some_chains.reshape(-1, some_chains.shape[-1])
+        return get_cvs_from_real_centered(some_chains_flatten, isomer=self.isomer_labels[0].item())
+
+    def plot_acc_ratio(self, ax):
+        accs_avg = self.accs.mean(axis=1).detach().numpy()
+        set_plot_sequential_data(accs_avg, avg=True, window_size=25, axis=1, ax=ax, label="acc ratio")
+
+    def plot_losses(self, ax):
+        set_plot_sequential_data(self.losses["train"], avg=False, alpha=1, ax=ax, label="train")
+        set_plot_sequential_data(self.losses["test"], avg=False, alpha=1, ax=ax, label="test")
+
+    def plot_part_ratio(self, ax):
+        set_plot_sequential_data(self.part_ratio, avg=True, window_size=25, axis=1, ax=ax, color='b', label="part ratio")
+         
+    def plot_energy_histogram(self, ax, energies=None):
+        if energies is None:
+            energies = {"MCMC": self.us.flatten().detach().numpy()
+            }
+        else:
+            energies["MCMC"] = self.us.flatten().detach().numpy()
+
+        sns.histplot(energies, ax=ax, bins=50, stat='density', common_norm=False, kde=True)
+
+    def plot_collective_variable_on_fes(self, fig, ax, cvs=None):
+        if cvs is None:
+            cvs = {"MCMC": self.cvs}
+        else:
+            cvs["MCMC"] = self.cvs
+
+        plot_energy_surface(fig=fig, ax=ax, add_colorbar=True)
+        
+        for key in list(cvs.keys())[::-1]:
+            ax.scatter(cvs[key][:, 0], cvs[key][:, 1], label=key)
+
+
+    def plot_nll_energy(self, fig, ax, n=10, colorbar=True):
+        # TODO: This works for just one isomer, remmerber mixture also computes nll
+
+        nll = lambda x: self.dict_flows_training[-1][0]['model'].nll(x)
+        steps = torch.arange(0, self.xs.shape[0], 1)
+
+        for i in torch.randint(0, self.xs.shape[1], (n,)):
+
+            nll_values = nll(self.xs[:, i]).detach().numpy()
+            us_values = self.us[:, i].detach().numpy()
+            im2 = ax.scatter(us_values, nll_values, c=steps, cmap='viridis')
+
+        if colorbar:
+            fig.colorbar(im2, ax=ax, label="MCMC step")
+
+
+
+def create_report(adaptive_plotter, energies=None, cvs=None):
+
+    fig, axs = plt.subplots(3, 2, figsize=(18, 18))
+    fig.subplots_adjust(top=0.92)
+
+    adaptive_plotter.plot_acc_ratio(axs[0][0])
+    axs[0][0].set_xlabel("MCMC steps")
+    axs[0][0].set_ylabel("Acceptance ratio")
+    axs[0][0].legend()
+
+    adaptive_plotter.plot_part_ratio(axs[0][1])
+    axs[0][1].set_xlabel("MCMC steps")
+    axs[0][1].set_ylabel("Participation ratio")
+    axs[0][1].legend()
+
+    adaptive_plotter.plot_losses(axs[1][0])
+    axs[1][0].set_xlabel("Epochs")
+    axs[1][0].set_ylabel("Loss")
+    axs[1][0].legend()
+
+    adaptive_plotter.plot_energy_histogram(axs[1][1], energies=energies)
+    axs[1][1].set_xlabel("Energy (eV)")
+    axs[1][1].set_ylabel("Density")
+
+    adaptive_plotter.plot_collective_variable_on_fes(fig=fig, ax=axs[2][0], cvs=cvs)
+    axs[2][0].set_ylim(2.0, 2.7)
+    axs[2][0].legend()
+
+    adaptive_plotter.plot_nll_energy(fig=fig, ax=axs[2][1])
+    axs[2][1].set_xlabel("Energy (eV)")
+    axs[2][1].set_ylabel("NLL")
+
+    fig.suptitle("Adaptive MCMC params: \n md={} nruns={} nchains={} nsteps={} \n lr={} epochs={}".format(adaptive_plotter.args["folder_path"],
+                                                                                            adaptive_plotter.args["n_runs"],
+                                                                                            adaptive_plotter.args["n_chains"],
+                                                                                            adaptive_plotter.args["n_steps"],
+                                                                                            adaptive_plotter.args["learning_rate"],
+                                                                                            adaptive_plotter.args["n_iter"]    
+                                                                                            ), )
+
+    fig.savefig("report_is{}_{}.png".format(adaptive_plotter.args["isomer_label"], adaptive_plotter.args["process_id"]))
+
 
 # ================================== DELETE ====================================
 
