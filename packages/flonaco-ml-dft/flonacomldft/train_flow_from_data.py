@@ -84,8 +84,14 @@ def train_flow(
     losses_test = []
     models = [copy.deepcopy(model)]
     grad_norms = []
-        
-    x = x_train.detach().requires_grad_()
+
+    if x_train.shape[0] < 8000:
+
+        x = x_train.detach().requires_grad_()
+
+    else:
+
+        x = x_train.detach().requires_grad_()[-8000:]
 
     if with_tqdm:
         pbar = tqdm.tqdm(range(n_iter))
@@ -95,6 +101,8 @@ def train_flow(
     # num_model = 0   
 
     time_start = time.time()
+
+    print("train shape: ", x.shape)
 
     permutation = torch.randperm(x.shape[0])
 

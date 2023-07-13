@@ -1,3 +1,5 @@
+#TODO: CLEAN UP!
+
 ## Import modules
 
 import os
@@ -7,7 +9,8 @@ import pandas as pd
 import chemcoord as cc
 from ase.units import kB
 
-from flonacomldft.utils.silver_isomers_utils import get_construction_table, get_molecule_isomer_minima 
+from flonacomldft.utils.silver_isomers_utils import get_construction_table, get_molecule_isomer_minima
+from flonacomldft.collective_variables import get_collective_variables
 
 ### Add phase to the angles from internal coordinates
 def add_phase(tensor, phase = 2 * torch.pi):
@@ -368,7 +371,8 @@ class Coordinates_mapping():
             
 
     def get_internal_from_trajectory(self, trajectory, isomer=None,
-                                     add_potential_energy=True, temperature=None,
+                                     add_potential_energy=True, 
+                                     add_cvs=True, temperature=None,
                                      max_samples=None):
         """
         Loops over the previous function to compute the internal coordinates for a whole trajectory.
@@ -397,6 +401,11 @@ class Coordinates_mapping():
                     zmat = torch.cat((zmat, isomer), dim=-1 )
 
                 zmat = torch.cat((zmat, logdetjac), dim=-1)
+
+            if add_cvs:
+                cv = self.get_collective_variables_from_molecule(molecule_configuration)
+                zmat = torch.cat((zmat, cv), dim=-1)
+
 
             zmats.append(zmat)
             
@@ -489,8 +498,59 @@ class Coordinates_mapping():
         molecule = self._build_molecule_from_xyz(xyz)
 
         return molecule, logdetjac
-        
 
+    def get_collective_variables_from_molecule(self, molecule):
+            
+        return torch.tensor(get_collective_variables(molecule)).squeeze()
+
+    def get_collective_variables_from_trajectory(self, trajectory, max_samples=None):
+        
+        cvs = []
+        
+        for m, molecule_configuration in enumerate(trajectory):
+            cv = get_collective_variables(molecule_configuration)
+            cvs.append(torch.tensor(cv))
+            
+            if max_samples is not None:
+                if m >= max_samples:
+                    break
+
+        return torch.stack(cvs)
+
+    def get_collective_variables_from_zmat(self, x):
+
+        if len(x.shape) > 1:
+            cvs = []
+            for xi in x:
+                molecule = self.build_molecule_from_zmat(xi)
+                cv = get_collective_variables(molecule)
+                cvs.append(torch.tensor(cv))
+
+            return torch.stack(cvs).squeeze()
+                
+        else:
+            molecule = self.build_molecule_from_zmat(x)
+            return torch.tensor(get_collective_variables(molecule)).squeeze()
+
+    def get_collective_variables_from_real_centered(self, x, isomer):
+
+        if len(x.shape) == 1:
+            x = x.reshape(1, -1)
+
+        zmat, logdetjac = self.get_internal_from_real_centered(x, isomer=isomer)
+
+        # cvs = []
+        # 
+        # for xi in x:
+        #     xi = xi.reshape(1, -1)
+        #     molecule, logdetjac = self.build_molecule_from_real_centered(xi, isomer)
+        #     cv = get_collective_variables(molecule)
+        #     cvs.append(torch.tensor(cv))       
+                
+        return self.get_collective_variables_from_zmat(zmat)
+    
+
+        
 def get_labels_from_construction_table(construction_table, all_labels=False):
 
     construction_table = construction_table.copy()
@@ -512,7 +572,7 @@ def get_labels_from_construction_table(construction_table, all_labels=False):
 
         return labels
 
-def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_energy=True, add_logdetjac=True, add_isomer=True, filename='traj.csv', path=os.getcwd()):
+def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_energy=True, add_logdetjac=True, add_isomer=True, add_cvs=True, filename='traj.csv', path=os.getcwd()):
 
         labels = get_labels_from_construction_table(construction_table)
             
@@ -524,6 +584,9 @@ def save_internal_coordinates_to_csv(xs, construction_table,  add_potential_ener
 
         if add_logdetjac:
             labels = labels + ['logdetjac']
+
+        if add_cvs:
+            labels = labels + ['C', 'R']
 
         df = pd.DataFrame(xs.detach().numpy())
         df.columns=labels
@@ -542,3 +605,86 @@ def join_data(xs, energies, isomers, logdetjacs=None):
 
     return data
 
+# # ================================= COLLECTIVE VARIABLES =================================
+# 
+# ### Define collective variables constants    
+# d=2.8
+# rij_d = lambda rij: rij/d
+# 
+# ### Define collective variables function: Switching function
+# def X_i(i, r):
+#    
+#    value=0
+#    
+#    for j in range(len(r)):
+#    
+#       if(i!=j):
+#    
+#          value = value + (1 - rij_d(r[i][j])**8)/(1 - rij_d(r[i][j])**16)
+#    
+#    return value
+# 
+# ### Define collective variables function: Coordination number
+# def compute_C(atoms):
+#    
+#    r = atoms.get_all_distances()
+#    
+#    return np.array([X_i(i, r) for i in range(atoms.get_global_number_of_atoms())]).sum()
+# 
+# ### Define collective variables function: Radius of gyration
+# def compute_R(atoms):
+#    
+#    r_rcm = atoms.get_positions() - atoms.get_center_of_mass()
+#    result = np.sqrt(np.array([np.linalg.norm(ri)**2 for ri in r_rcm]).sum()/atoms.get_global_number_of_atoms())
+#    
+#    return result 
+# 
+# def get_collective_variables(atoms):
+#     """Get the collective variables of the system."""
+#     return  np.array((compute_C(atoms), compute_R(atoms)))
+# 
+# ### Define collective variables function: Get collective variables from internal coordinates
+# def get_CVs(data):
+#    
+#    C_vals = []
+#    R_vals = []
+#    
+#    for x in data:
+#    
+#       coord_maps = Coordinates_mapping()
+#       molecule = coord_maps.build_molecule_from_zmat(x)
+#                                                                                
+#       C_vals.append(compute_C(molecule))
+#       R_vals.append(compute_R(molecule))
+#    
+#    return C_vals, R_vals
+# 
+# def get_cvs_from_traj(traj):
+#     """Get the collective variables from a trajectory."""
+#     return np.array([get_collective_variables(atoms) for atoms in traj])
+# 
+# def get_cvs_from_zmat(data):
+# 
+#    cvs = []
+# 
+#    for x in data:
+#          
+#       coord_maps = Coordinates_mapping()
+#       molecule = coord_maps.build_molecule_from_zmat(x)
+# 
+#       cvs.append(get_collective_variables(molecule))
+# 
+#    return np.array(cvs)
+# 
+# def get_cvs_from_real_centered(data, isomer):
+# 
+#    cvs = []
+# 
+#    for x in data:
+#          
+#       coord_maps = Coordinates_mapping()
+#       molecule = coord_maps.build_molecule_from_real_centered(x.reshape(1, -1), isomer)
+# 
+#       cvs.append(get_collective_variables(molecule[0]))
+# 
+#    return np.array(cvs)

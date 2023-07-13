@@ -39,9 +39,8 @@ def adaptive_sampling(
         path=None
         ):
 
-    #modes = torch.unique(flow_init_train[:, dim+1])
+    modes = torch.unique(torch.stack(flow_init_train).squeeze()[:, dim+1])
 
-    modes = torch.tensor(range(len(flow_init_train)))
     print('modes: ', modes)
 
     xs_for_flows_train = [ flow_init_train[i] for i in range(len(flow_init_train)) ]
@@ -69,7 +68,7 @@ def adaptive_sampling(
         weights = torch.tensor(weights).detach()
 
     max_md = xs_for_flows_train[0].shape[0]
-    n_md = 0
+    n_md = n_chains*n_steps
 
     for i in range(n_runs):
 
@@ -124,7 +123,7 @@ def adaptive_sampling(
 
         for mode in range(len(modes)):#modes.detach().numpy().astype(int):
 
-            xs_from_chains = chains_flatten.clone()[mask_flow==mode].clone()
+            xs_from_chains = chains_flatten.clone()[mask_flow==modes[mode]].clone()
 
             # extend data set for flow training
 
@@ -147,12 +146,12 @@ def adaptive_sampling(
                 flow_hyperparams[mode]['compute_part_ratio'] = False
 
             print(flow_hyperparams)
-            print("shape xs_for_flows_train: ", xs_for_flows_train[mode][n_md:].shape)
+            print("shape xs_for_flows_train: ", xs_for_flows_train[mode][:].shape)
 
             #add mlps
             dict_new_flow = train_flow(
                 dict_flows_training[i][mode]['model'],
-                xs_for_flows_train[mode][n_md:],
+                xs_for_flows_train[mode],
                 xs_for_flows_test[mode],
                 #mlp_model=get_models(dict_mlps_training[-1])[0],
                 **flow_hyperparams[mode],

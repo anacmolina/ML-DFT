@@ -227,5 +227,13 @@ out['args'] = argparse_dict
 
 save_json_args(args, 'adaptive_sampling', args.process_id, path_to_save_results)
 
-f = "adaptative_sampling_{:d}.pkl".format(args.process_id)
+f = "adaptive_sampling_{:s}_{:d}.pkl".format(simulation_name, args.process_id)
 save_pickle_file(out, f, path = path_to_save_results)
+
+from flonacomldft.utils.plots import Adaptive_Plotter, create_report
+
+adaptive_plotter = Adaptive_Plotter(out)
+
+energies = {'train': flow_xs_test[0][:, 12].detach().numpy(),}
+
+create_report(adaptive_plotter, energies=energies, path=path_to_save_results + '/')
