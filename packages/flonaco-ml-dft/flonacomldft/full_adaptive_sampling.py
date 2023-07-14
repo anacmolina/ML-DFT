@@ -36,7 +36,9 @@ def adaptive_sampling(
         T=300,
         reweighting=False,
         weights=None,
-        path=None
+        path=None,
+        fix_train_samples=None,
+        save_ratios = 5
         ):
 
     modes = torch.unique(torch.stack(flow_init_train).squeeze()[:, dim+1])
@@ -67,8 +69,10 @@ def adaptive_sampling(
     else:
         weights = torch.tensor(weights).detach()
 
-    max_md = xs_for_flows_train[0].shape[0]
-    n_md = n_chains*n_steps
+    if fix_train_samples is None:
+        fix_train_samples = xs_for_flows_train[0].shape[0]
+    elif fix_train_samples > xs_for_flows_train[0].shape[0]:
+        fix_train_samples = xs_for_flows_train[0].shape[0]    
 
     for i in range(n_runs):
 
@@ -135,7 +139,7 @@ def adaptive_sampling(
             )
 
             # n_runs/save_splits
-            if i % 5 == 0:
+            if i % save_ratios == 0:
                 #TODO: do this only for some number of runs
                 flow_hyperparams[mode]['compute_part_ratio'] = True
                 if "dft" in energy_type:
@@ -151,7 +155,7 @@ def adaptive_sampling(
             #add mlps
             dict_new_flow = train_flow(
                 dict_flows_training[i][mode]['model'],
-                xs_for_flows_train[mode],
+                xs_for_flows_train[mode][-fix_train_samples:],
                 xs_for_flows_test[mode],
                 #mlp_model=get_models(dict_mlps_training[-1])[0],
                 **flow_hyperparams[mode],
@@ -166,9 +170,6 @@ def adaptive_sampling(
             dict_new_flows.append(dict_new_flow)
 
         dict_flows_training.append(dict_new_flows)
-
-        if n_md <= max_md:
-            n_md += n_chains*n_steps
 
     to_return = {
         "dict_flows_training": dict_flows_training,

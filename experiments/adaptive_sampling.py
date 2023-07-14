@@ -47,7 +47,7 @@ parser.add_argument('-isomer', '--isomer-label', type=int, nargs='+', default=[0
 # flow params
 parser.add_argument('-ni', '--n-iter', type=int, default=10)
 parser.add_argument('-lr', '--learning-rate', type=float, default=1e-4)
-parser.add_argument('-bs', '--batch-size', type=int, default=128)
+parser.add_argument('-bs', '--batch-size', type=int, default=512)
 parser.add_argument('-nb', '--n-blocks', type=int, default=4)
 parser.add_argument('-hdm', '--hidden-dim', type=int, default=64)
 parser.add_argument('-hdp', '--hidden-depth', type=int, default=3)
@@ -177,6 +177,7 @@ flows_dic = [train_flow(
     energy_type=args.energy_type,
     n_prop=args.n_prop,
     path=path_to_save_results,
+    #N_samples=8000,
 ) for model, train, test in zip(models, flow_xs_train, flow_xs_test)]
 
 mlps_dic = None
@@ -194,6 +195,7 @@ flow_hyperparams = {'n_iter': args.n_iter,
     'grad_clip': 1e4,
     'compute_part_ratio': True,
     'energy_type': args.energy_type,
+    'batch_size': args.batch_size,
     }
 
 
@@ -215,6 +217,7 @@ out = adaptive_sampling(
     flow_hyperparams=[flow_hyperparams, flow_hyperparams], # TODO: generalize for more flows
     dict_mlps_init=mlps_dic,
     path=path_to_save_results,
+    save_ratios = 5,
     )
 
 date_end = time.strftime('%Y-%m-%d %H:%M:%S')

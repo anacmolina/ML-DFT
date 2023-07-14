@@ -141,7 +141,7 @@ def run_metropolis(
             xs_props.append(x_new)
 
         nll_x = model.nll(x_new)
-        nll_x_init = model.nll(x_init)
+        nll_x_init = model.nll(x_init)            
        
         if "mlp" in energy_type:
             u_new = torch.zeros((n_chains, 1)).squeeze()
@@ -176,7 +176,7 @@ def run_metropolis(
             # TODO: type of isomer_dft
             for i,flag_dft in enumerate(ind_dft):
                 if flag_dft:
-                    try: # Dangerous strategy
+                    try: # Avoid try if possible
                         #TODO: FIX SHAPES OF XS, ZMAT
 
                         #       zmat, logdetjac = coord_maps.get_internal_from_real_centered(x_new[i].reshape(1, -1), isomer=isomer_new[i].item())
@@ -195,6 +195,9 @@ def run_metropolis(
                         u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
                         #print(u_new[i])
                         #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
+
+
+
                         xs_dft.append(x_new[i])
                         us_dft.append(u_new[i])
                         isomers_dft.append(isomer_new[i])
