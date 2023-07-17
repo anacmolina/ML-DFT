@@ -4,7 +4,7 @@ from ase import Atoms
 
 isomers = {
     #'ag6_planar': {
-    'dft_is0': {
+    'is0': {
         'symbols': 'AgAgAgAgAgAg',
         'positions': np.array([[ 7.999201,  5.66275 ,  8.      ],
                                [ 7.986642, 10.350007,  8.      ],
@@ -14,7 +14,7 @@ isomers = {
                                [10.678646,  5.717535,  8.      ]])},
     
     #'ag6_3d': {
-    'dft_is1': {
+    'is1': {
         'symbols': 'AgAgAgAgAgAg',
         'positions': np.array([[ 6.594017,  5.856863,  7.384655],
                                [ 9.405983,  5.856863,  7.384655],
@@ -25,7 +25,7 @@ isomers = {
 #}
 #TODO: Fix this
 #emt_isomers = {
-    'is0':{
+    'emt_is0':{
         'symbols': 'AgAgAgAgAgAg',
         'positions': np.array([[ 7.53174253,  6.48514763,  5.        ],
                                [10.0723176 ,  5.6827374 ,  5.        ],
@@ -34,7 +34,7 @@ isomers = {
                                [ 7.15610969,  9.19211691,  5.        ],
                                [ 9.6463932 ,  8.24673131,  5.        ]])},
 
-    'is1':{
+    'emt_is1':{
         'symbols': 'AgAgAgAgAgAg',
         'positions': np.array([[7.31189267, 5.21860471, 7.87202555],
                                [7.37558519, 5.01139179, 5.15837097],
@@ -45,20 +45,12 @@ isomers = {
 } 
 
 
-def get_molecule_isomer_minima(name, etype='dft', vacuum=None, **kwargs):
+def get_molecule_isomer_minima(name, vacuum=None, **kwargs):
     
-    dict_isomers = None
 
-    if etype == 'dft':
-        dict_isomers = isomers
-    elif etype == 'emt':
-        dict_isomers = emt_isomers
-    else:
-        raise RuntimeError("Unknown potential type")
-
-    if name in dict_isomers:
+    if name in isomers:
     
-        kwargs.update(dict_isomers[name])
+        kwargs.update(isomers[name])
         molecule = Atoms(**kwargs)
 
     else:

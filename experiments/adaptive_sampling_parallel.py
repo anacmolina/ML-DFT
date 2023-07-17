@@ -1,6 +1,8 @@
 import warnings
 warnings.filterwarnings("ignore")
 
+from ase.parallel import parprint as print
+
 # standard library imports
 import os
 import time
@@ -15,7 +17,6 @@ import numpy as np
 from flonacomldft.utils.io_utils import (
     get_path,
     load_csv_file,
-    load_pickle_file,
     save_pickle_file,
     save_json_args,
     set_str_date_to_int,
@@ -28,16 +29,36 @@ from flonacomldft.train_flow_from_data import train_flow
 # sampling and training
 from flonacomldft.full_adaptive_sampling import adaptive_sampling
 
-num_seed = np.random.randint(0, 100)
-date_start = set_str_date_to_int(time.strftime('%Y-%m-%d %H:%M:%S'))
+# parallelization set up
+import gpaw.mpi as mpi
 
-print('seed: ', num_seed)
-print('date_start: ', date_start)
+ranks = np.arange(0, mpi.world.size)
+rank = mpi.rank
+comm = mpi.world.new_communicator(ranks)
+
+num_seed = np.array([0])
+date_start = np.array([0])
+
+# only rank 0 generates the seed and date_start
+if rank == 0:
+    num_seed = np.random.randint(0, 100, (1,))
+    date_start = np.array([set_str_date_to_int(time.strftime('%Y-%m-%d %H:%M:%S'))])
+
+mpi.world.barrier()
+
+comm.broadcast(num_seed, 0)
+comm.broadcast(date_start, 0)
+
+num_seed = num_seed[0]
+date_start = date_start[0]
+
+print('seed: ', num_seed, rank)
+print('date_start: ', date_start, rank)
 
 # define arpase arguments
 parser = argparse.ArgumentParser(description='Prepare experiment')
 # execution params
-parser.add_argument('-threads', '--threads', type=int, default=4)
+parser.add_argument('-threads', '--threads', type=int, default=None)
 parser.add_argument('-pid', '--process-id', type=int, default=date_start)
 parser.add_argument('-rs', '--random-seed', type=int, default=num_seed)
 parser.add_argument('-path', '--folder-path', type=str, default='emt_berendsen/')
@@ -47,13 +68,13 @@ parser.add_argument('-isomer', '--isomer-label', type=int, nargs='+', default=[0
 # flow params
 parser.add_argument('-ni', '--n-iter', type=int, default=10)
 parser.add_argument('-lr', '--learning-rate', type=float, default=1e-4)
-parser.add_argument('-bs', '--batch-size', type=int, default=128)
+parser.add_argument('-bs', '--batch-size', type=int, default=512)
 parser.add_argument('-nb', '--n-blocks', type=int, default=4)
-parser.add_argument('-hdm', '--hidden-dim', type=int, default=64)
-parser.add_argument('-hdp', '--hidden-depth', type=int, default=3)
+parser.add_argument('-nodes', '--hidden-dim', type=int, default=64)
+parser.add_argument('-layers', '--hidden-depth', type=int, default=3)
 parser.add_argument('-us', '--use-scheduler', type=bool, default=False)
 parser.add_argument('-ratios', '--do-ratios', type=bool, default=False)
-parser.add_argument('-prop', '--n-prop', type=int, default=100)
+parser.add_argument('-prop', '--n-prop', type=int, default=50)
 # adaptive sampling params
 parser.add_argument('-nruns', '--n-runs', type=int, default=5)
 parser.add_argument('-nchains', '--n-chains', type=int, default=5)
@@ -65,15 +86,19 @@ args.date_start = str(date_start)
 
 # torch settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 if args.threads is not None:
     torch.set_num_threads(args.threads)
 
-print('threads: ', torch.get_num_threads())
-torch.manual_seed(args.random_seed)
+print('device: ', device)
+print('threads: ', torch.get_num_threads(), rank)
+
+# set random seed
+torch.manual_seed(int(args.random_seed))
+mpi.world.barrier()
 
 # isomer labels
 isomer_labels = args.isomer_label
-#ids = args.ids
 
 # mcmc chains parameters
 n_runs = args.n_runs
@@ -81,10 +106,10 @@ n_chains = args.n_chains
 n_steps = args.n_steps
 energy_type = args.energy_type
 
+# path to the datasets
 path_datasets = get_path() + '/' + args.folder_path + '/' + 'datasets'
 
 # real center coordinates
-
 coord_mapping = Coordinates_mapping(etype=energy_type)
 
 # TODO: is this the best way to get the dataset?
@@ -114,9 +139,8 @@ flow_xs_train, flow_zmat_train = get_dataset('flow_train', path_datasets, isomer
 flow_xs_test, flow_zmat_test = get_dataset('flow_test', path_datasets, isomer_labels)
 
 for i in range(len(isomer_labels)):
-    print('flow_xs_train.shape: ', flow_xs_train[i].shape)
-    print('flow_xs_test.shape: ', flow_xs_test[i].shape)
-
+    print('flow_xs_train.shape: ', flow_xs_train[i].shape, isomer_labels[i], rank)
+    print('flow_xs_test.shape: ', flow_xs_test[i].shape, isomer_labels[i], rank)
 
 # whether to use a mixture of flows
 if len(isomer_labels)==1:
@@ -137,9 +161,12 @@ else:
 # path to save results
 folder_to_save_results = 'results_adaptive_{:s}_{:d}'.format(simulation_name, args.process_id)
 path_to_save_results = os.getcwd() + '/' + folder_to_save_results
+if rank == 0:
+    if not os.path.exists(path_to_save_results):
+        os.makedirs(path_to_save_results)
+        print('folder created: ', path_to_save_results, rank)
 
-if not os.path.exists(path_to_save_results):
-    os.makedirs(path_to_save_results)
+mpi.world.barrier()
 
 cov = [torch.cov(flow_xs_train[i][:, :12].T).detach() + 1e-5 * torch.eye(flow_xs_train[i][:, :12].shape[1]).detach() for i in range(len(isomer_labels))]
 print('cov.shape: ', len(cov))
@@ -155,10 +182,6 @@ models = [RealNVP_MLP(dim=flow_xs_train[i][:, :12].shape[1],
                     device=device,
                     )
                     for i in range(len(isomer_labels))]
-                    
-
-
-
 
 # training flow model
 flows_dic = [train_flow(
@@ -168,7 +191,7 @@ flows_dic = [train_flow(
     n_iter=args.n_iter,
     lr=args.learning_rate,
     batch_size=args.batch_size,
-    use_scheduler=args.use_scheduler,
+    use_scheduler=False,
     step_schedule=args.n_iter/5,
     save_splits=10,
     grad_clip=1e4,
@@ -177,27 +200,24 @@ flows_dic = [train_flow(
     energy_type=args.energy_type,
     n_prop=args.n_prop,
     path=path_to_save_results,
+    #N_samples=8000,
 ) for model, train, test in zip(models, flow_xs_train, flow_xs_test)]
 
 mlps_dic = None
-
-## flow models
-## flows_dic = [load_pickle_file("models/is{:d}_flow_dic_training_{:d}.pkl".format(isomer_label, id_), path_datasets) for isomer_label, id_ in zip(isomer_labels, ids) ]
-
 
 # retraining hyperparameters
 flow_hyperparams = {'n_iter': args.n_iter,
     'lr': args.learning_rate,
     'use_scheduler': False,
     'step_schedule': 100,
-    'save_splits': 5,
+    'save_splits': 10,
     'grad_clip': 1e4,
-    'compute_part_ratio': True,
+    'compute_part_ratio': args.do_ratios,
     'energy_type': args.energy_type,
     'batch_size': args.batch_size,
-    'compute_part_ratio': args.do_ratios,
+    'n_prop': args.n_prop,
+    'use_scheduler': args.use_scheduler,
     }
-
 
 # init chains
 shuffle = torch.randperm(flow_xs_test[0].shape[0]) # this works only for one isomer
@@ -218,25 +238,33 @@ out = adaptive_sampling(
     dict_mlps_init=mlps_dic,
     path=path_to_save_results,
     save_ratios = 5,
+    #seed=args.random_seed,
     )
 
-date_end = time.strftime('%Y-%m-%d %H:%M:%S')
-args.date_end = date_end
+date_end = np.array([0])
 
-args.algorithm = 'adaptive_sampling.py'
+if rank == 0:
+    date_end =  np.array([set_str_date_to_int(time.strftime('%Y-%m-%d %H:%M:%S'))])
 
-argparse_dict = vars(args)
-out['args'] = argparse_dict
+#mpi.world.barrier()
+#comm.broadcast(date_end, 0)
+#if rank == 0:
+    args.date_end = date_end[0]
+    args.algorithm = 'adaptive_sampling.py'
 
-save_json_args(args, 'adaptive_sampling', args.process_id, path_to_save_results)
+    argparse_dict = vars(args)
+    out['args'] = argparse_dict
 
-f = "adaptive_sampling_{:s}_{:d}.pkl".format(simulation_name, args.process_id)
-save_pickle_file(out, f, path = path_to_save_results)
+    save_json_args(args, 'adaptive_sampling', args.process_id, path_to_save_results)
 
-from flonacomldft.utils.plots import Adaptive_Plotter, create_report
+    f = "adaptive_sampling_{:s}_{:d}.pkl".format(simulation_name, args.process_id)
+    save_pickle_file(out, f, path = path_to_save_results)
 
-adaptive_plotter = Adaptive_Plotter(out)
+    from flonacomldft.utils.plots import Adaptive_Plotter, create_report
 
-energies = {'train': flow_xs_train[0][:, 12].detach().numpy(),}
+    adaptive_plotter = Adaptive_Plotter(out)
 
-create_report(adaptive_plotter, energies=energies, path=path_to_save_results + '/')
+    energies = {'train': flow_xs_train[0][:, 12].detach().numpy(),}
+
+    create_report(adaptive_plotter, energies=energies, path=path_to_save_results + '/')
+

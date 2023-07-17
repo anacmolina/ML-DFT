@@ -66,16 +66,20 @@ class Coordinates_mapping():
     """
 
     def __init__(self, construction_table=get_construction_table(), 
-                symbols=np.full(6, 'Ag')):
+                symbols=np.full(6, 'Ag'), etype='dft'):
         super().__init__()
         
         self.construction_table = construction_table.copy()
         self.symbols = symbols
         self.Natoms = len(self.symbols) 
-        self.angles_mappings = Angles_mapping()    
+        self.angles_mappings = Angles_mapping()
+        if etype == 'emt':
+            minima_name = 'emt_'
+        else:
+            minima_name = ''    
         self.zmat_minima = {
-            0: self.get_internal_from_molecule(get_molecule_isomer_minima('is0'))[0],
-            1: self.get_internal_from_molecule(get_molecule_isomer_minima('is1'))[0] #TODO: becareful with the silver minima file
+            0: self.get_internal_from_molecule(get_molecule_isomer_minima(minima_name+'is0'))[0],
+            1: self.get_internal_from_molecule(get_molecule_isomer_minima(minima_name+'is1'))[0] #TODO: becareful with the silver minima file
         } 
         #self.kb = 8.617333262e-5 # eV/K
         self.kB = kB # eV/K

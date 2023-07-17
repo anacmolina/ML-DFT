@@ -38,7 +38,7 @@ def adaptive_sampling(
         weights=None,
         path=None,
         fix_train_samples=None,
-        save_ratios = 5
+        save_ratios = 5,
         ):
 
     modes = torch.unique(torch.stack(flow_init_train).squeeze()[:, dim+1])
@@ -139,17 +139,16 @@ def adaptive_sampling(
             )
 
             # n_runs/save_splits
-            if i % save_ratios == 0:
+            if i % save_ratios == 0 and flow_hyperparams[mode]['compute_part_ratio']:
                 #TODO: do this only for some number of runs
-                flow_hyperparams[mode]['compute_part_ratio'] = True
+                #flow_hyperparams[mode]['compute_part_ratio'] = True
                 if "dft" in energy_type:
                     flow_hyperparams[mode]['path'] = path + '/DFTRatios_{:d}'.format(i)
                 else:
-                    flow_hyperparams[mode]['path'] = ''
-            else:
-                flow_hyperparams[mode]['compute_part_ratio'] = False
+                    flow_hyperparams[mode]['path'] = ''            
+            #else:
+            #    flow_hyperparams[mode]['compute_part_ratio'] = False
 
-            print(flow_hyperparams)
             print("shape xs_for_flows_train: ", xs_for_flows_train[mode][:].shape)
 
             #add mlps
@@ -162,6 +161,10 @@ def adaptive_sampling(
                 dim=dim,
                 mlp_model=mlp_models[mode],
                 )
+            
+            if (i+1)*n_steps >= 100:
+                flow_hyperparams[mode]['lr'] = 1e-4
+                flow_hyperparams[mode]['n_iter'] = 10
             
             dict_new_flows.append(dict_new_flow)
             

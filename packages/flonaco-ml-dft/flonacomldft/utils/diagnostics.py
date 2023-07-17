@@ -68,7 +68,7 @@ class Target_Log_Prob:
         from flonacomldft.dft_calculator import DFTCalculator
         from flonacomldft.internal_coordinates import Coordinates_mapping
         
-        coord_mapping = Coordinates_mapping()
+        coord_mapping = Coordinates_mapping(etype=self.energy_type)
         calculator = DFTCalculator()
         calculator.initialize_calculator(foldername=self.folder)
         
@@ -85,7 +85,7 @@ class Target_Log_Prob:
         from flonacomldft.dft_calculator import EMTCalculator
         from flonacomldft.internal_coordinates import Coordinates_mapping
         
-        coord_mapping = Coordinates_mapping()
+        coord_mapping = Coordinates_mapping(etype=self.energy_type)
         calculator = EMTCalculator()
         
         u = torch.zeros(xs.shape[0])

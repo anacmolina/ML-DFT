@@ -327,6 +327,7 @@ class Adaptive_Plotter:
 
     def __init__(self, adaptive):
         self.adaptive = adaptive
+
         self.xs = None
         self.flatten_xs = None
         self.us = None
@@ -350,7 +351,7 @@ class Adaptive_Plotter:
         self.isomer_labels = self.get_isomer_labels()
         self.dict_flows_training = self.get_flow_dicts()
         self.losses = self.get_losses()
-        self.part_ratio = self.get_part_ratio()
+        #self.part_ratio = self.get_part_ratio()
         self.cvs = self.get_collective_variables()
 
     # do a function, loop over the keys
@@ -387,7 +388,7 @@ class Adaptive_Plotter:
         inds = torch.randint(0, self.xs.shape[2], (n,))
         some_chains = self.flatten_xs[:, inds]
         some_chains_flatten = some_chains.reshape(-1, some_chains.shape[-1])
-        coords_mapping = Coordinates_mapping()
+        coords_mapping = Coordinates_mapping(etype=self.args['energy_type'])
         return coords_mapping.get_collective_variables_from_real_centered(some_chains_flatten, isomer=self.isomer_labels[0].item())
         #return get_cvs_from_real_centered(some_chains_flatten, isomer=self.isomer_labels[0].item()) # TODO: fix this isomer labeling
 
@@ -454,10 +455,10 @@ def create_report(adaptive_plotter, energies=None, cvs=None, path =os.getcwd() +
     axs[0][0].set_ylabel("Acceptance ratio")
     axs[0][0].legend()
 
-    adaptive_plotter.plot_part_ratio(axs[0][1])
-    axs[0][1].set_xlabel("MCMC steps")
-    axs[0][1].set_ylabel("Participation ratio")
-    axs[0][1].legend()
+    #adaptive_plotter.plot_part_ratio(axs[0][1])
+    #axs[0][1].set_xlabel("MCMC steps")
+    #axs[0][1].set_ylabel("Participation ratio")
+    #axs[0][1].legend()
 
     adaptive_plotter.plot_losses(axs[1][0])
     axs[1][0].set_xlabel("Epochs")

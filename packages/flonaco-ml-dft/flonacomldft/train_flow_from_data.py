@@ -16,10 +16,10 @@ def train_flow(
     test,
     dim=12,
     n_iter=100,
-    lr=5e-3,
+    lr=5e-4,
     batch_size=512,
     use_scheduler=False,
-    step_schedule=1000,
+    step_schedule=10,
     save_splits=10,
     grad_clip=1e4,
     with_tqdm=False,
@@ -68,6 +68,8 @@ def train_flow(
     # input data   
     x_train = train[:, :dim]
     x_test = test[:, :dim]
+
+    print('COMPUTE PARTICIPATION RATIO: ', compute_part_ratio)
 
     if compute_part_ratio:
         from flonacomldft.utils.diagnostics import Target_Log_Prob
@@ -180,6 +182,7 @@ def train_flow(
         "losses": torch.FloatTensor([losses_train, losses_test]).detach(),
         "models": models,
         "grad_norms": grad_norms,
+        "lr": param_group["lr"],
     }
 
     if compute_part_ratio:

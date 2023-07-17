@@ -20,7 +20,6 @@ class EMTCalculator:
     def calculate_potential_energy(self, atoms):
         return self.calculator.get_potential_energy(atoms)
 
-
 class DFTCalculator:
     """
     DFT calculator class holding the GPAW calculator and the 
@@ -28,9 +27,6 @@ class DFTCalculator:
     """
     def __init__(self):
         super().__init__()
-
-        from gpaw import GPAW
-        import gpaw.mpi as mpi
 
         self.calculator = None
         self.cell = [16, 16, 16]
@@ -45,10 +41,12 @@ class DFTCalculator:
             os.makedirs(self.path, exist_ok=True)
         else:
             pass
+
+        from gpaw import GPAW
+        import gpaw.mpi as mpi
         
         # DFT calculator low level precision but faster (takes 1 minute in serial)                                \
-        self.calculator = GPAW(mode = 'lcao', basis='pvalence.dz', h =0.2, xc = 'PBE',
-                            spinpol = True, nbands = -4, txt=self.path + "/init_calc.out")
+        self.calculator = GPAW(mode = 'lcao', basis='pvalence.dz', h =0.2, xc = 'PBE', spinpol = True, nbands = -4, txt=self.path + "/init_calc.out")
 
         # with higher precision, takes longer (about 30 minutes in serial).                      
         

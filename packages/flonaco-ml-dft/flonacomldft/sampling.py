@@ -3,6 +3,7 @@ Script with all sampling methods.
 
 """
 
+import time
 import numpy as np
 import torch
 import tqdm
@@ -66,11 +67,14 @@ def run_metropolis(
     beta = 1 / (kB * T)
 
     if "dft" in energy_type:
+        import gpaw.mpi as mpi
         from flonacomldft.dft_calculator import DFTCalculator
         from flonacomldft.internal_coordinates import Coordinates_mapping
         
-        coord_maps = Coordinates_mapping()
+        coord_maps = Coordinates_mapping(etype=energy_type)
         calculator = DFTCalculator()
+
+        mpi.world.barrier()
 
         if dft_folder_name is not None:
             calculator.initialize_calculator(dft_folder_name)
@@ -92,7 +96,7 @@ def run_metropolis(
         from flonacomldft.dft_calculator import EMTCalculator
         from flonacomldft.internal_coordinates import Coordinates_mapping
 
-        coord_maps = Coordinates_mapping()
+        coord_maps = Coordinates_mapping(etype=energy_type)
         calculator = EMTCalculator()
 
     #print("Use DFT: ", use_dft)
@@ -176,35 +180,23 @@ def run_metropolis(
             # TODO: type of isomer_dft
             for i,flag_dft in enumerate(ind_dft):
                 if flag_dft:
-                    try: # Avoid try if possible
-                        #TODO: FIX SHAPES OF XS, ZMAT
-
-                        #       zmat, logdetjac = coord_maps.get_internal_from_real_centered(x_new[i].reshape(1, -1), isomer=isomer_new[i].item())
-                        #       xyz, logdetjac = coord_maps.get_cartesian_from_internal(zmat[0], logdetjac)
-                        #       molecule = coord_maps._build_molecule_from_xyz(xyz)
-
-                        #TODO: BUILD molecule from internal, return logdet
-
-                        ### TODO: LINES THAT ACTUALLY WORK!!!!!!!!!!!!!    
-                        molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer=int(isomer_new[i].item()))
-                        u_ = calculator.calculate_potential_energy(
-                            molecule, 
-                            filename='ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
+                    #try: # Avoid try if possible
+                            
+                    molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer=int(isomer_new[i].item()))
+                    u_ = calculator.calculate_potential_energy(
+                        molecule, 
+                        filename='ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
                                             )
-                        #print(u_)
-                        u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
-                        #print(u_new[i])
-                        #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
+                    u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
+                    #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
 
+                    xs_dft.append(x_new[i])
+                    us_dft.append(u_new[i])
+                    isomers_dft.append(isomer_new[i])
 
-
-                        xs_dft.append(x_new[i])
-                        us_dft.append(u_new[i])
-                        isomers_dft.append(isomer_new[i])
-
-                    except:
-                        u_new[i] = 0.
-                        ind_not_computed[i] = 1
+                    #except:
+                    #    u_new[i] = 0.
+                    #    ind_not_computed[i] = 1
 
         if "emt" in energy_type:
 
