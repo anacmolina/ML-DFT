@@ -36,6 +36,8 @@ ranks = np.arange(0, mpi.world.size)
 rank = mpi.rank
 comm = mpi.world.new_communicator(ranks)
 
+print('ranks: ', mpi.world.size)
+
 num_seed = np.array([0])
 date_start = np.array([0])
 
