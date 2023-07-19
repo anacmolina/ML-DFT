@@ -96,6 +96,8 @@ def train_flow(
     else:
         pbar = range(n_iter)
 
+    time_epoch = []
+    time_batch = []
     time_start = time.time()
     print("train shape: ", x.shape)
 
@@ -119,10 +121,12 @@ def train_flow(
             loss.backward()
             clip_grad_norm_(model.parameters(), max_norm=grad_clip)
             optimizer.step()
+            time_batch.append(time.time())
 
         # appending logs
         losses_train.append(loss.item())
         losses_test.append(loss_func(x_test).item())
+        time_epoch.append(time.time())
 
         if with_tqdm:
             pbar.set_description(f"Loss: {losses_train[-1]:.4f}")
@@ -183,6 +187,8 @@ def train_flow(
         "models": models,
         "grad_norms": grad_norms,
         "lr": param_group["lr"],
+        "time_epoch": torch.tensor(time_epoch),
+        "time_batch": torch.tensor(time_batch),
     }
 
     if compute_part_ratio:

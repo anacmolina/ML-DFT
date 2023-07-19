@@ -70,7 +70,7 @@ parser.add_argument('-isomer', '--isomer-label', type=int, nargs='+', default=[0
 # flow params
 parser.add_argument('-ni', '--n-iter', type=int, default=10)
 parser.add_argument('-lr', '--learning-rate', type=float, default=1e-4)
-parser.add_argument('-bs', '--batch-size', type=int, default=512)
+parser.add_argument('-bs', '--batch-size', type=int, default=200)
 parser.add_argument('-nb', '--n-blocks', type=int, default=4)
 parser.add_argument('-nodes', '--hidden-dim', type=int, default=64)
 parser.add_argument('-layers', '--hidden-depth', type=int, default=3)
@@ -225,6 +225,10 @@ flow_hyperparams = {'n_iter': args.n_iter,
 shuffle = torch.randperm(flow_xs_test[0].shape[0]) # this works only for one isomer
 init_mcmc = flow_xs_test[0][shuffle].clone()[:n_chains] # TODO: generalize for more isomers
 
+if rank == 0:
+    time_init = time.time()
+
+mpi.world.barrier()
 # run adaptive sampling
 # TODO: include results folder and filename argument for mcmc
 out = adaptive_sampling(
@@ -253,6 +257,7 @@ if rank == 0:
 #if rank == 0:
     args.date_end = date_end[0]
     args.algorithm = 'adaptive_sampling.py'
+    args.time_init = time_init
 
     argparse_dict = vars(args)
     out['args'] = argparse_dict

@@ -1,4 +1,5 @@
 import torch
+import time
 import copy
 from flonacomldft.train_flow_from_data import train_flow
 from flonacomldft.sampling import run_metropolis
@@ -72,7 +73,10 @@ def adaptive_sampling(
     if fix_train_samples is None:
         fix_train_samples = xs_for_flows_train[0].shape[0]
     elif fix_train_samples > xs_for_flows_train[0].shape[0]:
-        fix_train_samples = xs_for_flows_train[0].shape[0]    
+        fix_train_samples = xs_for_flows_train[0].shape[0]
+
+    timestep_flow = []
+    timestep_adaptive = []    
 
     for i in range(n_runs):
 
@@ -97,6 +101,8 @@ def adaptive_sampling(
             dft_folder_name=path + '/DFTAdaptive',
             )
         
+        timestep_adaptive.append(time.time())
+
         mcmc_runs.append(mcmc_run)
 
         xs.append(mcmc_run["xs"])
@@ -125,6 +131,7 @@ def adaptive_sampling(
 
         dict_new_flows = []
 
+
         for mode in range(len(modes)):#modes.detach().numpy().astype(int):
 
             xs_from_chains = chains_flatten.clone()[mask_flow==modes[mode]].clone()
@@ -151,9 +158,11 @@ def adaptive_sampling(
 
             print("shape xs_for_flows_train: ", xs_for_flows_train[mode][:].shape)
 
+            model = copy.deepcopy(dict_flows_training[i][mode]['model'])
+
             #add mlps
             dict_new_flow = train_flow(
-                dict_flows_training[i][mode]['model'],
+                model,
                 xs_for_flows_train[mode][-fix_train_samples:],
                 xs_for_flows_test[mode],
                 #mlp_model=get_models(dict_mlps_training[-1])[0],
@@ -161,10 +170,12 @@ def adaptive_sampling(
                 dim=dim,
                 mlp_model=mlp_models[mode],
                 )
+
+            timestep_flow.append(time.time())
             
-            if (i+1)*n_steps >= 100:
-                flow_hyperparams[mode]['lr'] = 1e-4
-                flow_hyperparams[mode]['n_iter'] = 10
+            #if (i+1)*n_steps >= 100:
+            #    flow_hyperparams[mode]['lr'] = 1e-4
+            #    flow_hyperparams[mode]['n_iter'] = 10
             
             dict_new_flows.append(dict_new_flow)
             
@@ -181,6 +192,8 @@ def adaptive_sampling(
         "us": us,
         "accs": accs,
         "isomers": isomers,
+        "time_flow": timestep_flow,
+        "time_adaptive": timestep_adaptive,
     }
 
     return to_return

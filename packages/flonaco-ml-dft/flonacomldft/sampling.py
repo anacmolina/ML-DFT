@@ -129,6 +129,8 @@ def run_metropolis(
         pbar = tqdm.tqdm(range(n_steps))
     else:
         pbar = range(n_steps)
+
+    timestep_mcmc = []
     
     for dt in pbar:
 
@@ -210,6 +212,7 @@ def run_metropolis(
             
         #print(u_new, u_init, nll_x, nll_x_init, isomer_new, isomer_init)
 
+        timestep_mcmc.append(time.time())
 
         ratio = -beta * u_new + nll_x
         ratio += beta * u_init - nll_x_init
@@ -262,6 +265,7 @@ def run_metropolis(
         "us": torch.stack(us),
         "accs": torch.stack(accs),
         "isomers": torch.stack(isomers),
+        "time_mcmc": timestep_mcmc,
     }
 
     if return_ratio:
