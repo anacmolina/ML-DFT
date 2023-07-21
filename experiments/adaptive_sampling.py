@@ -49,8 +49,8 @@ parser.add_argument('-ni', '--n-iter', type=int, default=10)
 parser.add_argument('-lr', '--learning-rate', type=float, default=1e-4)
 parser.add_argument('-bs', '--batch-size', type=int, default=128)
 parser.add_argument('-nb', '--n-blocks', type=int, default=4)
-parser.add_argument('-hdm', '--hidden-dim', type=int, default=64)
-parser.add_argument('-hdp', '--hidden-depth', type=int, default=3)
+parser.add_argument('-nodes', '--hidden-dim', type=int, default=64)
+parser.add_argument('-layers', '--hidden-depth', type=int, default=3)
 parser.add_argument('-us', '--use-scheduler', type=bool, default=False)
 parser.add_argument('-ratios', '--do-ratios', type=bool, default=False)
 parser.add_argument('-prop', '--n-prop', type=int, default=100)
@@ -156,10 +156,6 @@ models = [RealNVP_MLP(dim=flow_xs_train[i][:, :12].shape[1],
                     )
                     for i in range(len(isomer_labels))]
                     
-
-
-
-
 # training flow model
 flows_dic = [train_flow(
     model,
@@ -203,6 +199,8 @@ flow_hyperparams = {'n_iter': args.n_iter,
 shuffle = torch.randperm(flow_xs_test[0].shape[0]) # this works only for one isomer
 init_mcmc = flow_xs_test[0][shuffle].clone()[:n_chains] # TODO: generalize for more isomers
 
+time_init = time.time()
+
 # run adaptive sampling
 # TODO: include results folder and filename argument for mcmc
 out = adaptive_sampling(
@@ -224,6 +222,7 @@ date_end = time.strftime('%Y-%m-%d %H:%M:%S')
 args.date_end = date_end
 
 args.algorithm = 'adaptive_sampling.py'
+args.time_init = time_init
 
 argparse_dict = vars(args)
 out['args'] = argparse_dict
