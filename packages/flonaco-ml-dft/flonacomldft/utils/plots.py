@@ -351,7 +351,7 @@ class Adaptive_Plotter:
         self.isomer_labels = self.get_isomer_labels()
         self.dict_flows_training = self.get_flow_dicts()
         self.losses = self.get_losses()
-        #self.part_ratio = self.get_part_ratio()
+        if self.args["do_ratios"]: self.part_ratio = self.get_part_ratio()
         self.cvs = self.get_collective_variables()
 
     # do a function, loop over the keys
@@ -398,7 +398,7 @@ class Adaptive_Plotter:
 
     def plot_losses(self, ax):
         set_plot_sequential_data(self.losses["train"], avg=False, alpha=1, ax=ax, label="train")
-        set_plot_sequential_data(self.losses["test"], avg=False, alpha=1, ax=ax, label="test")
+        #set_plot_sequential_data(self.losses["test"], avg=False, alpha=1, ax=ax, label="test")
 
     def plot_part_ratio(self, ax, window_size=5):
         if window_size >= self.part_ratio.shape[0]:
@@ -455,10 +455,11 @@ def create_report(adaptive_plotter, energies=None, cvs=None, path =os.getcwd() +
     axs[0][0].set_ylabel("Acceptance ratio")
     axs[0][0].legend()
 
-    #adaptive_plotter.plot_part_ratio(axs[0][1])
-    #axs[0][1].set_xlabel("MCMC steps")
-    #axs[0][1].set_ylabel("Participation ratio")
-    #axs[0][1].legend()
+    if adaptive_plotter.args["do_ratios"]:
+        adaptive_plotter.plot_part_ratio(axs[0][1])
+        axs[0][1].set_xlabel("MCMC steps")
+        axs[0][1].set_ylabel("Participation ratio")
+        axs[0][1].legend()
 
     adaptive_plotter.plot_losses(axs[1][0])
     axs[1][0].set_xlabel("Epochs")
@@ -477,13 +478,14 @@ def create_report(adaptive_plotter, energies=None, cvs=None, path =os.getcwd() +
     axs[2][1].set_xlabel("Energy (eV)")
     axs[2][1].set_ylabel("NLL")
 
-    fig.suptitle("Adaptive MCMC params: \n isomer={} md={} nruns={} nchains={} nsteps={} \n lr={} epochs={} nb={} hdm={} hdp={}".format(
+    fig.suptitle("Adaptive MCMC params: \n isomer={} md={} nruns={} nchains={} nsteps={} \n lr={} bs={} epochs={} nb={} hdm={} hdp={}".format(
                                                                                             adaptive_plotter.args["isomer_label"],
                                                                                             adaptive_plotter.args["folder_path"],
                                                                                             adaptive_plotter.args["n_runs"],
                                                                                             adaptive_plotter.args["n_chains"],
                                                                                             adaptive_plotter.args["n_steps"],
                                                                                             adaptive_plotter.args["learning_rate"],
+                                                                                            adaptive_plotter.args["batch_size"],
                                                                                             adaptive_plotter.args["n_iter"],
                                                                                             adaptive_plotter.args["n_blocks"],
                                                                                             adaptive_plotter.args["hidden_dim"],

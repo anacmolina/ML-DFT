@@ -170,7 +170,7 @@ def adaptive_sampling(
                 dim=dim,
                 mlp_model=mlp_models[mode],
                 )
-
+                    
             timestep_flow.append(time.time())
             
             #if (i+1)*n_steps >= 100:

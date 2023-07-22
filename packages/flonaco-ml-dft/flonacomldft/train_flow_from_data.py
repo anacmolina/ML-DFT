@@ -81,6 +81,7 @@ def train_flow(
         mlp_model = mlp_model
 
         part_ratios = []
+        time_part_ratios = []
 
     # logs
     losses_train = []
@@ -94,7 +95,7 @@ def train_flow(
     if with_tqdm:
         pbar = tqdm.tqdm(range(n_iter))
     else:
-        pbar = range(n_iter)
+        pbar = range(n_iter) 
 
     time_epoch = []
     time_batch = []
@@ -169,6 +170,7 @@ def train_flow(
             if compute_part_ratio:
 
                 if energy_type == 'dft':
+                    import gpaw.mpi as mpi
                     path = path+'/DFTComputations_{:d}'.format(t)
                 else:
                     path = None
@@ -177,6 +179,14 @@ def train_flow(
                 part_ratio = get_participation_ratio(model, target_log_prob, n_prop=n_prop)
 
                 part_ratios.append(part_ratio)
+
+                if energy_type == 'dft':
+                    rank = mpi.rank
+                    if rank == 0:
+                        time_part_ratios.append(time.time())
+                    mpi.world.barrier()
+                else:
+                    time_part_ratios.append(time.time())
 
                 print("part ratio: {:0.2e}".format(part_ratio), end="\n")
 
@@ -187,11 +197,12 @@ def train_flow(
         "models": models,
         "grad_norms": grad_norms,
         "lr": param_group["lr"],
-        "time_epoch": torch.tensor(time_epoch),
-        "time_batch": torch.tensor(time_batch),
+        "time_epoch": time_epoch,
+        "time_batch": time_batch,
     }
 
     if compute_part_ratio:
         to_return["part_ratios"] = torch.stack(part_ratios).detach()
+        to_return["time_part_ratios"] = time_part_ratios
 
     return to_return

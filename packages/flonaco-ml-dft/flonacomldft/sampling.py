@@ -212,7 +212,13 @@ def run_metropolis(
             
         #print(u_new, u_init, nll_x, nll_x_init, isomer_new, isomer_init)
 
-        timestep_mcmc.append(time.time())
+        if use_dft:
+            rank = mpi.world.rank
+            if rank == 0:
+                timestep_mcmc.append(time.time())
+            mpi.world.barrier()
+        else:
+            timestep_mcmc.append(time.time())
 
         ratio = -beta * u_new + nll_x
         ratio += beta * u_init - nll_x_init
