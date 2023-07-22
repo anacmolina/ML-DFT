@@ -20,7 +20,7 @@ from flonacomldft.FES.plotter2 import Plotter
  #                                              get_cvs_from_zmat)
 
 
-def set_plot_sequential_data(tensor, avg=True, window_size=10, axis=1, ax=None, init=0, color='k', alpha=0.5, label=None, **kwargs):
+def set_plot_sequential_data(y, x=None, avg=True, window_size=10, axis=1, ax=None, init=0, color='k', alpha=0.3, label=None, **kwargs):
     """
     Function to plot sequential data.
     Args:
@@ -37,17 +37,20 @@ def set_plot_sequential_data(tensor, avg=True, window_size=10, axis=1, ax=None, 
     if ax is None:
         fig, ax = plt.subplots(1, 1)
     
-    x = init + np.arange(tensor.shape[0])
-    y = tensor
+    if x is None:
+        x = init + np.arange(y.shape[0])
 
     if avg:
-        x_avg = np.arange(init + window_size - 1, 
-                          init + window_size + len(avg_windows(tensor, window_size, axis)) - 1)
-        y_avg = avg_windows(tensor, window_size, axis)
+        if x is None:
+            x_avg = np.arange(init + window_size - 1, 
+                              init + window_size + len(avg_windows(y, window_size, axis)) - 1)
+        else:
+            x_avg = avg_windows(x, window_size, axis)
+        y_avg = avg_windows(y, window_size, axis)
 
         ax.plot(x_avg, y_avg, color=color, **kwargs)
 
-    ax.plot(x, y, alpha=alpha, label=label, **kwargs)
+    ax.plot(x, y, alpha=alpha, color=color, label=label, **kwargs)
 
     return ax
 
@@ -392,15 +395,15 @@ class Adaptive_Plotter:
         return coords_mapping.get_collective_variables_from_real_centered(some_chains_flatten, isomer=self.isomer_labels[0].item())
         #return get_cvs_from_real_centered(some_chains_flatten, isomer=self.isomer_labels[0].item()) # TODO: fix this isomer labeling
 
-    def plot_acc_ratio(self, ax):
+    def plot_acc_ratio(self, ax, window_size=50):
         accs_avg = self.accs.reshape(-1, self.accs.shape[-1]).mean(axis=1).detach().numpy()
-        set_plot_sequential_data(accs_avg, avg=True, window_size=25, axis=1, ax=ax, label="acc ratio")
+        set_plot_sequential_data(accs_avg, avg=True, window_size=window_size, axis=1, ax=ax, label="acc ratio")
 
     def plot_losses(self, ax):
         set_plot_sequential_data(self.losses["train"], avg=False, alpha=1, ax=ax, label="train")
         #set_plot_sequential_data(self.losses["test"], avg=False, alpha=1, ax=ax, label="test")
 
-    def plot_part_ratio(self, ax, window_size=5):
+    def plot_part_ratio(self, ax, window_size=50):
         if window_size >= self.part_ratio.shape[0]:
             window_size = int(self.part_ratio.shape[0]/2)
             print("window size too large, setting to {}".format(window_size))

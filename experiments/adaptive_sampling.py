@@ -9,6 +9,7 @@ import argparse
 # scientific library imports
 import torch
 import numpy as np
+import pandas as pd
 
 # flonaco imports
 # io handling
@@ -27,6 +28,8 @@ from flonacomldft.models.real_nvp import RealNVP_MLP
 from flonacomldft.train_flow_from_data import train_flow
 # sampling and training
 from flonacomldft.full_adaptive_sampling import adaptive_sampling
+# plotting
+from flonacomldft.utils.plots import Adaptive_Plotter, create_report
 
 num_seed = np.random.randint(0, 100)
 date_start = set_str_date_to_int(time.strftime('%Y-%m-%d %H:%M:%S'))
@@ -186,7 +189,7 @@ flow_hyperparams = {'n_iter': args.n_iter,
     'lr': args.learning_rate,
     'use_scheduler': False,
     'step_schedule': 100,
-    'save_splits': 5,
+    'save_splits': 10,
     'grad_clip': 1e4,
     'compute_part_ratio': True,
     'energy_type': args.energy_type,
@@ -215,7 +218,7 @@ out = adaptive_sampling(
     flow_hyperparams=[flow_hyperparams, flow_hyperparams], # TODO: generalize for more flows
     dict_mlps_init=mlps_dic,
     path=path_to_save_results,
-    save_ratios = 5,
+    save_ratios = 1,
     )
 
 date_end = time.strftime('%Y-%m-%d %H:%M:%S')
@@ -229,10 +232,64 @@ out['args'] = argparse_dict
 
 save_json_args(args, 'adaptive_sampling', args.process_id, path_to_save_results)
 
+# save all simulation results in a pickle file
 f = "adaptive_sampling_{:s}_{:d}.pkl".format(simulation_name, args.process_id)
 save_pickle_file(out, f, path = path_to_save_results)
 
-from flonacomldft.utils.plots import Adaptive_Plotter, create_report
+# save all normalizing flows in a pickle file
+save_pickle_file(out["dict_flows_training"], "all_flows_{:s}_{:d}.pkl".format(simulation_name, args.process_id), path = path_to_save_results)
+
+# save all mcmc runs in a pickle file
+save_pickle_file(out["mcmc_runs"], "all_mcmc_runs_{:s}_{:d}.pkl".format(simulation_name, args.process_id), path = path_to_save_results)
+
+# save chains conformations, energies and isomers in a csv file
+xs = torch.stack(out["xs"])
+us = torch.stack(out["us"]).squeeze()
+accs = torch.stack(out["accs"]).squeeze()
+isomers = torch.stack(out["isomers"]).squeeze()
+
+xs_chains = xs.reshape(xs.shape[0]*xs.shape[1], xs.shape[2], xs.shape[3])
+us_chains = us.reshape(us.shape[0]*us.shape[1], us.shape[2])
+accs_chains = accs.reshape(accs.shape[0]*accs.shape[1], accs.shape[2])
+isomers_chains = isomers.reshape(isomers.shape[0]*isomers.shape[1], isomers.shape[2])
+
+data_mcmc = torch.cat([torch.cat((xs_chains[:, i, :12], us_chains[:, i].reshape(-1, 1), isomers_chains[:, i].reshape(-1, 1)), dim=1) for i in range(out["args"]["n_chains"])])
+
+df = pd.DataFrame(data_mcmc.detach().numpy(), columns=['b-2-0', 'b-3-2', 'b-4-2', 'b-5-4', 'b-1-4', 'a-3-2-0', 'a-4-2-3',
+    'a-5-4-2', 'a-1-4-2', 'd-4-2-3-0', 'd-5-4-2-3', 'd-1-4-2-3',
+    'potential_energy', 'isomer',])
+
+df.to_csv(path_to_save_results + '/' + 'MCMC_{:s}_{:d}.csv'.format(simulation_name, args.process_id), index=False)
+
+# save last flow model
+save_pickle_file(out["dict_flows_training"][-1][0]["model"], 
+                    "flow_model_{:s}_{:d}.pkl".format(simulation_name, args.process_id), path = path_to_save_results)
+
+# save acceptance rates and times
+mcmc_runs = out["mcmc_runs"]
+
+time_mcmc = [mcmc['time_mcmc'] for mcmc in mcmc_runs]
+time_mcmc_flatten = [t - time_init for time_set in time_mcmc for t in time_set]
+
+accs = torch.stack(out["accs"]).squeeze()
+accs_flatten = accs.reshape(accs.shape[0]*accs.shape[1], accs.shape[2])
+
+data_accs = torch.cat((torch.tensor(time_mcmc_flatten).reshape(-1, 1), accs_flatten.mean(dim=1).reshape(-1, 1), accs_flatten), dim=1)
+df_acc = pd.DataFrame(data_accs, columns=['time', 'accs'] + ['chain_{:d}'.format(i) for i in range(accs_flatten.shape[1])])
+
+df_acc.to_csv(path_to_save_results + '/' + 'accs_{:s}_{:d}.csv'.format(simulation_name, args.process_id), index=False)
+
+# save participation ratios
+if args.do_ratios:
+    part_ratios = torch.stack([out["dict_flows_training"][i][0]["part_ratios"] for i in range(len(out["dict_flows_training"]))])
+
+    time_part_ratios = [out["dict_flows_training"][i][0]["time_epoch"] for i in range(len(out["dict_flows_training"]))]
+    time_part_ratios_flatten = torch.tensor([t-time_init for time_set in time_part_ratios for t in time_set])
+
+    data_part_ratios = torch.stack((part_ratios.flatten(), time_part_ratios_flatten), dim=1)
+
+    df_part_ratios = pd.DataFrame(data_part_ratios.detach(), columns=['part_ratios', 'time'])
+    df_part_ratios.to_csv(path_to_save_results + '/' + 'part_ratios_{:s}_{:d}.csv'.format(simulation_name, args.process_id), index=False)
 
 adaptive_plotter = Adaptive_Plotter(out)
 

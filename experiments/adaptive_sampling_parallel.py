@@ -329,4 +329,3 @@ if rank == 0:
     energies = {'train': flow_xs_train[0][:, 12].detach().numpy(),}
 
     create_report(adaptive_plotter, energies=energies, path=path_to_save_results + '/')
-
