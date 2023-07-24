@@ -283,7 +283,7 @@ df_acc.to_csv(path_to_save_results + '/' + 'accs_{:s}_{:d}.csv'.format(simulatio
 if args.do_ratios:
     part_ratios = torch.stack([out["dict_flows_training"][i][0]["part_ratios"] for i in range(len(out["dict_flows_training"]))])
 
-    time_part_ratios = [out["dict_flows_training"][i][0]["time_epoch"] for i in range(len(out["dict_flows_training"]))]
+    time_part_ratios = [out["dict_flows_training"][i][0]["time_part_ratios"] for i in range(len(out["dict_flows_training"]))]
     time_part_ratios_flatten = torch.tensor([t-time_init for time_set in time_part_ratios for t in time_set])
 
     data_part_ratios = torch.stack((part_ratios.flatten(), time_part_ratios_flatten), dim=1)
