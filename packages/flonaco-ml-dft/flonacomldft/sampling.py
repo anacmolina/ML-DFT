@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import tqdm
 
-from ase.parallel import parprint as print
+#from ase.parallel import parprint as print
 from ase.units import kB
 
 #kb = 8.617333262e-5
@@ -214,8 +214,10 @@ def run_metropolis(
 
         if use_dft:
             rank = mpi.world.rank
+            #print('save time: ', rank)
             if rank == 0:
                 timestep_mcmc.append(time.time())
+            #print('save time 0 : ', rank)
             mpi.world.barrier()
         else:
             timestep_mcmc.append(time.time())
@@ -265,6 +267,42 @@ def run_metropolis(
         #TODO: Add parameter to save
         if dt % scheduler == 0:
             print("step: {:d} \t acc: {:0.2f}".format(dt, acc.float().mean()))
+    
+    
+
+    if use_dft:
+
+        timestep_mcmc_min = np.array([0])
+        
+        ranks = np.arange(mpi.world.size)
+        comm = mpi.world.new_communicator(ranks)
+        rank = mpi.world.rank
+        mpi.world.barrier()
+
+        if rank==0:
+            timestep_mcmc_min = np.min(timestep_mcmc).astype(int)
+            timestep_mcmc = [t-timestep_mcmc_min for t in timestep_mcmc]
+            timestep_mcmc_min = timestep_mcmc_min.reshape(1,)
+            timestep_mcmc = np.array(timestep_mcmc)
+            
+        else:
+            timestep_mcmc = np.array([0.]*n_steps)
+
+        comm.broadcast(timestep_mcmc_min, 0)
+        comm.broadcast(timestep_mcmc, 0)
+
+
+        mpi.world.barrier()
+
+        timestep_mcmc_min = timestep_mcmc_min[0]
+        timestep_mcmc = timestep_mcmc.tolist()
+        timestep_mcmc = [t+timestep_mcmc_min for t in timestep_mcmc]
+    
+        mpi.world.barrier()
+
+    print(timestep_mcmc, rank)
+    print(torch.stack(accs), rank)
+
 
     to_return = {
         "xs": torch.stack(xs),
