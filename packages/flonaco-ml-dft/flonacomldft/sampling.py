@@ -30,6 +30,7 @@ def run_metropolis(
     return_proposals = False,
     dft_folder_name = None,
     scheduler = 1,
+    update_weigth = False,
 ):
     """
     Run Metropolis-Hastings algorithm to sample from a model.
@@ -190,7 +191,7 @@ def run_metropolis(
                         filename='ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
                                             )
                     u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
-                    #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
+                    # u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
 
                     xs_dft.append(x_new[i])
                     us_dft.append(u_new[i])
@@ -267,8 +268,29 @@ def run_metropolis(
         #TODO: Add parameter to save
         if dt % scheduler == 0:
             print("step: {:d} \t acc: {:0.2f}".format(dt, acc.float().mean()))
-    
-    
+
+        if mixture:
+            
+            population_is0 = (~torch.stack(isomers).bool()).float().mean()
+            population_is1 = torch.stack(isomers).mean()
+            
+            if population_is1 < population_is0:
+                population_mask = torch.tensor([1., -1.])
+            elif population_is1 > population_is0:
+                population_mask = torch.tensor([-1., 1.])
+            else:
+                population_mask = torch.tensor([0., 0.])
+
+            new_weights = model.weights.clone().detach() + 0.05*population_mask.float()        
+
+            print("isomer 0 population: ", population_is0)
+            #print("weights: ", model.weights)
+            #print("condition: ", all(new_weights >= 0.2))
+
+
+            if update_weigth and all(new_weights >= 0.2):
+                model.weights = new_weights.clone().detach()
+                #print("updated weights: ", model.weights)
 
     if use_dft:
 
@@ -300,8 +322,8 @@ def run_metropolis(
     
         mpi.world.barrier()
 
-    print(timestep_mcmc, rank)
-    print(torch.stack(accs), rank)
+    #print(timestep_mcmc, rank)
+    #print(torch.stack(accs), rank)
 
 
     to_return = {
