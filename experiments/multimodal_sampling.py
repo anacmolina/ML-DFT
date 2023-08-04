@@ -181,6 +181,7 @@ mh = run_metropolis(
     dft_folder_name=path_to_save_results + '/' + 'DFTComputations_{:d}'.format(args.process_id),
     scheduler=1,
     update_weigth=True,
+    alpha = 0.5,
 )
 
 mpi.world.barrier()

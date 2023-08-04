@@ -42,9 +42,10 @@ def adaptive_sampling(
         save_ratios = 5,
         ):
 
-    modes = torch.unique(torch.stack(flow_init_train).squeeze()[:, dim+1])
+    modes = torch.unique(torch.cat(flow_init_train)[:, dim+1]).int()
 
     print('modes: ', modes)
+
 
     xs_for_flows_train = [ flow_init_train[i] for i in range(len(flow_init_train)) ]
     xs_for_flows_test = [ flow_init_test[i] for i in range(len(flow_init_test)) ]
@@ -131,8 +132,10 @@ def adaptive_sampling(
 
         dict_new_flows = []
 
+        print("modes: ", modes)
 
         for mode in range(len(modes)):#modes.detach().numpy().astype(int):
+            print("mode: ", mode)
 
             xs_from_chains = chains_flatten.clone()[mask_flow==modes[mode]].clone()
 
