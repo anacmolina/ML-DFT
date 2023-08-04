@@ -13,6 +13,11 @@ from ase.units import kB
 
 #kb = 8.617333262e-5
 
+#TODO: Fix the weights for mixture
+#   1. Add paramerts alpha 
+#   2. Rule for optimizing the weights
+#   3. Return the weights as function of MCMC steps
+
 def run_metropolis(
     model,
     init,
@@ -280,6 +285,8 @@ def run_metropolis(
                 population_mask = torch.tensor([-1., 1.])
             else:
                 population_mask = torch.tensor([0., 0.])
+            
+            #new_weights = alpha*model.weights.clone() + (1-alpha)*populations
 
             new_weights = model.weights.clone().detach() + 0.05*population_mask.float()        
 
