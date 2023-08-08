@@ -286,9 +286,11 @@ def run_metropolis(
             print("current weights: ", model.weights)
             print("current population weights: ", weigths_current_populations)
 
-            new_weights = alpha*model.weights.clone() + (1-alpha)*weigths_current_populations
+            print(model.weights, model.weights < 0.75, torch.all(model.weights  < 0.75))
 
-            model.weights = new_weights.clone().detach()
+            if torch.all(model.weights  < 0.75):
+
+                model.weights = alpha*model.weights.clone() + (1-alpha)*weigths_current_populations.clone()
 
             weights.append(model.weights.clone().float().detach())
 
