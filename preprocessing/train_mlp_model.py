@@ -50,7 +50,7 @@ parser.add_argument('-etype', '--energy-type', type=str, default='dft', help='Se
 # model parameters
 parser.add_argument('-ni', '--n-iter', type=int, default=10, help='Set number of iterations')
 parser.add_argument('-lr', '--learning-rate', type=float, default=1e-4, help='Set learning rate')
-parser.add_argument('-bs', '--batch-size', type=int, default=200, help='Set batch size')
+parser.add_argument('-bs', '--batch-size', type=int, default=500, help='Set batch size')
 parser.add_argument('-hdm', '--hidden-dim', type=int, default=64, help='Set hidden dimension')
 parser.add_argument('-hdp', '--hidden-depth', type=int, default=3, help='Set hidden depth')
 parser.add_argument('-us', '--use-scheduler', type=bool, default=False, help='Set scheduler')
@@ -103,10 +103,8 @@ def get_dataset(name, path, isomer_label):
 
     return xs, zmats
 
-dataset_labels = ['flow_train', 'flow_test']
-
 xs_train, zmat_train = get_dataset('mlp_train', path_datasets, isomer_label)
-xs_test, zmat_test = get_dataset('flow_train', path_datasets, isomer_label)
+xs_test, zmat_test = get_dataset('mlp_test', path_datasets, isomer_label)
 
 print("Train data shape: {}".format(xs_train.shape))
 print("Test data shape: {}".format(xs_test.shape))
