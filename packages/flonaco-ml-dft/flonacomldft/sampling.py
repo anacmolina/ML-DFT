@@ -13,11 +13,6 @@ from ase.units import kB
 
 #kb = 8.617333262e-5
 
-#TODO: Fix the weights for mixture
-#   1. Add paramerts alpha ------ checked
-#   2. Rule for optimizing the weights ------ checked
-#   3. Return the weights as function of MCMC steps
-
 def run_metropolis(
     model,
     init,
@@ -34,9 +29,9 @@ def run_metropolis(
     return_ratio = False,
     return_proposals = False,
     dft_folder_name = None,
-    scheduler = 1,
+    scheduler = 5,
     update_weigth = False,
-    alpha=0.5,
+    alpha=0.1,
 ):
     """
     Run Metropolis-Hastings algorithm to sample from a model.
@@ -200,7 +195,7 @@ def run_metropolis(
                         filename='ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
                                             )
                     u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
-                    #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
+                    # u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
 
                     xs_dft.append(x_new[i])
                     us_dft.append(u_new[i])
@@ -275,22 +270,32 @@ def run_metropolis(
             pbar.set_description(f'acc: {acc.float().mean():.2f}')
 
         #TODO: Add parameter to save
-        if dt % scheduler == 0:
-            print("step: {:d} \t acc: {:0.2f}".format(dt, acc.float().mean()))
+        #if dt % scheduler == 0:
+        print("step: {:d} \t acc: {:0.2f}".format(dt, acc.float().mean()))
 
-        if mixture:
+        if mixture and update_weigth and dt % scheduler == 0 and dt != 0:
+        # if mixture and update_weigth and dt >= scheduler:
+
+            print("dt, isomers shape: ", dt, torch.stack(isomers).shape)
+            print("populations window", torch.stack(isomers)[-scheduler:].shape, (~torch.stack(isomers).bool()).float()[-scheduler:].detach().mean(), (torch.stack(isomers).bool()).float()[-scheduler:].detach().mean())
             
-            weigths_current_populations = torch.tensor([(~torch.stack(isomers).bool()).float().mean(), 
-                                    torch.stack(isomers).bool().float().mean()]).float().detach()
+            weigths_current_populations = torch.tensor([(~torch.stack(isomers).bool())[-scheduler:].float().mean(), 
+                                    (torch.stack(isomers).bool()).float()[-scheduler:].detach().mean()]).float().detach()
             
             print("current weights: ", model.weights)
             print("current population weights: ", weigths_current_populations)
 
-            print(model.weights, model.weights < 0.75, torch.all(model.weights  < 0.75))
+            new_weights = alpha*model.weights.clone() + (1-alpha)*weigths_current_populations.clone()
+            
+            print("new weights: ", new_weights)
 
-            if torch.all(model.weights  < 0.75):
+            print(model.weights, new_weights < 0.75, torch.all(new_weights  < 0.75))
 
-                model.weights = alpha*model.weights.clone() + (1-alpha)*weigths_current_populations.clone()
+            if torch.all(new_weights  < 0.75):
+
+                model.weights = new_weights.clone()
+                #model.weights = alpha*model.weights.clone() + (1-alpha)*weigths_current_populations.clone()
+                print("updated weights: ", model.weights)
 
             weights.append(model.weights.clone().float().detach())
 
