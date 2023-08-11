@@ -149,7 +149,22 @@ def plot_energy_surface(C=None, R=None, F=None, bins=401, shift=2.0, delta=4 * (
     im = ax.contourf(C_grid, R_grid, F_grid, np.arange(mini, maxi, delta), cmap=cmap, vmin=mini, vmax=maxi)
 
     if fig is not None and add_colorbar:
-        fig.colorbar(im, ax=ax, label = 'Free energy (eV)')
+        from matplotlib.ticker import FormatStrFormatter
+        from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
+        cbaxes = inset_axes(ax, width="86%", height="4%", loc=8) 
+        colorbar = fig.colorbar(im, cax=cbaxes, orientation='horizontal', label='Free energy (eV)', format=FormatStrFormatter('%.1f'))
+        #fig.colorbar(im, location="bottom", cax=cbaxes, pad=0, label='Free energy (eV)', format=FormatStrFormatter('%.1f'))
+        
+        #colorbar.ax.xaxis.set_ticks_position('bottom')
+        #colorbar.set_label('FES [e.V]', labelpad=0)
+        #ax.set_ylim(2.0, 2.8)
+        
+        colorbar.ax.xaxis.set_ticks_position('top')
+        colorbar.set_label('FES [e.V]', labelpad=-80)
+        ax.set_ylim(1.9, 2.7)
+
+
     elif fig is None:
         print('No figure provided. Cannot add colorbar.')
 
