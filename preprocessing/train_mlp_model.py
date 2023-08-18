@@ -103,8 +103,16 @@ def get_dataset(name, path, isomer_label):
 
     return xs, zmats
 
-xs_train, zmat_train = get_dataset('mlp_train', path_datasets, isomer_label)
-xs_test, zmat_test = get_dataset('mlp_test', path_datasets, isomer_label)
+xs_train_mlp, zmat_train_mlp = get_dataset('mlp_train', path_datasets, isomer_label)
+xs_test_mlp, zmat_test_mlp = get_dataset('mlp_test', path_datasets, isomer_label)
+
+xs_train_md, zmat_train_md = get_dataset('flow_train', path_datasets, isomer_label)
+xs_test_md, zmat_test_md = get_dataset('flow_test', path_datasets, isomer_label)
+
+print(xs_train_mlp.shape, xs_train_md.shape)
+
+xs_train = torch.cat((xs_train_md, xs_train_mlp) )
+xs_test = torch.cat((xs_test_md, xs_test_mlp) )
 
 print("Train data shape: {}".format(xs_train.shape))
 print("Test data shape: {}".format(xs_test.shape))
