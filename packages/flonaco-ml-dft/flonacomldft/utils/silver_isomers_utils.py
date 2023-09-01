@@ -63,6 +63,41 @@ def get_molecule_isomer_minima(name, vacuum=None, **kwargs):
     
     return molecule
 
+
+params_calc = {
+    'LCAO': {'mode': 'lcao',
+              'basis': 'pvalence.dz',
+              'h': 0.2,
+              'xc': 'PBE',
+              'spinpol': True,
+              'symmetry': 'off',
+              #'nbands': -4,
+              },
+
+    'FD': {'mode': 'fd',
+            'h': 0.18,
+            'xc': 'PBE',
+            'eigensolver': 'rmm-diis',
+            'spinpol': True,
+            'symmetry': 'off',
+            #'nbands': -4,
+            },
+}
+
+def get_molecule_calc_params(name='LCAO'):
+    
+
+    if name in params_calc:
+    
+        params = params_calc[name]
+
+    else:
+    
+        raise RuntimeError("Undefined calculator parameters")
+
+    
+    return params
+
 # Construction table for both isomers, pandas dataframe (convention we chose)
 def get_construction_table():
 

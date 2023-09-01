@@ -152,6 +152,15 @@ else:
     simulation_name = 'mixture'
     mixture_model = Mixture(flow_models, torch.tensor([0.5, 0.5]).detach())
 
+if "mlp" in energy_type: 
+    path_models = get_path() + '/' + args.folder_path + '/' + 'models'
+
+    mlps_dic = [load_pickle_file("mlp_model_is{:d}.pkl".format(
+                                isomer_labels[i]), 
+                                path=path_models) 
+                                for i in range(len(isomer_labels))]
+else:
+    mlps_dic = None
 
 folder_to_save_results = 'results_multimodal_sampling_{:s}_{:d}'.format(simulation_name, args.process_id)
 path_to_save_results = os.getcwd() + '/' + folder_to_save_results
@@ -182,6 +191,7 @@ mh = run_metropolis(
     scheduler=5,
     update_weigth=True,
     alpha = 0.5,
+    mlp_models=mlps_dic,
 )
 
 mpi.world.barrier()

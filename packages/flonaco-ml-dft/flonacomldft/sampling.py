@@ -160,9 +160,9 @@ def run_metropolis(
             #print(u_new, isomer_new.bool())
 
             if mixture:
-                #print(u_new[~(isomer_new.bool())], x_new[~(isomer_new.bool())], model_mlp_is0(x_new[~(isomer_new.bool())]))
-                u_new[~(isomer_new.bool())] = model_mlp_is0(x_new[~(isomer_new.bool())])
-                u_new[isomer_new.bool()] = model_mlp_is1(x_new[isomer_new.bool()])
+                #print(u_new[~(isomer_new.bool())], x_new[~(isomer_new.bool())], model_mlp_is0(x_new[~(isomer_new.bool())]).reshape(1, -1))
+                u_new[~(isomer_new.bool())] = model_mlp_is0(x_new[~(isomer_new.bool())]).reshape(1, -1)
+                u_new[isomer_new.bool()] = model_mlp_is1(x_new[isomer_new.bool()]).reshape(1, -1)
             else:
                 if(isomer_new.sum()==0):
                     u_new = model_mlp_is0[0](x_new)

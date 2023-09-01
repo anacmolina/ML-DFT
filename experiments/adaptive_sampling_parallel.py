@@ -18,6 +18,7 @@ import pandas as pd
 from flonacomldft.utils.io_utils import (
     get_path,
     load_csv_file,
+    load_pickle_file,
     save_pickle_file,
     save_json_args,
     set_str_date_to_int,
@@ -67,7 +68,7 @@ parser = argparse.ArgumentParser(description='Prepare experiment')
 parser.add_argument('-threads', '--threads', type=int, default=None)
 parser.add_argument('-pid', '--process-id', type=int, default=date_start)
 parser.add_argument('-rs', '--random-seed', type=int, default=num_seed)
-parser.add_argument('-path', '--folder-path', type=str, default='emt_berendsen/')
+parser.add_argument('-path', '--folder-path', type=str, default='emt_berendsen')
 # training params
 parser.add_argument('-isomer', '--isomer-label', type=int, nargs='+', default=[0])
 #parser.add_argument('-ids', '--ids', type=int, nargs='+', default=[None, None])
@@ -150,19 +151,22 @@ for i in range(len(isomer_labels)):
 
 # whether to use a mixture of flows
 if len(isomer_labels)==1:
+    
     mixture = False
-
-    if "mlp" in energy_type: 
-        ## ADD MLP MODEL
-        pass
-        #mlp_models = mlp_models[0]
-else:
-    mixture = True
-
-if mixture:
-    simulation_name = "mixture"
-else:
     simulation_name = "is{:d}".format(isomer_labels[0])
+
+else:
+
+    mixture = True
+    simulation_name = "mixture"
+
+if "mlp" in energy_type: 
+        path_models = get_path() + '/' + args.folder_path + '/' + 'models'
+
+        mlps_dic = [load_pickle_file("mlp_model_{:s}.pkl".format(
+                                    simulation_name), 
+                                    path=path_models) 
+                                    for i in range(len(isomer_labels))]
 
 # path to save results
 folder_to_save_results = 'results_adaptive_{:s}_{:d}'.format(simulation_name, args.process_id)
@@ -206,10 +210,10 @@ flows_dic = [train_flow(
     energy_type=args.energy_type,
     n_prop=args.n_prop,
     path=path_to_save_results,
-    #N_samples=8000,
+    mlp_model=mlps_dic[i],
 ) for model, train, test in zip(models, flow_xs_train, flow_xs_test)]
 
-mlps_dic = None
+#mlps_dic = None
 
 # retraining hyperparameters
 flow_hyperparams = {'n_iter': args.n_iter,

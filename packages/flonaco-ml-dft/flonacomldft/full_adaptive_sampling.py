@@ -53,7 +53,8 @@ def adaptive_sampling(
     dict_flows_training = [copy.deepcopy(dict_flows_init), ]
 
     if 'mlp' in energy_type or dict_mlps_init is not None:
-        mlp_models = get_models(dict_mlps_init)
+        #mlp_models = get_models(dict_mlps_init)
+        mlp_models = dict_mlps_init
     else:
         mlp_models = [None]*len(modes)
 

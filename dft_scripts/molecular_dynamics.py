@@ -1,150 +1,143 @@
-### Import modules
+# load libraries
+
 import argparse
 import time
+from ase.parallel import parprint as print
 
+# load scientific libraries
+
+import numpy as np
+
+# load DFT libraries 
+
+from ase.units import (kB, fs)
 from gpaw import GPAW
-import gpaw.mpi as mpi
-from ase import units
+from ase.md.velocitydistribution import (
+    MaxwellBoltzmannDistribution,
+    Stationary,
+    ZeroRotation,
+)
 
-from ase.md.velocitydistribution import (MaxwellBoltzmannDistribution,
-                                         Stationary, ZeroRotation)
+# load flonaco utils
 
-from flonacomldft.utils.silver_isomers_utils import get_molecule_isomer_minima
+from flonacomldft.utils.silver_isomers_utils import (
+    get_molecule_isomer_minima,
+    get_molecule_calc_params,
+)
+
+from flonacomldft.dft_calculator import run_molecular_dynamics
+
 from flonacomldft.utils.io_utils import set_str_date_to_int
 
-### Get start date and process id
-date_start = time.strftime('%Y-%m-%d %H:%M:%S') 
-process_id = set_str_date_to_int(date_start)
+# load parallel libraries
 
-### Define arguments to parse from command line
-parser = argparse.ArgumentParser(description='Prepare simulation params')
-parser.add_argument('-ml', '--mode-label', type=int, default=0)
+import gpaw.mpi as mpi
+
+# set up MPI
+
+ranks = np.arange(0, mpi.world.size)
+rank = mpi.world.rank
+comm = mpi.world.new_communicator(ranks)
+
+# get initial date and set random seed
+
+num_seed = np.array([0])
+date_start = np.array([0])
+
+# only rank 0 generates the seed and date_start
+
+if rank == 0:
+    num_seed = np.random.randint(0, 100, (1,))
+    date_start = np.array([set_str_date_to_int(time.strftime("%Y-%m-%d %H:%M:%S"))])
+
+mpi.world.barrier()
+
+comm.broadcast(num_seed, 0)
+comm.broadcast(date_start, 0)
+
+num_seed = num_seed[0]
+date_start = date_start[0]
+
+print('Num_seed: {:d}, Date_start: {:d}'.format(num_seed, date_start))
+
+# set up parser 
+
+parser = argparse.ArgumentParser(description='Run molecular dynamics simulation of silver isomers')
+# system parameters
+parser.add_argument('-isomer', '--isomer-label' , type=int, default=0, help='Isomer label')
+parser.add_argument('-etype', '--energy-type', type=str, default='dft', help='Energy type')
+# molecular dynamics parameters
 parser.add_argument('-tt', '--thermostat-type', type=str, default='berendsen')
-parser.add_argument('-ns', '--n-steps', type=int, default=10)
+parser.add_argument('-ns', '--n-steps', type=int, default=5)
 parser.add_argument('-ts', '--time-step', type=float, default=5)
+parser.add_argument('-nin', '--n-interval', type=int, default=1)
 parser.add_argument('-T', '--temperature', type=float, default=300)
 parser.add_argument('-taut', '--taut', type=float, default=50)
 parser.add_argument('-f', '--friction', type=float, default=None)
 parser.add_argument('-ap', '--andersen-prob', type=float, default=2e-3)
-parser.add_argument('-pid', '--process-id', type=int, default=process_id)
+parser.add_argument('-pid', '--process-id', type=int, default=date_start)
+parser.add_argument('-s', '--seed', type=int, default=num_seed)
 
 args = parser.parse_args()
 args.date_start = date_start
 
-#mode_label = args.mode_label
+# define isomer and calculator
 
-### Get molecule to start simulation
-mol = get_molecule_isomer_minima('is'+str(args.mode_label))
-
-### Set simulation parameters
-mol.set_cell([16, 16, 16])
-mol.set_pbc(True)
-mol.center()
-
-filename = 'is{:d}_{:s}_{:d}'.format(args.mode_label, args.thermostat_type, args.process_id)
-
-### Set calculator
-calc = GPAW(mode="lcao", h=0.2, basis="pvalence.dz", spinpol=True, xc="PBE", symmetry="off", txt = filename +'.out')
-mol.calc = calc
-
-### Set initial conditions
-if args.thermostat_type == 'langenvin':
-    MaxwellBoltzmannDistribution(mol, temperature_K=300)
-    Stationary(mol)
-    ZeroRotation(mol)
-
-params_thermostat = {'time_step': args.time_step,
-                     'temperature': args.temperature,
-                     'taut': args.taut,
-                     'friction': args.friction,
-                     'andersen_prob': args.andersen_prob,
-                     'filename': filename + '.traj'}
-
-print(params_thermostat)
-print(args)
-
-### Set thermostat
-def set_thermostat(thermostat_type, molecule, params):
+if args.energy_type == 'dft':
     
-    if thermostat_type == 'berendsen':
-        from ase.md.nvtberendsen import NVTBerendsen
-        thermostat = NVTBerendsen(molecule, 
-                           params['time_step'] * units.fs, 
-                           taut = params['taut'], 
-                           temperature_K = params['temperature'], 
-                           trajectory = params['filename'])
-        
-        params_used = {'thermostat_type': 'Berendsen',
-                        'time_step': params['time_step'],
-                        'temperature': params['temperature'],
-                        'taut': params['taut']}
+    MOLECULE = 'is{:d}'.format(args.isomer_label)
+
+    params_calc = get_molecule_calc_params()
+    params_calc['txt'] = '{:d}_is{:d}_{:s}.out'.format(args.process_id, args.isomer_label, args.thermostat_type)
+    calc = GPAW(**params_calc)
+
+if args.energy_type == 'emt':
     
-    elif thermostat_type == 'langevin':
-        from ase.md.langevin import Langevin
-        thermostat = Langevin(molecule,
-                              params['time_step'] * units.fs,
-                              friction = params['friction'],
-                              temperature_K = params['temperature'],
-                              trajectory = params['filename'])
-        
-        params_used = {'thermostat_type': 'Langevin',
-                        'time_step': params['time_step'],
-                        'temperature': params['temperature'],
-                        'friction': params['friction']}
-        
-    elif thermostat_type == 'andersen':
-        from ase.md.andersen import Andersen
-        thermostat = Andersen(molecule,
-                              params['time_step'] * units.fs,
-                              andersen_prob = params['andersen_prob'],
-                              temperature_K = params['temperature'],
-                              trajectory = params['filename'])
-        
-        params_used = {'thermostat_type': 'Andersen',
-                        'time_step': params['time_step'],
-                        'temperature': params['temperature'],
-                        'andersen_prob': params['andersen_prob']}
-
-    else:
-        raise ValueError('Thermostat type not recognized')
+    from ase.calculators.emt import EMT
     
-    return thermostat, params_used
+    MOLECULE = 'emt_is{:d}'.format(args.isomer_label)
+    calc = EMT()
 
-### Run simulation
-dyn, params_used = set_thermostat(args.thermostat_type, mol, params_thermostat)
-print(params_used)
-dyn.run(args.n_steps)
+TEMPERATURE = args.temperature
+N_STEPS = args.n_steps
+INTERVAL = args.n_interval
 
-mpi.world.barrier()
+MD_PARAMS = {'thermostat': args.thermostat_type,
+             'timestep': args.time_step * fs,
+             'temperature_K': TEMPERATURE,
+             'taut': args.taut,
+             'andersen_prob': args.andersen_prob,
+             'friction': args.friction,
+}
 
-### Get end date
-date_end = time.strftime('%Y-%m-%d %H:%M:%S')
-args.date_end = date_end
+print('Molecule: {:s}, Calculator: {:s}'.format(MOLECULE, args.energy_type))
 
-argparse_dict = vars(args)
+molecule = get_molecule_isomer_minima(MOLECULE)
 
-mpi.world.barrier()
+molecule.set_cell([16, 16, 16])
+#molecule.set_pbc(True)
+molecule.center()
 
-### Save simulation parameters
-from flonacomldft.utils.io_utils import save_json_args
-from os import getcwd
-save_json_args(args, 'md', args.process_id, path = getcwd() + '/')
+molecule.set_calculator(calc)
 
-mpi.world.barrier()
+MaxwellBoltzmannDistribution(molecule, temperature_K=TEMPERATURE)
+Stationary(molecule)  # zero linear momentum
+ZeroRotation(molecule)  # zero angular momentum
 
-### Plot temperature
-from ase.io.trajectory import Trajectory
-traj = Trajectory(filename + '.traj', 'r')
+filename = str(args.process_id) + '_' + MOLECULE + '_' + MD_PARAMS['thermostat'] + '.traj'
 
-temp = [config.get_temperature() for config in traj]
+md = run_molecular_dynamics(molecule, 
+                            MD_PARAMS, 
+                            N_STEPS, 
+                            INTERVAL, 
+                            trajectory_filename=filename, 
+                            return_temperature=False)
 
-import matplotlib.pyplot as plt
 
-fig, ax = plt.subplots(figsize=(10, 6))
-ax.plot(list(range(0, len(temp))), temp, '.-', label='is{:d}'.format(args.mode_label))
-ax.set_title(params_used)
-ax.set_xlabel('time step')
-ax.set_ylabel('temperature')
-ax.legend()
 
-plt.savefig('temperature_{:d}.png'.format(args.process_id))
+
+
+
+
+
+
