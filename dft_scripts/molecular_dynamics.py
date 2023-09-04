@@ -6,7 +6,9 @@ from ase.parallel import parprint as print
 
 # load scientific libraries
 
+import torch
 import numpy as np
+import matplotlib.pyplot as plt
 
 # load DFT libraries 
 
@@ -17,6 +19,7 @@ from ase.md.velocitydistribution import (
     Stationary,
     ZeroRotation,
 )
+from ase.io.trajectory import Trajectory
 
 # load flonaco utils
 
@@ -28,6 +31,8 @@ from flonacomldft.utils.silver_isomers_utils import (
 from flonacomldft.dft_calculator import run_molecular_dynamics
 
 from flonacomldft.utils.io_utils import set_str_date_to_int
+
+from flonacomldft.utils.plots import set_plot_sequential_data
 
 # load parallel libraries
 
@@ -133,9 +138,15 @@ md = run_molecular_dynamics(molecule,
                             trajectory_filename=filename, 
                             return_temperature=False)
 
+traj = Trajectory(filename)
 
+temperature = torch.tensor([molecule.get_temperature() for molecule in traj])
 
+fig, ax = plt.subplots(figsize=(10, 7))
 
+set_plot_sequential_data(ax=ax, temperature, )
+
+plt.savefig('{:s}_{:s}_{:d}')
 
 
 
