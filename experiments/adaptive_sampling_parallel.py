@@ -167,6 +167,8 @@ if "mlp" in energy_type:
                                     simulation_name), 
                                     path=path_models) 
                                     for i in range(len(isomer_labels))]
+else:
+    mlps_dic = [None for i in range(len(isomer_labels))]
 
 # path to save results
 folder_to_save_results = 'results_adaptive_{:s}_{:d}'.format(simulation_name, args.process_id)
