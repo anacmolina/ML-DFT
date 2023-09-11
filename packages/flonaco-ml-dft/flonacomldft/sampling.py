@@ -21,7 +21,7 @@ def run_metropolis(
     dim=12,
     id_run=None,
     energy_type=None,
-    frac_dft=0.2,
+    frac_dft=0.5,
     mlp_models=None,
     mixture=False,
     T=300,
@@ -73,13 +73,13 @@ def run_metropolis(
         from flonacomldft.dft_calculator import DFTCalculator
         from flonacomldft.internal_coordinates import Coordinates_mapping
         
-        coord_maps = Coordinates_mapping(etype=energy_type)
+        coord_maps = Coordinates_mapping(etype='dft')
         calculator = DFTCalculator()
 
         mpi.world.barrier()
 
         if dft_folder_name is not None:
-            calculator.initialize_calculator(dft_folder_name)
+            calculator.initialize_calculator(foldername=dft_folder_name)
         else:
             calculator.initialize_calculator()
     
@@ -152,7 +152,9 @@ def run_metropolis(
             xs_props.append(x_new)
 
         nll_x = model.nll(x_new)
-        nll_x_init = model.nll(x_init)            
+        nll_x_init = model.nll(x_init)  
+
+        print('energy type: ', energy_type)          
        
         if "mlp" in energy_type:
             u_new = torch.zeros((n_chains, 1)).squeeze()
@@ -195,7 +197,7 @@ def run_metropolis(
                         filename='ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
                                             )
                     u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
-                    # u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
+                    #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
 
                     xs_dft.append(x_new[i])
                     us_dft.append(u_new[i])

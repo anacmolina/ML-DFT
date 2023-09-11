@@ -140,6 +140,7 @@ def get_dataset(name, path, isomer_labels):
 
     return xs, zmats
 
+
 dataset_labels = ['flow_train', 'flow_test']
 
 flow_xs_train, flow_zmat_train = get_dataset('flow_train', path_datasets, isomer_labels)
@@ -164,12 +165,14 @@ else:
 if "mlp" in energy_type: 
     path_models = get_path() + '/' + args.folder_path + '/' + 'models'
 
-    mlps_dic = [load_pickle_file("mlp_model_is{:d}.pkl".format(
+    mlps_dic = [load_pickle_file("dict_mlp_model_is{:d}.pkl".format(
                                 isomer_labels[i]), 
                                 path=path_models) 
                                 for i in range(len(isomer_labels))]
 else:
-    mlps_dic = None
+
+    mlps_dic = [None for i in range(len(isomer_labels))]
+
 
 # path to save results
 folder_to_save_results = 'results_adaptive_{:s}_{:d}'.format(simulation_name, args.process_id)
@@ -232,6 +235,15 @@ flow_hyperparams = {'n_iter': args.n_iter,
 
 print("flows_dic len: ", len(flows_dic))
 
+mlp_hyperparams = {'n_iter': args.n_iter,
+    'lr': args.learning_rate,
+    'use_scheduler': False,
+    'step_schedule': 100,
+    'save_splits': 10,
+    'batch_size': args.batch_size,
+    'use_scheduler': args.use_scheduler,
+    }
+
 
 
 # init chains
@@ -258,9 +270,10 @@ out = adaptive_sampling(
     dict_flows_init=flows_dic,
     flow_hyperparams=[flow_hyperparams, flow_hyperparams], # TODO: generalize for more flows
     dict_mlps_init=mlps_dic,
+    mlp_hyperparams=[mlp_hyperparams, mlp_hyperparams], # TODO: generalize for more flows
     path=path_to_save_results,
     save_ratios = 1,
-    #seed=args.random_seed,
+    retrain_mlps=True,
     )
 
 date_end = np.array([0])

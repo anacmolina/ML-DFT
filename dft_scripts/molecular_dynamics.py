@@ -1,5 +1,7 @@
 # load libraries
 
+from os import getcwd
+
 import argparse
 import time
 from ase.parallel import parprint as print
@@ -27,6 +29,7 @@ from flonacomldft.utils.silver_isomers_utils import (
     get_molecule_isomer_minima,
     get_molecule_calc_params,
 )
+from flonacomldft.utils.io_utils import save_json_args
 
 from flonacomldft.dft_calculator import run_molecular_dynamics
 
@@ -143,6 +146,8 @@ traj = Trajectory(filename)
 temperature = torch.tensor([molecule.get_temperature() for molecule in traj]).detach()
 
 #TODO: add saving args, add title to plot
+
+save_json_args(args, 'md', args.process_id, path = getcwd() + '/')
 
 fig, ax = plt.subplots(figsize=(10, 7))
 

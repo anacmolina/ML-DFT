@@ -2,6 +2,7 @@ import torch
 import time
 import copy
 from flonacomldft.train_flow_from_data import train_flow
+from flonacomldft.train_mlp_from_data import train_mlp
 from flonacomldft.sampling import run_metropolis
 from flonacomldft.models.mixture import Mixture, get_models
 from flonacomldft.internal_coordinates import join_data
@@ -28,6 +29,7 @@ def adaptive_sampling(
         dict_flows_init,
         dict_mlps_init,
         flow_hyperparams,
+        mlp_hyperparams,
         n_chains,
         n_steps,
         n_runs,
@@ -39,21 +41,26 @@ def adaptive_sampling(
         weights=None,
         path=None,
         fix_train_samples=None,
-        save_ratios = 5,
+        save_ratios = 10,
+        retrain_mlps=False,
         ):
 
     modes = torch.unique(torch.cat(flow_init_train)[:, dim+1]).int()
 
     print('modes: ', modes)
 
-
     xs_for_flows_train = [ flow_init_train[i] for i in range(len(flow_init_train)) ]
     xs_for_flows_test = [ flow_init_test[i] for i in range(len(flow_init_test)) ]
+
+    if retrain_mlps:
+        xs_for_mlps_train = [ flow_init_train[i] for i in range(len(flow_init_train)) ]
+        xs_for_mlps_test = [ flow_init_test[i] for i in range(len(flow_init_test)) ]
+
+        dict_mlps_training = [copy.deepcopy(dict_mlps_init), ]
 
     dict_flows_training = [copy.deepcopy(dict_flows_init), ]
 
     if 'mlp' in energy_type or dict_mlps_init is not None:
-        #mlp_models = get_models(dict_mlps_init)
         mlp_models = dict_mlps_init
     else:
         mlp_models = [None]*len(modes)
@@ -89,6 +96,9 @@ def adaptive_sampling(
             model = Mixture(get_models(dict_flows_training[i]), weights)
         else:
             model = get_models(dict_flows_training[i])[0]
+
+        if retrain_mlps:
+            mlp_models = get_models(dict_mlps_training[i])
 
         mcmc_run = run_metropolis(
             model=model,
@@ -133,6 +143,9 @@ def adaptive_sampling(
 
         dict_new_flows = []
 
+        if retrain_mlps:
+            dict_new_mlps = []
+
         print("modes: ", modes)
 
         for mode in range(len(modes)):#modes.detach().numpy().astype(int):
@@ -174,20 +187,54 @@ def adaptive_sampling(
                 dim=dim,
                 mlp_model=mlp_models[mode],
                 )
+                            
                     
             timestep_flow.append(time.time())
             
-            #if (i+1)*n_steps >= 100:
-            #    flow_hyperparams[mode]['lr'] = 1e-4
-            #    flow_hyperparams[mode]['n_iter'] = 10
-            
             dict_new_flows.append(dict_new_flow)
+
+            if retrain_mlps:
+                xs_dft = mcmc_run['xs_dft']
+                us_dft = mcmc_run['us_dft']
+                isomers_dft = mcmc_run['isomers_dft']
             
+                configs_dft_flatten = Transpose(
+                torch.cat(
+                    (
+                        Transpose(xs_dft),
+                        us_dft.reshape(1, -1),
+                        isomers_dft.reshape(1, -1),
+                    ),
+                    dim=0,
+                )
+            )
+                
+                mask_mlp = configs_dft_flatten[:, -1].bool()
+
+                xs_for_mlps_train[mode] = torch.cat((xs_for_mlps_train[mode], configs_dft_flatten[~mask_mlp]))
+                xs_for_mlps_test[mode] = torch.cat((xs_for_mlps_test[mode], configs_dft_flatten[~mask_mlp]))
+
+
+                print('retrain mlp: ', mode)
+                mlp_train = train_mlp(dict_mlps_training[-1][mode]['model'], 
+                                    xs_for_mlps_train[mode],  
+                                    xs_for_mlps_test[mode], 
+                                    **mlp_hyperparams[0],
+                                    with_tqdm=True)
+
+
+                dict_new_mlps.append(mlp_train)
+
+
+
         else:
             dict_new_flow = dict_flows_training[i][mode]
             dict_new_flows.append(dict_new_flow)
 
         dict_flows_training.append(dict_new_flows)
+
+        if retrain_mlps:
+            dict_mlps_training.append(dict_new_mlps)
 
     to_return = {
         "dict_flows_training": dict_flows_training,

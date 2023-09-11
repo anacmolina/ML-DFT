@@ -1,7 +1,10 @@
 # TODO: Move funtion to another file, dataprocessing folder in experiments
 
 import torch
+from flonacomldft.internal_coordinates import Coordinates_mapping
+from flonacomldft.utils.io_utils import load_csv_file, get_path
 
+coord_mapping = Coordinates_mapping()
 
 # split data
 
@@ -19,4 +22,26 @@ def split_data_from_dataframe(dataset, train_size, sk_seed):
     dataset_splitted = [dataset[data.indices] for data in split]
 
     return tuple(dataset_splitted)
+
+
+def load_datasets(md, isomer_id, real_centered=True):
+    
+    zmats = {data_type: load_csv_file('is{:d}_flow_{:s}.csv'.format(isomer_id, data_type),
+                                      get_path() + '/{:s}/datasets'.format(md))
+             for data_type in ['train', 'test']}
+
+
+    if real_centered:
+    
+        xs = {data_type: coord_mapping.get_real_centered_from_internal(
+                                    zmats[data_type][:, :12],
+                                    zmats[data_type][:, 14],
+                                    isomer=isomer_id,
+                                    energies=zmats[data_type][:, 12]
+                                    ) for data_type in ['train', 'test'] }
+        
+        xs = {data_type: torch.cat((xs[data_type][0], xs[data_type][2].reshape(-1, 1), 
+                                 zmats[data_type][:, 13].reshape(-1, 1), 
+                                 ), dim=1) for data_type in ['train', 'test']}    
+    return xs
 
