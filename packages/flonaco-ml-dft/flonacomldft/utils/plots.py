@@ -98,7 +98,7 @@ def plot_energy_histogram(energy_molecules, axis_labels='default', ax=None, **kw
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize=(10, 5))
 
-    sns.histplot(energy_molecules, stat='density', **kwargs)
+    sns.histplot(energy_molecules, stat='density', ax=ax, **kwargs)
 
     if axis_labels == 'default':
         ax.set_xlabel('Energy (eV)')

@@ -3,6 +3,8 @@ import numpy as np
 import torch
 from flonacomldft.sampling import run_metropolis
 from ase.units import kB
+import arviz as az
+from arviz.utils import get_coords, _var_names
 
 def avg_windows(x, window_size, axis):
     return np.lib.stride_tricks.sliding_window_view(x, window_size).mean(axis=axis)
@@ -209,3 +211,30 @@ def my_gelman_rubin(x):
     s2 = W * (n_iter - 1) / n_iter + B_over_n
 
     return s2
+
+
+def R_hat(chains, burn_in=100, n_split=10, var_names=None, filter_vars=None):
+    
+    idata = az.convert_to_inference_data(chains[:, burn_in:, :])
+    coords = {}
+    data = get_coords(az.convert_to_dataset(idata, group="posterior"), coords)
+    
+    var_names = _var_names(var_names, data, filter_vars)
+    n_draws = data.dims["draw"]
+    n_samples = n_draws * data.dims["chain"]
+    first_draw = data.draw.values[0] # int of where where things should start
+    labels = ['x{:d}'.format(i) for i in range(12)]
+
+    ## Compute where to split the data to diagnostic the convergence
+    xdata = np.linspace(n_samples / n_split, n_samples, n_split)
+    draw_divisions = np.linspace(n_draws // n_split, n_draws, n_split, dtype=int)
+
+    rhat_s = np.stack([np.array(az.rhat(data.sel(draw=slice(first_draw + draw_div)),
+                    var_names=var_names,
+                    method="rank",
+                )['x'])
+        for draw_div in draw_divisions
+        ])
+    
+    return rhat_s, draw_divisions, labels
+    

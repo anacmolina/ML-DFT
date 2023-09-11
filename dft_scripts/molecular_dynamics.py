@@ -140,15 +140,12 @@ md = run_molecular_dynamics(molecule,
 
 traj = Trajectory(filename)
 
-temperature = torch.tensor([molecule.get_temperature() for molecule in traj])
+temperature = torch.tensor([molecule.get_temperature() for molecule in traj]).detach()
+
+#TODO: add saving args, add title to plot
 
 fig, ax = plt.subplots(figsize=(10, 7))
 
-set_plot_sequential_data(ax=ax, temperature, )
+set_plot_sequential_data(temperature, ax=ax, window_size=100)
 
-plt.savefig('{:s}_{:s}_{:d}')
-
-
-
-
-
+plt.savefig('{:d}_{:s}_{:s}.png'.format(args.process_id, MD_PARAMS['thermostat'], MOLECULE))
