@@ -56,6 +56,7 @@ def adaptive_sampling(
         xs_for_mlps_train = [ flow_init_train[i] for i in range(len(flow_init_train)) ]
         xs_for_mlps_test = [ flow_init_test[i] for i in range(len(flow_init_test)) ]
 
+    if 'mlp' in energy_type and dict_mlps_init is not None:
         dict_mlps_training = [copy.deepcopy(dict_mlps_init), ]
 
     dict_flows_training = [copy.deepcopy(dict_flows_init), ]
@@ -97,8 +98,8 @@ def adaptive_sampling(
         else:
             model = get_models(dict_flows_training[i])[0]
 
-        if retrain_mlps:
-            mlp_models = get_models(dict_mlps_training[i])
+        if 'mlp' in energy_type and dict_mlps_init is not None:
+            mlp_models = get_models(dict_mlps_training[-1])
 
         mcmc_run = run_metropolis(
             model=model,
@@ -188,7 +189,8 @@ def adaptive_sampling(
                 mlp_model=mlp_models[mode],
                 )
                             
-                    
+            print("shape xs_for_flows_train: ", xs_for_flows_train[mode][-fix_train_samples:].shape)
+
             timestep_flow.append(time.time())
             
             dict_new_flows.append(dict_new_flow)
@@ -237,6 +239,7 @@ def adaptive_sampling(
             dict_mlps_training.append(dict_new_mlps)
 
     to_return = {
+        "dict_mlps_training": dict_mlps_training,
         "dict_flows_training": dict_flows_training,
         "mcmc_runs": mcmc_runs,
         "xs": xs,

@@ -21,7 +21,7 @@ def run_metropolis(
     dim=12,
     id_run=None,
     energy_type=None,
-    frac_dft=0.5,
+    frac_dft=0.1,
     mlp_models=None,
     mixture=False,
     T=300,

@@ -165,9 +165,14 @@ else:
 if "mlp" in energy_type: 
     path_models = get_path() + '/' + args.folder_path + '/' + 'models'
 
-    mlps_dic = [load_pickle_file("dict_mlp_model_is{:d}.pkl".format(
+    #mlps_dic = [load_pickle_file("dict_mlp_model_is{:d}.pkl".format(
+    #                            isomer_labels[i]), 
+    #                            path=path_models) 
+    #                            for i in range(len(isomer_labels))]
+    
+    mlps_dic = [{'model': load_pickle_file("mlp_model_is{:d}.pkl".format(
                                 isomer_labels[i]), 
-                                path=path_models) 
+                                path=path_models)}
                                 for i in range(len(isomer_labels))]
 else:
 
