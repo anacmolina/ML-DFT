@@ -43,6 +43,7 @@ def adaptive_sampling(
         fix_train_samples=None,
         save_ratios = 10,
         retrain_mlps=False,
+        frac_dft=0.1,
         ):
 
     modes = torch.unique(torch.cat(flow_init_train)[:, dim+1]).int()
@@ -108,6 +109,7 @@ def adaptive_sampling(
             n_steps=n_steps,
             id_run=i,
             energy_type=energy_type,
+            frac_dft=frac_dft,
             mlp_models=mlp_models,
             mixture=mixture,
             dim=dim,
@@ -219,10 +221,10 @@ def adaptive_sampling(
 
                 print('retrain mlp: ', mode)
                 mlp_train = train_mlp(dict_mlps_training[-1][mode]['model'], 
-                                    xs_for_mlps_train[mode],  
+                                    xs_for_mlps_train[mode][-fix_train_samples:],  
                                     xs_for_mlps_test[mode], 
                                     **mlp_hyperparams[0],
-                                    with_tqdm=True)
+                                    )
 
 
                 dict_new_mlps.append(mlp_train)

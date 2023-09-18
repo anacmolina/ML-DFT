@@ -29,7 +29,7 @@ def run_metropolis(
     return_ratio = False,
     return_proposals = False,
     dft_folder_name = None,
-    scheduler = 5,
+    scheduler = 10,
     update_weigth = False,
     alpha=0.1,
 ):
@@ -56,11 +56,6 @@ def run_metropolis(
     # add data dimension and data structure compatibility
 
     assert init.shape[0] == n_chains
-
-    # this is for silver six only
-    #x_init = init[:, :12]
-    #u_init = init[:, 12]
-    #isomer_init = init[:, 13]
 
     x_init = init[:, :dim]
     u_init = init[:, dim]
@@ -93,7 +88,6 @@ def run_metropolis(
     else:
         use_dft = False
 
-    #TODO: add emt calculator in the energy computation
     if "emt" in energy_type:
         from flonacomldft.dft_calculator import EMTCalculator
         from flonacomldft.internal_coordinates import Coordinates_mapping
@@ -101,10 +95,10 @@ def run_metropolis(
         coord_maps = Coordinates_mapping(etype=energy_type)
         calculator = EMTCalculator()
 
-    #print("Use DFT: ", use_dft)
-
+    print("Use DFT: ", use_dft)
 
     if "mlp" in energy_type:
+        #TODO: Add calculator for MLP
         if(mlp_models is None):
             raise RuntimeError("No MLP model to calculate energy")
         if mixture:
@@ -157,12 +151,10 @@ def run_metropolis(
         print('energy type: ', energy_type)          
        
         if "mlp" in energy_type:
+            
             u_new = torch.zeros((n_chains, 1)).squeeze()
 
-            #print(u_new, isomer_new.bool())
-
             if mixture:
-                #print(u_new[~(isomer_new.bool())], x_new[~(isomer_new.bool())], model_mlp_is0(x_new[~(isomer_new.bool())]).reshape(1, -1))
                 u_new[~(isomer_new.bool())] = model_mlp_is0(x_new[~(isomer_new.bool())]).reshape(1, -1)
                 u_new[isomer_new.bool()] = model_mlp_is1(x_new[isomer_new.bool()]).reshape(1, -1)
             else:
@@ -174,8 +166,10 @@ def run_metropolis(
             u_new = u_new.squeeze().float()
 
         if "dft" in energy_type:
+            
             ind_not_computed = torch.zeros(n_chains) # keeps indices where DFT fails
             ind_dft = torch.zeros(n_chains) # boolean table of where DFT is used
+            
             if energy_type == "dft":
                 ind_dft = torch.ones(n_chains)
                 u_new = torch.zeros((n_chains))
@@ -184,7 +178,6 @@ def run_metropolis(
                 u_sort, ind_u_sort = u_new.sort()
                 for idx in ind_u_sort[:n_dft]:
                     ind_dft[idx] = 1
-            #print("DFT idx: ", ind_dft)
             
             # TODO: type of isomer_dft
             for i,flag_dft in enumerate(ind_dft):
@@ -217,23 +210,22 @@ def run_metropolis(
                 u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
 
             
-        #print(u_new, u_init, nll_x, nll_x_init, isomer_new, isomer_init)
-
         if use_dft:
+
             rank = mpi.world.rank
-            #print('save time: ', rank)
+
             if rank == 0:
                 timestep_mcmc.append(time.time())
-            #print('save time 0 : ', rank)
+
             mpi.world.barrier()
+
         else:
+
             timestep_mcmc.append(time.time())
 
         ratio = -beta * u_new + nll_x
         ratio += beta * u_init - nll_x_init
         ratio = torch.exp(ratio)
-
-        #print("Ratio: ", ratio)
 
         if return_ratio:
             ratios.append(torch.min(ratio.clone(), torch.ones_like(ratio)))
@@ -243,6 +235,7 @@ def run_metropolis(
         acc = u < torch.min(ratio, torch.ones_like(ratio))
 
         if use_dft:
+            
             if ind_not_computed is not None and ind_not_computed.sum() != 0:
                 acc[ind_not_computed.bool()] = False
 
@@ -257,7 +250,6 @@ def run_metropolis(
         else:
             isomer_new = isomer_init
 
-        
         xs.append(x_new.float().clone())
         us.append(u_new.float().clone())
         accs.append(acc.float().clone())
@@ -272,24 +264,22 @@ def run_metropolis(
             pbar.set_description(f'acc: {acc.float().mean():.2f}')
 
         #TODO: Add parameter to save
-        #if dt % scheduler == 0:
         print("step: {:d} \t acc: {:0.2f}".format(dt, acc.float().mean()))
 
         if mixture and update_weigth and dt % scheduler == 0 and dt != 0:
-        # if mixture and update_weigth and dt >= scheduler:
 
-            print("dt, isomers shape: ", dt, torch.stack(isomers).shape)
-            print("populations window", torch.stack(isomers)[-scheduler:].shape, (~torch.stack(isomers).bool()).float()[-scheduler:].detach().mean(), (torch.stack(isomers).bool()).float()[-scheduler:].detach().mean())
+            #print("dt, isomers shape: ", dt, torch.stack(isomers).shape)
+            #print("populations window", torch.stack(isomers)[-scheduler:].shape, (~torch.stack(isomers).bool()).float()[-scheduler:].detach().mean(), (torch.stack(isomers).bool()).float()[-scheduler:].detach().mean())
             
-            weigths_current_populations = torch.tensor([(~torch.stack(isomers).bool())[-scheduler:].float().mean(), 
+            weigths_window_populations = torch.tensor([(~torch.stack(isomers).bool())[-scheduler:].float().mean(), 
                                     (torch.stack(isomers).bool()).float()[-scheduler:].detach().mean()]).float().detach()
             
-            print("current weights: ", model.weights)
-            print("current population weights: ", weigths_current_populations)
+            print("current model weights: ", model.weights)
+            print("window population: ", weigths_window_populations)
 
-            new_weights = alpha*model.weights.clone() + (1-alpha)*weigths_current_populations.clone()
+            new_weights = alpha*model.weights.clone() + (1-alpha)*weigths_window_populations.clone()
             
-            print("new weights: ", new_weights)
+            #print("new weights: ", new_weights)
 
             print(model.weights, new_weights < 0.75, torch.all(new_weights  < 0.75))
 
@@ -300,6 +290,8 @@ def run_metropolis(
                 print("updated weights: ", model.weights)
 
             weights.append(model.weights.clone().float().detach())
+
+    #TODO: Check if this is necessary
 
     if use_dft:
 
