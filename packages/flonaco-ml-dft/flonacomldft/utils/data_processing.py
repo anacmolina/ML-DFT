@@ -23,10 +23,10 @@ def split_data_from_dataframe(dataset, train_size, sk_seed):
 
     return tuple(dataset_splitted)
 
-
-def load_datasets(md, isomer_id, real_centered=True):
+#TODO: Change flow by a parameter in the function
+def load_datasets(md, isomer_id, name, real_centered=True):
     
-    zmats = {data_type: load_csv_file('is{:d}_flow_{:s}.csv'.format(isomer_id, data_type),
+    zmats = {data_type: load_csv_file('is{:d}_{:s}_{:s}.csv'.format(isomer_id, name, data_type),
                                       get_path() + '/{:s}/datasets'.format(md))
              for data_type in ['train', 'test']}
 
