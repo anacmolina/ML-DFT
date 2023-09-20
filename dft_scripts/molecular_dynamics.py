@@ -123,14 +123,19 @@ print('Molecule: {:s}, Calculator: {:s}'.format(MOLECULE, args.energy_type))
 molecule = get_molecule_isomer_minima(MOLECULE)
 
 molecule.set_cell([16, 16, 16])
-#molecule.set_pbc(True)
+molecule.set_pbc(True)
 molecule.center()
 
 molecule.set_calculator(calc)
 
 MaxwellBoltzmannDistribution(molecule, temperature_K=TEMPERATURE)
-Stationary(molecule)  # zero linear momentum
-ZeroRotation(molecule)  # zero angular momentum
+#Stationary(molecule)  # zero linear momentum
+#ZeroRotation(molecule)  # zero angular momentum
+
+p = molecule.get_momenta()
+psum = p.sum(axis=0)/float(len(p))
+p = p - psum
+molecule.set_momenta(p)
 
 filename = str(args.process_id) + '_' + MOLECULE + '_' + MD_PARAMS['thermostat'] + '.traj'
 
