@@ -129,13 +129,13 @@ molecule.center()
 molecule.set_calculator(calc)
 
 MaxwellBoltzmannDistribution(molecule, temperature_K=TEMPERATURE)
-#Stationary(molecule)  # zero linear momentum
-#ZeroRotation(molecule)  # zero angular momentum
+Stationary(molecule)  # zero linear momentum
+ZeroRotation(molecule)  # zero angular momentum
 
-p = molecule.get_momenta()
-psum = p.sum(axis=0)/float(len(p))
-p = p - psum
-molecule.set_momenta(p)
+#p = molecule.get_momenta()
+#psum = p.sum(axis=0)/float(len(p))
+#p = p - psum
+#molecule.set_momenta(p)
 
 filename = str(args.process_id) + '_' + MOLECULE + '_' + MD_PARAMS['thermostat'] + '.traj'
 
@@ -144,7 +144,8 @@ md = run_molecular_dynamics(molecule,
                             N_STEPS, 
                             INTERVAL, 
                             trajectory_filename=filename, 
-                            return_temperature=False)
+                            return_temperature=True,
+                            return_collective_variable=True)
 
 traj = Trajectory(filename)
 
