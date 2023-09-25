@@ -5,7 +5,8 @@ from ase.io import Trajectory
 from ase.md.nvtberendsen import NVTBerendsen
 from ase.md.velocitydistribution import (MaxwellBoltzmannDistribution,
                                          Stationary, ZeroRotation)
-#from ase.parallel import parprint as print
+
+from flonacomldft.collective_variables import compute_R
 
 class EMTCalculator:
     def __init__(self):
@@ -137,8 +138,9 @@ class Thermostats:
             raise ValueError('Thermostat name not recognized')
 
 
-def run_molecular_dynamics(atoms, thermostat_params, n_steps, interval, trajectory_filename, return_temperature=True):
+def run_molecular_dynamics(atoms, thermostat_params, n_steps, interval, trajectory_filename, return_temperature=True, return_collective_variable=True):
 
+    from ase.parallel import parprint as print
     from ase.io.trajectory import Trajectory
 
     dyn = Thermostats()(thermostat_params, atoms)
@@ -154,6 +156,14 @@ def run_molecular_dynamics(atoms, thermostat_params, n_steps, interval, trajecto
             print('Temperature: {:.1f} K'.format(temperature))
 
         dyn.attach(print_temperature, interval=interval)
+
+    if return_collective_variable:
+
+        def print_collective_variable(a=atoms):
+            R = compute_R(a)
+            print('Radius of gyration: {:.2f} K'.format(R))
+
+        dyn.attach(print_collective_variable, interval=interval)
 
     dyn.attach(traj.write, interval=interval)
 
