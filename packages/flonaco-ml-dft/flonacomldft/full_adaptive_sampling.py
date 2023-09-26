@@ -6,6 +6,9 @@ from flonacomldft.train_mlp_from_data import train_mlp
 from flonacomldft.sampling import run_metropolis
 from flonacomldft.models.mixture import Mixture, get_models
 from flonacomldft.internal_coordinates import join_data
+from flonacomldft.utils.data_processing import load_datasets
+
+from ase.parallel import parprint as print
 
 def get_weights(isomers):
 
@@ -46,6 +49,7 @@ def adaptive_sampling(
         frac_dft=0.1,
         ):
 
+
     modes = torch.unique(torch.cat(flow_init_train)[:, dim+1]).int()
 
     print('modes: ', modes)
@@ -54,8 +58,20 @@ def adaptive_sampling(
     xs_for_flows_test = [ flow_init_test[i] for i in range(len(flow_init_test)) ]
 
     if retrain_mlps:
-        xs_for_mlps_train = [ flow_init_train[i] for i in range(len(flow_init_train)) ]
-        xs_for_mlps_test = [ flow_init_test[i] for i in range(len(flow_init_test)) ]
+        xs_mlps_init = [ load_datasets('andersen', isomer_id=i, name='mlp', real_centered=True) for i in range(len(flow_init_train))]
+
+        xs_for_mlps_train = [ torch.cat((flow_init_train[i], xs_mlps_init[i]['train'])) for i in range(len(flow_init_train)) ]
+        xs_for_mlps_test = [ torch.cat((flow_init_test[i], xs_mlps_init[i]['test'])) for i in range(len(flow_init_test)) ]
+
+        n_iters_bs = [ torch.ceil(torch.tensor(xs_for_mlps_train[i].shape[0])/mlp_hyperparams[i]['batch_size']) for i in range(len(xs_for_mlps_train)) ]
+        total_iterations_mlps = [mlp_hyperparams[i]['n_iter']*n_iters_bs[i] for i in range(len(n_iters_bs))]
+
+        print('n_iters_bs: ', n_iters_bs, 
+              [mlp_hyperparams[i]['n_iter'] for i in range(len(xs_for_mlps_train))],
+              total_iterations_mlps)
+
+        print('xs_for_mlps_train: ', [xs_for_mlps_train[i].shape for i in range(len(xs_for_mlps_train))] )
+        print('xs_for_mlps_test: ', [xs_for_mlps_test[i].shape for i in range(len(xs_for_mlps_test))] )
 
     if 'mlp' in energy_type and dict_mlps_init is not None:
         dict_mlps_training = [copy.deepcopy(dict_mlps_init), ]
@@ -201,6 +217,8 @@ def adaptive_sampling(
                 xs_dft = mcmc_run['xs_dft']
                 us_dft = mcmc_run['us_dft']
                 isomers_dft = mcmc_run['isomers_dft']
+
+                print('dft isomers: ', isomers_dft)
             
                 configs_dft_flatten = Transpose(
                 torch.cat(
@@ -212,18 +230,34 @@ def adaptive_sampling(
                     dim=0,
                 )
             )
+                #keep gradient steps constant
+                n_iters_bs = torch.ceil(torch.tensor(xs_for_mlps_train[mode].shape[0])/mlp_hyperparams[mode]['batch_size'])
+                print('n_iters_bs: ', n_iters_bs)
+                print('total_iterations_mlps: ', total_iterations_mlps[mode])
                 
-                mask_mlp = configs_dft_flatten[:, -1].bool()
+                mlp_hyperparams[mode]['n_iter'] = (total_iterations_mlps[mode]/n_iters_bs).int().item() 
+                
+                print('mlp_hyperparams[mode][n_iter]: ', mlp_hyperparams[mode]['n_iter'])
 
-                xs_for_mlps_train[mode] = torch.cat((xs_for_mlps_train[mode], configs_dft_flatten[~mask_mlp]))
-                xs_for_mlps_test[mode] = torch.cat((xs_for_mlps_test[mode], configs_dft_flatten[~mask_mlp]))
+                print('n_iters_bs: ', mode,
+                      n_iters_bs, 
+                      mlp_hyperparams[mode]['n_iter'],
+                      total_iterations_mlps[mode])
+
+                mask_mlp = configs_dft_flatten[:, -1] == modes[mode]
+                print('mask_mlp: ', mask_mlp)
+
+                xs_for_mlps_train[mode] = torch.cat((xs_for_mlps_train[mode], configs_dft_flatten[mask_mlp]))
+                xs_for_mlps_test[mode] = torch.cat((xs_for_mlps_test[mode], configs_dft_flatten[mask_mlp]))
 
 
                 print('retrain mlp: ', mode)
+                print('shape xs_for_mlps_train: ', xs_for_mlps_train[mode].shape)
+
                 mlp_train = train_mlp(dict_mlps_training[-1][mode]['model'], 
-                                    xs_for_mlps_train[mode][-fix_train_samples:],  
+                                    xs_for_mlps_train[mode],#[-fix_train_samples:],  
                                     xs_for_mlps_test[mode], 
-                                    **mlp_hyperparams[0],
+                                    **mlp_hyperparams[mode],
                                     )
 
 

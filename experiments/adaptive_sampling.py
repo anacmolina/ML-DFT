@@ -86,9 +86,9 @@ parser.add_argument('-fss', '--flow-step-scheduler', type=int, default=100)
 parser.add_argument('-ratios', '--do-ratios', type=bool, default=False)
 parser.add_argument('-prop', '--n-prop', type=int, default=50)
 # mlp params
-parser.add_argument('-ni', '--mlp-n-iter', type=int, default=5)
-parser.add_argument('-lr', '--mlp-learning-rate', type=float, default=1e-4)
-parser.add_argument('-bs', '--mlp-batch-size', type=int, default=100)
+parser.add_argument('-ni', '--mlp-n-iter', type=int, default=10)
+parser.add_argument('-lr', '--mlp-learning-rate', type=float, default=1e-5)
+parser.add_argument('-bs', '--mlp-batch-size', type=int, default=500)
 parser.add_argument('-us', '--mlp-use-scheduler', type=bool, default=False)
 parser.add_argument('-ss', '--mlp-step-scheduler', type=int, default=100)
 # adaptive sampling params
@@ -134,7 +134,7 @@ flow_xs_test = []
 
 for isomer_label in isomer_labels:
     
-    dataset = load_datasets(args.folder_path, isomer_label, real_centered=True)
+    dataset = load_datasets(args.folder_path, isomer_label, name='flow', real_centered=True)
     flow_xs_train.append(dataset['train'].clone())
     flow_xs_test.append(dataset['test'].clone())
 
