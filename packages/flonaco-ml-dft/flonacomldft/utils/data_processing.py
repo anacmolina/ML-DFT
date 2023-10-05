@@ -4,8 +4,6 @@ import torch
 from flonacomldft.internal_coordinates import Coordinates_mapping
 from flonacomldft.utils.io_utils import load_csv_file, get_path
 
-coord_mapping = Coordinates_mapping()
-
 # split data
 
 def split_data_from_dataframe(dataset, train_size, sk_seed):
@@ -32,6 +30,12 @@ def load_datasets(md, isomer_id, name, real_centered=True):
 
 
     if real_centered:
+        if 'emt' in md:
+            etype = 'emt'
+        else:
+            etype = 'dft'
+    
+        coord_mapping = Coordinates_mapping(etype=etype)
     
         xs = {data_type: coord_mapping.get_real_centered_from_internal(
                                     zmats[data_type][:, :12],

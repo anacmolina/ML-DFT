@@ -95,13 +95,6 @@ def run_metropolis(
         coord_maps = Coordinates_mapping(etype=energy_type)
         calculator = EMTCalculator()
 
-        use_dft = True
-
-        xs_dft = []
-        us_dft = []
-        isomers_dft = []
-        inds_dft = []
-
     print("Use DFT: ", use_dft)
 
     if "mlp" in energy_type:
@@ -172,12 +165,12 @@ def run_metropolis(
 
             u_new = u_new.squeeze().float()
 
-        if "dft" or "emt" in energy_type:
+        if "dft" in energy_type:
             
             ind_not_computed = torch.zeros(n_chains) # keeps indices where DFT fails
             ind_dft = torch.zeros(n_chains) # boolean table of where DFT is used
             
-            if energy_type == "dft" or energy_type == "emt":
+            if energy_type == "dft":
                 ind_dft = torch.ones(n_chains)
                 u_new = torch.zeros((n_chains))
             else:
@@ -192,16 +185,9 @@ def run_metropolis(
                     #try: # Avoid try if possible
                             
                     molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer=int(isomer_new[i].item()))
-                    input_calculator = {
-                        'atoms': molecule,
-                    }
-
-                    if "dft" in energy_type:
-                        input_calculator['filename'] = 'ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
-
-                    u_ = calculator.calculate_potential_energy(**input_calculator
-                        #molecule, 
-                        #filename='ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
+                    u_ = calculator.calculate_potential_energy(
+                        molecule, 
+                        filename='ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
                                             )
                     u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
                     #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
@@ -214,17 +200,17 @@ def run_metropolis(
                     #    u_new[i] = 0.
                     #    ind_not_computed[i] = 1
 
-        #if "emt" in energy_type:
-#
-        #    u_new = torch.zeros(n_chains)
-        #    for i in range(n_chains):
-        #        molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer=int(isomer_new[i].item()))
-        #        u_ = calculator.calculate_potential_energy(molecule)
-#
-        #        u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
+        if "emt" in energy_type:
+
+            u_new = torch.zeros(n_chains)
+            for i in range(n_chains):
+                molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer=int(isomer_new[i].item()))
+                u_ = calculator.calculate_potential_energy(molecule)
+
+                u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
 
             
-        if use_dft and 'dft' in energy_type:
+        if use_dft:
 
             rank = mpi.world.rank
 
@@ -307,7 +293,7 @@ def run_metropolis(
 
     #TODO: Check if this is necessary
 
-    if use_dft and 'dft' in energy_type:
+    if use_dft:
 
         timestep_mcmc_min = np.array([0])
         

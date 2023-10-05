@@ -14,6 +14,7 @@ from flonacomldft.utils.io_utils import get_path
 parser = argparse.ArgumentParser(description='Prepare dataset')
 parser.add_argument('-file', '--file', type=str)
 parser.add_argument('-isomer', '--isomer-label', type=int, default=0)
+parser.add_argument('-etype', '--energy-type', type=str, default='dft')
 parser.add_argument('-N', '--num-samples', type=int, default=None)
 parser.add_argument('-low', '--low-index', type=int, default=0)
 
@@ -27,7 +28,7 @@ input_file = args.file
 traj = Trajectory(input_file)[args.low_index:]
 
 # compute internal coordinates
-coord_mapping = Coordinates_mapping()
+coord_mapping = Coordinates_mapping(etype=args.energy_type)
 zmats = coord_mapping.get_internal_from_trajectory(traj, isomer=isomer_label, temperature=300, max_samples=N).detach()
 
 if isomer_label == 0:

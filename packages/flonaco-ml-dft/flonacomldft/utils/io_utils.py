@@ -75,7 +75,9 @@ def save_csv_file(dataframe, filename, path=os.getcwd()):
 
 
 def save_ase_molecules_as_traj(configs, filename='configs.traj', path=os.getcwd()):
-   traj = Trajectory(path + '/' + filename, 'w', atoms=configs)
+   traj = Trajectory(path + '/' + filename, 'w')
+   for config in configs:
+       traj.write(config)
    traj.close()
 
 # add type of algorithm to args filename

@@ -58,7 +58,11 @@ def adaptive_sampling(
     xs_for_flows_test = [ flow_init_test[i] for i in range(len(flow_init_test)) ]
 
     if retrain_mlps:
-        xs_mlps_init = [ load_datasets('andersen', isomer_id=i, name='mlp', real_centered=True) for i in range(len(flow_init_train))]
+        if 'emt' in energy_type:
+            path = 'emt_andersen'
+        else:
+            path = 'andersen'
+        xs_mlps_init = [ load_datasets(path, isomer_id=i, name='mlp', real_centered=True) for i in modes.detach().numpy()]
 
         xs_for_mlps_train = [ torch.cat((flow_init_train[i], xs_mlps_init[i]['train'])) for i in range(len(flow_init_train)) ]
         xs_for_mlps_test = [ torch.cat((flow_init_test[i], xs_mlps_init[i]['test'])) for i in range(len(flow_init_test)) ]
@@ -130,6 +134,7 @@ def adaptive_sampling(
             mixture=mixture,
             dim=dim,
             dft_folder_name=path + '/DFTAdaptive',
+            T=T,
             )
         
         timestep_adaptive.append(time.time())
@@ -275,7 +280,6 @@ def adaptive_sampling(
             dict_mlps_training.append(dict_new_mlps)
 
     to_return = {
-        "dict_mlps_training": dict_mlps_training,
         "dict_flows_training": dict_flows_training,
         "mcmc_runs": mcmc_runs,
         "xs": xs,
@@ -285,5 +289,8 @@ def adaptive_sampling(
         "time_flow": timestep_flow,
         "time_adaptive": timestep_adaptive,
     }
+
+    if retrain_mlps:
+        to_return["dict_mlps_training"] = dict_mlps_training
 
     return to_return

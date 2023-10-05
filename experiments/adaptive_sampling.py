@@ -92,6 +92,7 @@ parser.add_argument('-bs', '--mlp-batch-size', type=int, default=500)
 parser.add_argument('-us', '--mlp-use-scheduler', type=bool, default=False)
 parser.add_argument('-ss', '--mlp-step-scheduler', type=int, default=100)
 # adaptive sampling params
+parser.add_argument('-T', '--temperature', type=float, default=350)
 parser.add_argument('-nruns', '--n-runs', type=int, default=5)
 parser.add_argument('-nchains', '--n-chains', type=int, default=5)
 parser.add_argument('-nsteps', '--n-steps', type=int, default=10)
@@ -160,15 +161,15 @@ else:
 if "mlp" in energy_type: 
     path_models = get_path() + '/' + args.folder_path + '/' + 'models'
 
-    #mlps_dic = [load_pickle_file("dict_mlp_model_is{:d}.pkl".format(
-    #                            isomer_labels[i]), 
-    #                            path=path_models) 
-    #                            for i in range(len(isomer_labels))]
-    
-    mlps_dic = [{'model': load_pickle_file("mlp_model_is{:d}.pkl".format(
+    mlps_dic = [load_pickle_file("dict_mlp_model_is{:d}.pkl".format(
                                 isomer_labels[i]), 
-                                path=path_models)}
+                                path=path_models) 
                                 for i in range(len(isomer_labels))]
+    
+    # mlps_dic = [{'model': load_pickle_file("mlp_model_is{:d}.pkl".format(
+    #                             isomer_labels[i]), 
+    #                             path=path_models)}
+    #                             for i in range(len(isomer_labels))]
 else:
 
     mlps_dic = [None for i in range(len(isomer_labels))]
@@ -280,6 +281,7 @@ out = adaptive_sampling(
     save_ratios = 1,
     retrain_mlps=args.retrain_mlps,
     frac_dft=args.frac_dft,
+    T=args.temperature,
     )
 
 date_end = np.array([0])
