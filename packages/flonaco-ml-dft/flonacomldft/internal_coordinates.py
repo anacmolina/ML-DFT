@@ -73,7 +73,7 @@ class Coordinates_mapping():
         self.symbols = symbols
         self.Natoms = len(self.symbols) 
         self.angles_mappings = Angles_mapping()
-        if etype == 'emt':
+        if 'emt' in etype:
             minima_name = 'emt_'
         else:
             minima_name = ''    
