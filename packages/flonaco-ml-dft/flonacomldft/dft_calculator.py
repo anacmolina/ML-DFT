@@ -66,7 +66,7 @@ class DFTCalculator:
         #with higher precision, takes longer (about 30 minutes in serial).                      
         #self.calculator = GPAW(mode = 'fd', h =0.18, xc = 'PBE', eigensolver = 'rmm-diis', spinpol = True, nbands=-4) 
 
-    def calculate_potential_energy(self, molecule, filename=None):
+    def calculate_potential_energy(self, atoms, filename=None):
         
         if self.calculator is None:
             self.initialize_calculator()
@@ -77,14 +77,14 @@ class DFTCalculator:
         self.calculator.set(txt=self.file)
 
         # Setting the cell parameters
-        molecule.set_cell(self.cell)
-        molecule.center()
-        molecule.set_pbc(True)
+        atoms.set_cell(self.cell)
+        atoms.center()
+        atoms.set_pbc(True)
         # print(self.calculator)
-        molecule.set_calculator(self.calculator)
+        atoms.set_calculator(self.calculator)
       
         # Calculating the potential energy
-        return molecule.get_potential_energy()
+        return atoms.get_potential_energy()
 
 
 class Thermostats:
