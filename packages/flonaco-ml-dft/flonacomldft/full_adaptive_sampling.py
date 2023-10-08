@@ -59,10 +59,10 @@ def adaptive_sampling(
 
     if retrain_mlps:
         if 'emt' in energy_type:
-            path = 'emt_andersen'
+            path_dataset = 'emt_andersen'
         else:
-            path = 'andersen'
-        xs_mlps_init = [ load_datasets(path, isomer_id=i, name='mlp', real_centered=True) for i in modes.detach().numpy()]
+            path_dataset = 'andersen'
+        xs_mlps_init = [ load_datasets(path_dataset, isomer_id=i, name='mlp', real_centered=True) for i in modes.detach().numpy()]
 
         xs_for_mlps_train = [ torch.cat((flow_init_train[i], xs_mlps_init[i]['train'])) for i in range(len(flow_init_train)) ]
         xs_for_mlps_test = [ torch.cat((flow_init_test[i], xs_mlps_init[i]['test'])) for i in range(len(flow_init_test)) ]
