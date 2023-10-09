@@ -17,7 +17,7 @@ date = set_str_date_to_int(time.strftime("%Y-%m-%d %H:%M:%S"))
 # define arguments to parse from command line
 parser = argparse.ArgumentParser(description="Prepare split dataset")
 parser.add_argument("-file", "--file", type=str)
-parser.add_argument("-isomer", "--isomer-label", type=int, default=0)
+parser.add_argument("-isomer", "--isomer-label", type=int,)
 parser.add_argument("-fm", "--for-model", type=str, default="flow")
 parser.add_argument("-ts", "--train-size", type=float, default=0.8)
 parser.add_argument("-ss", "--sk-seed", type=int, default=42)

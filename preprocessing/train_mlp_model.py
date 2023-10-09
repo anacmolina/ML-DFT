@@ -47,6 +47,7 @@ parser.add_argument('-path', '--folder-path', type=str, default='andersen/', hel
 # system parameters
 parser.add_argument('-isomer', '--isomer-label', type=int, default=0, help='Set isomer label')
 parser.add_argument('-etype', '--energy-type', type=str, default='dft', help='Set energy type')
+parser.add_argument('-T', '--temperature', type=float, default=350, help='Set temperature')
 # model parameters
 parser.add_argument('-ni', '--n-iter', type=int, default=10, help='Set number of iterations')
 parser.add_argument('-lr', '--learning-rate', type=float, default=1e-4, help='Set learning rate')
@@ -91,7 +92,8 @@ def get_dataset(name, path, isomer_label):
                                     zmats[:, :12],
                                     zmats[:, 14],
                                     isomer=isomer_label,
-                                    energies=zmats[:, 12]
+                                    energies=zmats[:, 12],
+                                    temperature=args.temperature,
                                     )
 
     xs = torch.cat((xs[0], xs[2].reshape(-1, 1), 

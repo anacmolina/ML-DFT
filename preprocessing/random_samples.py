@@ -26,11 +26,12 @@ parser = argparse.ArgumentParser(description='Prepare experiment')
 parser.add_argument('-threads', '--threads', type=int, default=None)
 parser.add_argument('-pid', '--process-id', type=int, default=None)
 parser.add_argument('-rs', '--random-seed', type=int, default=None)
-parser.add_argument('-path', '--folder-path', type=str, default='andersen')
+parser.add_argument('-path', '--folder-path', type=str,)
 # simulation params
-parser.add_argument('-isomer', '--isomer-label', type=int, default=0)
-parser.add_argument('-etype', '--energy-type', type=str, default='emt')
-parser.add_argument('-N', '--num-samples', type=int, default=5)
+parser.add_argument('-isomer', '--isomer-label', type=int,)
+parser.add_argument('-etype', '--energy-type', type=str,)
+parser.add_argument('-N', '--num-samples', type=int,)
+parser.add_argument('-T', '--temperature', type=float, default=350)
 # flow params
 parser.add_argument('-nb', '--n-blocks', type=int, default=4)
 parser.add_argument('-nodes', '--hidden-dim', type=int, default=64)
@@ -105,7 +106,11 @@ print('seed: ', args.random_seed, num_seed)
 print('date_start: ', args.date_start)
 
 
-xs = load_datasets(args.folder_path, args.isomer_label, name='flow', real_centered=True)
+xs = load_datasets(args.folder_path, 
+                   args.isomer_label, 
+                   name='flow', 
+                   real_centered=True, 
+                   temperature=args.temperature)
 xs =  torch.cat([xs['train'], xs['test']])
 
 cov = torch.cov(xs[:, :12].T).detach() + 1e-5 * torch.eye(xs[:, :12].shape[1]).detach()
@@ -128,7 +133,7 @@ molecules = []
 
 for i, x in enumerate(new_xs):
     
-    molecule, logdetjac = coord_mapping.build_molecule_from_real_centered(x[:12].reshape(1, -1).detach(), isomer=args.isomer_label)
+    molecule, logdetjac = coord_mapping.build_molecule_from_real_centered(x[:12].reshape(1, -1).detach(), isomer=args.isomer_label, temperature=args.temperature)
     
     calculator_input = {'atoms': molecule,}
     if args.energy_type == 'dft':
@@ -138,7 +143,7 @@ for i, x in enumerate(new_xs):
 
     molecules.append(molecule)
 
-    us_xs[i, 0] = coord_mapping.compute_energy_in_new_frame(u, logdetjac*(-1))
+    us_xs[i, 0] = coord_mapping.compute_energy_in_new_frame(u, logdetjac*(-1), temperature=args.temperature)
 
 new_xs = torch.cat([new_xs, us_xs], dim=1)
 

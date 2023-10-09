@@ -24,7 +24,7 @@ def run_metropolis(
     frac_dft=0.1,
     mlp_models=None,
     mixture=False,
-    T=300,
+    T=350,
     with_tqdm=False,
     return_ratio = False,
     return_proposals = False,
@@ -203,7 +203,7 @@ def run_metropolis(
                         #molecule, 
                         #filename='ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
                                             )
-                    u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
+                    u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1), temperature=T)
                     #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
 
                     xs_dft.append(x_new[i])

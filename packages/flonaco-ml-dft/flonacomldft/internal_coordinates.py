@@ -334,11 +334,11 @@ class Coordinates_mapping():
         
         return xyz, logdetjac
 
-    def compute_energy_in_new_frame(self, energy, logdetjac, temperature=300):
+    def compute_energy_in_new_frame(self, energy, logdetjac, temperature=350):
         return energy - (self.kB * temperature) * logdetjac
 
     def get_internal_from_molecule(self, molecule, return_potential_energy=False,
-                                temperature=300, requires_grad=False):
+                                temperature=350, requires_grad=False):
         """"
         Computes the internal coordinate tensor from a molecule and a construction table.
         If return_logdetjac is True, the logdetjac is also computed.
@@ -448,7 +448,7 @@ class Coordinates_mapping():
         return xyz_rebuilt.get_ase_atoms()
     
     def get_real_centered_from_internal(self, zmats, logdetjacs=None, isomer=None, 
-                                        temperature=300, energies=None):
+                                        temperature=350, energies=None):
         """    
         Centers the internal coordinates and takes in real space from raw zmat
 
@@ -478,7 +478,7 @@ class Coordinates_mapping():
 
     #TODO: Fix bug, you need the isomer
     def get_internal_from_real_centered(self, reals, logdetjacs=None, isomer=None, 
-                                        temperature=300, energies=None):
+                                        temperature=350, energies=None):
         
         if logdetjacs is None:
             logdetjacs = 0
@@ -494,9 +494,9 @@ class Coordinates_mapping():
 
         return zmats, logdetjacs
     
-    def build_molecule_from_real_centered(self, x, isomer):
+    def build_molecule_from_real_centered(self, x, isomer, temperature=350):
 
-        zmat, logdetjac = self.get_internal_from_real_centered(x, isomer=isomer)
+        zmat, logdetjac = self.get_internal_from_real_centered(x, isomer=isomer, temperature=temperature)
         #print(zmat.shape, zmat)
         xyz, logdetjac = self.get_cartesian_from_internal(zmat[0], logdetjac)
         molecule = self._build_molecule_from_xyz(xyz)
@@ -541,15 +541,7 @@ class Coordinates_mapping():
         if len(x.shape) == 1:
             x = x.reshape(1, -1)
 
-        zmat, logdetjac = self.get_internal_from_real_centered(x, isomer=isomer)
-
-        # cvs = []
-        # 
-        # for xi in x:
-        #     xi = xi.reshape(1, -1)
-        #     molecule, logdetjac = self.build_molecule_from_real_centered(xi, isomer)
-        #     cv = get_collective_variables(molecule)
-        #     cvs.append(torch.tensor(cv))       
+        zmat, logdetjac = self.get_internal_from_real_centered(x, isomer=isomer)     
                 
         return self.get_collective_variables_from_zmat(zmat)
     

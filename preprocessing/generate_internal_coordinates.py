@@ -12,9 +12,10 @@ from flonacomldft.utils.io_utils import get_path
 
 # define arguments argparser
 parser = argparse.ArgumentParser(description='Prepare dataset')
-parser.add_argument('-file', '--file', type=str)
-parser.add_argument('-isomer', '--isomer-label', type=int, default=0)
-parser.add_argument('-etype', '--energy-type', type=str, default='dft')
+parser.add_argument('-file', '--file', type=str,)
+parser.add_argument('-isomer', '--isomer-label', type=int,)
+parser.add_argument('-etype', '--energy-type', type=str,)
+parser.add_argument('-T', '--temperature', type=int, default=350)
 parser.add_argument('-N', '--num-samples', type=int, default=None)
 parser.add_argument('-low', '--low-index', type=int, default=0)
 
@@ -29,7 +30,7 @@ traj = Trajectory(input_file)[args.low_index:]
 
 # compute internal coordinates
 coord_mapping = Coordinates_mapping(etype=args.energy_type)
-zmats = coord_mapping.get_internal_from_trajectory(traj, isomer=isomer_label, temperature=300, max_samples=N).detach()
+zmats = coord_mapping.get_internal_from_trajectory(traj, isomer=isomer_label, temperature=args.temperature, max_samples=N).detach()
 
 if isomer_label == 0:
     zmats[:, 11][zmats[:, 11]>0] = zmats[:, 11][zmats[:, 11]>0].apply_(add_phase)

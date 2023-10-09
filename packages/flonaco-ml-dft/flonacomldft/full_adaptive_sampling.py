@@ -39,7 +39,7 @@ def adaptive_sampling(
         dim=12,
         energy_type='mlp',
         mixture=False,
-        T=300,
+        T=350,
         reweighting=False,
         weights=None,
         path=None,
@@ -252,9 +252,20 @@ def adaptive_sampling(
                 mask_mlp = configs_dft_flatten[:, -1] == modes[mode]
                 print('mask_mlp: ', mask_mlp)
 
-                xs_for_mlps_train[mode] = torch.cat((xs_for_mlps_train[mode], configs_dft_flatten[mask_mlp]))
-                xs_for_mlps_test[mode] = torch.cat((xs_for_mlps_test[mode], configs_dft_flatten[mask_mlp]))
+                print('shape configs_dft_flatten: ', configs_dft_flatten[mask_mlp].shape)
 
+                indexes = torch.randperm(configs_dft_flatten[mask_mlp].shape[0])
+
+                split_ratio = 0.8  # You can adjust this ratio as needed
+                split_index = int(configs_dft_flatten[mask_mlp].shape[0] * split_ratio)
+                configs_dft_flatten_train = configs_dft_flatten[mask_mlp][indexes[:split_index]]
+                configs_dft_flatten_test = configs_dft_flatten[mask_mlp][indexes[split_index:]]
+
+                print('shape configs_dft_flatten_train: ', configs_dft_flatten_train.shape)
+                print('shape configs_dft_flatten_test: ', configs_dft_flatten_test.shape)
+
+                xs_for_mlps_train[mode] = torch.cat((xs_for_mlps_train[mode], configs_dft_flatten_train))
+                xs_for_mlps_test[mode] = torch.cat((xs_for_mlps_test[mode], configs_dft_flatten_test))
 
                 print('retrain mlp: ', mode)
                 print('shape xs_for_mlps_train: ', xs_for_mlps_train[mode].shape)
@@ -267,8 +278,6 @@ def adaptive_sampling(
 
 
                 dict_new_mlps.append(mlp_train)
-
-
 
         else:
             dict_new_flow = dict_flows_training[i][mode]
