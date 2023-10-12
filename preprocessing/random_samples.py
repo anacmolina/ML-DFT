@@ -159,9 +159,9 @@ new_zmat = torch.cat([new_zmat,
                       logdetjac_zmat.reshape(-1, 1),
                       CV], dim=1)
 
-save_ase_molecules_as_traj(molecules, 'is{:d}_emt_mlp.traj'.format(args.isomer_label))
+save_ase_molecules_as_traj(molecules, 'is{:d}_{:s}_mlp.traj'.format(args.isomer_label, args.energy_type))
 
 save_internal_coordinates_to_csv(new_zmat,
             get_construction_table(),
             add_cvs=True,
-            filename='is{:d}_emt_mlp.csv'.format(args.isomer_label))
+            filename='is{:d}_{:s}_mlp.csv'.format(args.isomer_label, args.energy_type))
