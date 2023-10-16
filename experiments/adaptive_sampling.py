@@ -99,6 +99,7 @@ parser.add_argument('-nsteps', '--n-steps', type=int, default=10)
 parser.add_argument('-etype', '--energy-type', type=str, default='emt')
 parser.add_argument('-frac', '--frac-dft', type=float, default=0.5)
 parser.add_argument('-rmlp', '--retrain-mlps', type=bool, default=False)
+parser.add_argument('-load', '--load-models', type=bool, default=False)
 
 
 args = parser.parse_args()
@@ -187,41 +188,57 @@ if rank == 0:
 
 mpi.world.barrier()
 
-#set covariance matrix for flows
+if args.load_models==False:
 
-cov = [torch.cov(flow_xs_train[i][:, :12].T).detach() + 1e-5 * torch.eye(flow_xs_train[i][:, :12].shape[1]).detach() for i in range(len(isomer_labels))]
-#torch.cov(xs_train.T).detach() + 1e-5 * torch.eye(xs_train.shape[1]).detach()
+    #set covariance matrix for flows
 
-models = [RealNVP_MLP(dim=flow_xs_train[i][:, :12].shape[1],
-                    n_blocks=args.n_blocks,
-                    block_depth=1,
-                    init_weight_scale=1e-3,
-                    base_cov=cov[i],
-                    hidden_dim=args.hidden_dim,
-                    hidden_depth=args.hidden_depth,
-                    device=device,
-                    )
-                    for i in range(len(isomer_labels))]
+    cov = [torch.cov(flow_xs_train[i][:, :12].T).detach() + 1e-5 * torch.eye(flow_xs_train[i][:, :12].shape[1]).detach() for i in range(len(isomer_labels))]
+    #torch.cov(xs_train.T).detach() + 1e-5 * torch.eye(xs_train.shape[1]).detach()
 
-# training flow model
-flows_dic = [train_flow(
-    model,
-    train,
-    test,
-    n_iter=args.flow_n_iter,
-    lr=args.flow_learning_rate,
-    batch_size=args.flow_batch_size,
-    use_scheduler=False,
-    step_schedule=args.flow_step_scheduler,
-    save_splits=10,
-    grad_clip=1e4,
-    with_tqdm=False,
-    compute_part_ratio=args.do_ratios,
-    energy_type=args.energy_type,
-    n_prop=args.n_prop,
-    path=path_to_save_results,
-    mlp_model=mlps_dic[i],
-) for model, train, test in zip(models, flow_xs_train, flow_xs_test)]
+    models = [RealNVP_MLP(dim=flow_xs_train[i][:, :12].shape[1],
+                        n_blocks=args.n_blocks,
+                        block_depth=1,
+                        init_weight_scale=1e-3,
+                        base_cov=cov[i],
+                        hidden_dim=args.hidden_dim,
+                        hidden_depth=args.hidden_depth,
+                        device=device,
+                        )
+                        for i in range(len(isomer_labels))]
+
+    # training flow model
+    flows_dic = [train_flow(
+        model,
+        train,
+        test,
+        n_iter=args.flow_n_iter,
+        lr=args.flow_learning_rate,
+        batch_size=args.flow_batch_size,
+        use_scheduler=False,
+        step_schedule=args.flow_step_scheduler,
+        save_splits=10,
+        grad_clip=1e4,
+        with_tqdm=False,
+        compute_part_ratio=args.do_ratios,
+        energy_type=args.energy_type,
+        n_prop=args.n_prop,
+        path=path_to_save_results,
+        mlp_model=mlps_dic[i],
+    ) for model, train, test in zip(models, flow_xs_train, flow_xs_test)]
+
+else:
+
+    if 'mlp' in args.energy_type:
+        add_mlp = '_mlp'
+    else:
+        add_mlp = ''
+
+    path_models = get_path() + '/' + args.folder_path + '/' + 'models'
+
+    flows_dic = [load_pickle_file("dict_flow_model_is{:d}{:s}.pkl".format(
+                                isomer_labels[i], add_mlp), 
+                                path=path_models) 
+                                for i in range(len(isomer_labels))]
 
 # retraining hyperparameters
 flow_hyperparams = {'n_iter': args.flow_n_iter,

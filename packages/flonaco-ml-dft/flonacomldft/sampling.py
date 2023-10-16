@@ -189,30 +189,30 @@ def run_metropolis(
             # TODO: type of isomer_dft
             for i,flag_dft in enumerate(ind_dft):
                 if flag_dft:
-                    #try: # Avoid try if possible
+                    try: # Avoid try if possible
                             
-                    molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer=int(isomer_new[i].item()))
-                    input_calculator = {
-                        'atoms': molecule,
-                    }
+                        molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer=int(isomer_new[i].item()))
+                        input_calculator = {
+                            'atoms': molecule,
+                        }
+    
+                        if "dft" in energy_type:
+                            input_calculator['filename'] = 'ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
+    
+                        u_ = calculator.calculate_potential_energy(**input_calculator
+                            #molecule, 
+                            #filename='ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
+                                                )
+                        u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1), temperature=T)
+                        #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
+    
+                        xs_dft.append(x_new[i])
+                        us_dft.append(u_new[i])
+                        isomers_dft.append(isomer_new[i])
 
-                    if "dft" in energy_type:
-                        input_calculator['filename'] = 'ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
-
-                    u_ = calculator.calculate_potential_energy(**input_calculator
-                        #molecule, 
-                        #filename='ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
-                                            )
-                    u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1), temperature=T)
-                    #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
-
-                    xs_dft.append(x_new[i])
-                    us_dft.append(u_new[i])
-                    isomers_dft.append(isomer_new[i])
-
-                    #except:
-                    #    u_new[i] = 0.
-                    #    ind_not_computed[i] = 1
+                    except:
+                        u_new[i] = 0.
+                        ind_not_computed[i] = 1
 
         #if "emt" in energy_type:
 #
