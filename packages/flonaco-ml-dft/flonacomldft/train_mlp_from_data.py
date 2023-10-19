@@ -125,8 +125,8 @@ def train_mlp(
 
     to_return = {
         "model": model,
-        "train_loss": losses_train,
-        "test_loss": losses_test,
+        "train_loss": torch.tensor(losses_train),
+        "test_loss": torch.tensor(losses_test),
         "models": models,
         "grad_norms": grad_norms,
     }

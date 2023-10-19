@@ -22,7 +22,7 @@ def split_data_from_dataframe(dataset, train_size, sk_seed):
     return tuple(dataset_splitted)
 
 #TODO: Change flow by a parameter in the function
-def load_datasets(md, isomer_id, name, real_centered=True, temperature=350):
+def load_datasets(md, isomer_id, name, real_centered=True, temperature=350, dtype=torch.float32, device='cpu'):
     
     zmats = {data_type: load_csv_file('is{:d}_{:s}_{:s}.csv'.format(isomer_id, name, data_type),
                                       get_path() + '/{:s}/datasets'.format(md))
@@ -39,7 +39,7 @@ def load_datasets(md, isomer_id, name, real_centered=True, temperature=350):
     
         xs = {data_type: coord_mapping.get_real_centered_from_internal(
                                     zmats[data_type][:, :12],
-                                    zmats[data_type][:, 14],
+                                    #zmats[data_type][:, 14],
                                     isomer=isomer_id,
                                     energies=zmats[data_type][:, 12],
                                     temperature=temperature
@@ -47,6 +47,6 @@ def load_datasets(md, isomer_id, name, real_centered=True, temperature=350):
         
         xs = {data_type: torch.cat((xs[data_type][0], xs[data_type][2].reshape(-1, 1), 
                                  zmats[data_type][:, 13].reshape(-1, 1), 
-                                 ), dim=1) for data_type in ['train', 'test']}    
+                                 ), dim=1).to(device=device, dtype=dtype) for data_type in ['train', 'test']}    
     return xs
 

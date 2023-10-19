@@ -142,6 +142,7 @@ for isomer_label in isomer_labels:
 
     del dataset
 
+print(flow_xs_train, flow_xs_test)
 
 for i in range(len(isomer_labels)):
     print('flow_xs_train.shape: ', flow_xs_train[i].shape, isomer_labels[i], rank)
@@ -299,6 +300,7 @@ out = adaptive_sampling(
     retrain_mlps=args.retrain_mlps,
     frac_dft=args.frac_dft,
     T=args.temperature,
+    reweighting=True,
     )
 
 date_end = np.array([0])

@@ -135,6 +135,8 @@ def adaptive_sampling(
             dim=dim,
             dft_folder_name=path + '/DFTAdaptive',
             T=T,
+            update_weigth=True,
+            alpha = 0.5,
             )
         
         timestep_adaptive.append(time.time())

@@ -73,6 +73,7 @@ parser.add_argument('-isomer', '--isomer-label', type=int, nargs='+', default=[0
 parser.add_argument('-nchains', '--n-chains', type=int, default=5, help='Number of chains')
 parser.add_argument('-nsteps', '--n-steps', type=int, default=10, help='Number of steps')
 parser.add_argument('-etype', '--energy-type', type=str, default='dft', help='Energy type')
+parser.add_argument('-T', '--temperature', type=float, default=350, help='Temperature')
 
 args = parser.parse_args()
 args.date_start = date_start
@@ -133,10 +134,17 @@ for i in range(len(isomer_labels)):
 # load models
 
 # path to models
+
+if 'mlp' in args.energy_type:
+        add_mlp = '_mlp'
+else:
+    add_mlp = ''
+
 path_models = get_path() + '/' + args.folder_path + '/' + 'models'
 
-flow_models = [load_pickle_file('flow_model_is{:d}.pkl'.format(isomer_label), path_models) for isomer_label in isomer_labels]
-
+flow_models = [load_pickle_file("dict_flow_model_is{:d}{:s}.pkl".format(
+                                isomer_labels[i], add_mlp), 
+                                path=path_models)['model'] for i in range(len(isomer_labels)) ]
 # initizalize mcmc chains
 xs_init = torch.cat(flow_xs_test).clone()
 xs_init = xs_init[torch.randperm(xs_init.shape[0])]
@@ -182,7 +190,7 @@ mh = run_metropolis(
     id_run=0,
     energy_type=energy_type,
     mixture=mixture,
-    T=300,
+    T=args.temperature,
     frac_dft=0.0,
     with_tqdm=False,
     return_ratio=False,
