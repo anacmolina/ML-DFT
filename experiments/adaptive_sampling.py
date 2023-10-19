@@ -280,6 +280,9 @@ print('init_mcmc: ', init_mcmc, rank)
 if rank == 0:
     time_init = time.time()
 
+if len(isomer_labels) > 1:
+    mixture = True
+
 mpi.world.barrier()
 # run adaptive sampling
 # TODO: include results folder and filename argument for mcmc
@@ -301,6 +304,7 @@ out = adaptive_sampling(
     frac_dft=args.frac_dft,
     T=args.temperature,
     reweighting=True,
+    mixture=mixture,
     )
 
 date_end = np.array([0])

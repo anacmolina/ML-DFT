@@ -11,6 +11,8 @@ import tqdm
 #from ase.parallel import parprint as print
 from ase.units import kB
 
+from ase.parallel import parprint as print
+
 #kb = 8.617333262e-5
 
 def run_metropolis(
@@ -259,8 +261,12 @@ def run_metropolis(
         x_new[~acc] = x_init[~acc]
         u_new[~acc] = u_init[~acc]
 
+        print('mixtue: ', mixture)
+
         if mixture:
+            print('sampling new - old', isomer_new, isomer_init)
             isomer_new[~acc] = isomer_init[~acc]
+            print('sampling new', isomer_new)
         else:
             isomer_new = isomer_init
 
@@ -304,6 +310,8 @@ def run_metropolis(
                 print("updated weights: ", model.weights)
 
             weights.append(model.weights.clone().float().detach())
+
+    print(isomer_init)
 
     #TODO: Check if this is necessary
 

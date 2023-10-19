@@ -148,6 +148,8 @@ def adaptive_sampling(
         accs.append(mcmc_run["accs"])
         isomers.append(mcmc_run["isomers"])
 
+        print('full sampling', mcmc_run["isomers"])
+
         init = join_data(xs[i][-1].clone(), us[i][-1].clone(), isomers[i][-1].clone())
 
         #TODO: Chech size of xs_for_flows_train, if rewriting first and last element in the list
