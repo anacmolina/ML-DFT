@@ -142,9 +142,14 @@ else:
 
 path_models = get_path() + '/' + args.folder_path + '/' + 'models'
 
-flow_models = [load_pickle_file("dict_flow_model_is{:d}{:s}.pkl".format(
-                                isomer_labels[i], add_mlp), 
+#flow_models = [load_pickle_file("dict_flow_model_is{:d}{:s}.pkl".format(
+#                                isomer_labels[i], add_mlp), 
+#                                path=path_models)['model'] for i in range(len(isomer_labels)) ]
+
+flow_models = [load_pickle_file("dict_flow_model_is{:d}.pkl".format(
+                                isomer_labels[i]), 
                                 path=path_models)['model'] for i in range(len(isomer_labels)) ]
+
 # initizalize mcmc chains
 xs_init = torch.cat(flow_xs_test).clone()
 xs_init = xs_init[torch.randperm(xs_init.shape[0])]
@@ -163,9 +168,9 @@ else:
 if "mlp" in energy_type: 
     path_models = get_path() + '/' + args.folder_path + '/' + 'models'
 
-    mlps_dic = [load_pickle_file("mlp_model_is{:d}.pkl".format(
+    mlps_dic = [load_pickle_file("dict_mlp_model_is{:d}_adaptive.pkl".format(
                                 isomer_labels[i]), 
-                                path=path_models) 
+                                path=path_models)['model'] 
                                 for i in range(len(isomer_labels))]
 else:
     mlps_dic = None
