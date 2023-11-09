@@ -4,6 +4,7 @@ from scipy.optimize import root_scalar
 import warnings
 
 
+
 def compute_TFP(n_prop, target_log_prob, prop):
     r"""
     Compute the Importance Sampling estimator of the log partition of the target 
@@ -33,6 +34,11 @@ def compute_TFP(n_prop, target_log_prob, prop):
     logprob_target = target_log_prob(xs_prop).detach().numpy().squeeze() 
     # squeezing because the mlp are returning a 2d tensor with a size 1 extra column
 
+    return compute_TFP_from_samples(logprob_prop, logprob_target)
+
+
+def compute_TFP_from_samples(logprob_prop, logprob_target):
+    n_prop = logprob_prop.shape[0]
     logr_per_sample = logprob_target - logprob_prop
     logr = - logsumexp(logr_per_sample) + np.log(n_prop)
 
@@ -110,13 +116,20 @@ def compute_BAR(xs, target_log_prob, prop, n_prop=None,
 
     xs = xs[:thin]
 
-    n_mcmc = len(xs)
-    n_prop = len(xs_prop)
-
     logprop_prop = - prop.nll(xs_prop).detach().numpy() 
     logprop_mc = - prop.nll(xs).detach().numpy() 
     logtgt_prop = target_log_prob(xs_prop).detach().numpy()
     logtgt_mc = target_log_prob(xs).detach().numpy()
+    
+    return compute_BAR_from_samples(logprop_prop, logprop_mc, logtgt_prop, logtgt_mc,
+                                    maxiter=maxiter, rtol=rtol, xtol=xtol, ess=ess)
+
+
+def compute_BAR_from_samples(logprop_prop, logprop_mc, logtgt_prop, logtgt_mc, 
+                             maxiter=2000, rtol=1e-13, xtol=1e-13, ess=1):
+    n_mcmc = logprop_mc.shape[0]
+    n_prop = logprop_prop.shape[0]
+
     if len(logtgt_prop.shape) > 1:
         logtgt_prop = logtgt_prop[:, 0] 
         logtgt_mc = logtgt_mc[:, 0]
@@ -148,6 +161,9 @@ def compute_BAR(xs, target_log_prob, prop, n_prop=None,
     logr_err = (re2_p + re2_q)**0.5
 
     return - logr, logr_err
+
+
+
 
 
 def compute_deepBAR_logratio(xs, cs, target_log_prob, mix_prop, n_prop=None):
