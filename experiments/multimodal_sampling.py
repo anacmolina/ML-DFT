@@ -74,6 +74,7 @@ parser.add_argument('-nchains', '--n-chains', type=int, default=5, help='Number 
 parser.add_argument('-nsteps', '--n-steps', type=int, default=10, help='Number of steps')
 parser.add_argument('-etype', '--energy-type', type=str, default='dft', help='Energy type')
 parser.add_argument('-T', '--temperature', type=float, default=350, help='Temperature')
+parser.add_argument('-lmlpf', '--load-mlp-flow', type=bool, default=False, help='Load mlp flow model')
 
 args = parser.parse_args()
 args.date_start = date_start
@@ -135,20 +136,20 @@ for i in range(len(isomer_labels)):
 
 # path to models
 
-if 'mlp' in args.energy_type:
+if args.load_mlp_flow:
         add_mlp = '_mlp'
 else:
     add_mlp = ''
 
 path_models = get_path() + '/' + args.folder_path + '/' + 'models'
 
-#flow_models = [load_pickle_file("dict_flow_model_is{:d}{:s}.pkl".format(
-#                                isomer_labels[i], add_mlp), 
-#                                path=path_models)['model'] for i in range(len(isomer_labels)) ]
-
-flow_models = [load_pickle_file("dict_flow_model_is{:d}.pkl".format(
-                                isomer_labels[i]), 
+flow_models = [load_pickle_file("dict_flow_model_is{:d}{:s}.pkl".format(
+                                isomer_labels[i], add_mlp), 
                                 path=path_models)['model'] for i in range(len(isomer_labels)) ]
+
+#flow_models = [load_pickle_file("dict_flow_model_is{:d}.pkl".format(
+#                                isomer_labels[i]), 
+#                                path=path_models)['model'] for i in range(len(isomer_labels)) ]
 
 # initizalize mcmc chains
 xs_init = torch.cat(flow_xs_test).clone()
@@ -196,14 +197,14 @@ mh = run_metropolis(
     energy_type=energy_type,
     mixture=mixture,
     T=args.temperature,
-    frac_dft=0.0,
+    frac_dft=0.2,
     with_tqdm=False,
     return_ratio=False,
     return_proposals=False,
     dft_folder_name=path_to_save_results + '/' + 'DFTComputations_{:d}'.format(args.process_id),
     scheduler=5,
     update_weigth=True,
-    alpha = 0.5,
+    alpha = 0.1,
     mlp_models=mlps_dic,
 )
 

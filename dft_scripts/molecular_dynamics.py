@@ -135,10 +135,10 @@ MaxwellBoltzmannDistribution(molecule, temperature_K=TEMPERATURE)
 Stationary(molecule)  # zero linear momentum
 ZeroRotation(molecule)  # zero angular momentum
  
-# p = molecule.get_momenta()
-# psum = p.sum(axis=0)/float(len(p))
-# p = p - psum
-# molecule.set_momenta(p)
+p = molecule.get_momenta()
+psum = p.sum(axis=0)/float(len(p))
+p = p - psum
+molecule.set_momenta(p)
 
 filename = str(args.process_id) + '_' + MD_PARAMS['thermostat'] + '_' + MOLECULE + '.traj'
 

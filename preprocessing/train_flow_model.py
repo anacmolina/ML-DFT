@@ -161,8 +161,8 @@ from flonacomldft.utils.plots import set_plot_sequential_data as set_plot_iterat
 
 fig, ax = plt.subplots(1, 1, figsize=(12, 4))
 ax.set_title("ml: {:d}, nb: {:d}, hdm: {:d}, hdp: {:d}".format(args.isomer_label, args.n_blocks, args.hidden_dim, args.hidden_depth))
-set_plot_iteration(flow_dic['losses'][0], avg=False, ax=ax, alpha=1, label='train')
-set_plot_iteration(flow_dic['losses'][1], avg=False, ax=ax, alpha=1, label='test')
+set_plot_iteration(flow_dic['losses'][0], avg=False, ax=ax, alpha=1, label='train', color='blue')
+set_plot_iteration(flow_dic['losses'][1], avg=False, ax=ax, alpha=1, label='test', color='orange')
 ax.legend()
 ax.set_xlabel('Iterations')
 ax.set_ylabel('Loss')

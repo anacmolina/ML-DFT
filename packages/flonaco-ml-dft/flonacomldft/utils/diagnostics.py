@@ -50,7 +50,7 @@ def get_acceptance_ratio(init, flow_model, n_chains=5, n_steps=10, id_run=None, 
 # TODO: Return energies to plot histograms of proposals    
 class Target_Log_Prob:
     """Class to compute the target log probability of a model"""
-    def __init__(self, energy_type, mode_label=None, mlp_model=None, T=300, kB=kB, folder=None):#kB=8.617333262e-5):
+    def __init__(self, energy_type, mode_label=None, mlp_model=None, T=350, kB=kB, folder=None):#kB=8.617333262e-5):
         """Initialize the class
         Args:
             energy_type (str): type of energy to use (dft, mlp, dft+mlp)
