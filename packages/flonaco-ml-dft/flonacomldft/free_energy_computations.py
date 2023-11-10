@@ -43,8 +43,9 @@ def compute_TFP_from_samples(logprob_prop, logprob_target):
     logr = - logsumexp(logr_per_sample) + np.log(n_prop)
 
     # TODO: rewrite with logsumexp - no log?
-    err = np.sqrt(np.var(np.exp(logr_per_sample)) / np.exp(2 * logr)  / n_prop)
-    logr_err =  np.log(err)
+    # err = np.sqrt(np.var(np.exp(logr_per_sample)) / np.exp(2 * logr)  / n_prop)
+    # logr_err =  np.log(err)
+    logr_err = 0
 
     return logr, logr_err
 
