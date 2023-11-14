@@ -1,76 +1,95 @@
-#import warnings
-#warnings.filterwarnings("ignore")
+import warnings
+warnings.filterwarnings("ignore")
 
+# standard library imports
 import os
-import argparse
 import time
+import argparse
 
+# scientific library imports
 import torch
 import numpy as np
 
+# parallelization set up
+import gpaw.mpi as mpi
+from ase.parallel import parprint as print
+
+# flonaco imports
+# io handling
 from flonacomldft.utils.io_utils import (
+    get_path,
     load_pickle_file,
     load_csv_file,
     save_pickle_file, 
-    get_project_path,
-    save_json_args
+    save_json_args,
+    set_str_date_to_int
 )
-
+# sampling 
 from flonacomldft.sampling import run_metropolis
 from flonacomldft.models.mixture import Mixture
 from flonacomldft.internal_coordinates import Coordinates_mapping
 
-#from flonacomldft.parallel import set_seed
-from flonacomldft.utils.io_utils import get_process_id
+ranks = np.arange(0, mpi.world.size)
+rank = mpi.rank
+comm = mpi.world.new_communicator(ranks)
 
-#import gpaw.mpi as mpi
+num_seed = np.array([0])
+date_start = np.array([0])
 
-num_seed = [42] #set_seed()
-torch.manual_seed(num_seed[0])
-#mpi.world.barrier()
+if rank == 0:
+    num_seed = np.random.randint(0, 100, (1,))
+    date_start = np.array([set_str_date_to_int(time.strftime('%Y-%m-%d %H:%M:%S'))])
 
-# for naming files
-date_start = time.strftime('%Y-%m-%d %H:%M:%S')
-process_id = get_process_id(date_start)
+mpi.world.barrier()
 
-print('seed: ', num_seed)
+comm.broadcast(num_seed, 0)
+comm.broadcast(date_start, 0)
 
-### Define arguments to parse from command line
+num_seed = num_seed[0]
+date_start = date_start[0]
+
+print('seed: ', num_seed, rank)
+print('date_start: ', date_start, rank)
+
+# define arguments to parse from command line
 parser = argparse.ArgumentParser(description='Prepare experiment')
-parser.add_argument('-np', '--num-procs', type=int, default=1)
-parser.add_argument('-ml', '--mode-label', type=int, nargs='+', default=0)
-parser.add_argument('-ids', '--ids', type=int, nargs='+', default=[None, None])
-parser.add_argument('-rs', '--random-seed', type=str, default=str(num_seed))
-parser.add_argument('-path', '--folder-path', type=str, default='database/')
-parser.add_argument('-pid', '--process-id', type=int, default=int(process_id))
-parser.add_argument('-ncs', '--n-chains-steps', type=int, nargs='+', default=[50, 100] )
-parser.add_argument('-etype', '--energy-type', type=str, default='mlp')
+# execution params
+parser.add_argument('-np', '--num-procs', type=int, default=len(ranks))
+parser.add_argument('-pid', '--process-id', type=int, default=date_start)
+parser.add_argument('-rs', '--random-seed', type=int, default=num_seed)
+parser.add_argument('-path', '--folder-path', type=str, default='andersen/')
+# sampling params
+parser.add_argument('-isomer', '--mode-label', type=int, nargs='+', default=[0])
+parser.add_argument('-ids', '--ids', type=int, nargs='+', default=[None]) # Ideally this should load not be here, but its for identifying flow models
+parser.add_argument('-nchains', '--n-chains', type=int, default=5)
+parser.add_argument('-nsteps', '--n-steps', type=int, default=10)
+parser.add_argument('-etype', '--energy-type', type=str, default='dft')
 
 args = parser.parse_args()
+args.date_start = str(date_start)
 
-args.date_start = date_start
-
+# torch settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-#torch.set_num_threads(args.num_procs)
-print('n_thread_set: ', args.num_procs)
+if len(ranks) > 1:
+    torch.set_num_threads(int(args.num_procs))
+    torch.manual_seed(args.random_seed)
 
-
-print(args)
-
+# isomer labels
 mode_labels = args.mode_label
 ids = args.ids
 
 # mcmc chains parameters
 
-n_chains,n_steps = args.n_chains_steps
+n_chains = args.n_chains
+n_steps = args.n_steps
 energy_type = args.energy_type
 
+path_datasets = get_path() + '/' + args.folder_path
+
+# real center coordinates
 coord_mapping = Coordinates_mapping()
-
-# load data
-
-zmats_test = [load_csv_file(args.folder_path + "is{:d}_md_test.csv".format(mode_label)) for mode_label in mode_labels] 
+zmats_test = [load_csv_file("datasets/is{:d}_flow_test.csv".format(mode_label), path=path_datasets) for mode_label in mode_labels] 
 
 xs = [coord_mapping.get_real_centered_from_internal(
                                     zmat_test[:, :12],
@@ -79,74 +98,107 @@ xs = [coord_mapping.get_real_centered_from_internal(
                                     energies=zmat_test[:, 12]
                                     ) for mode_label, zmat_test in zip(mode_labels, zmats_test)]
 
-xs = torch.stack([torch.cat((x[0], x[1].reshape(-1, 1), x[2].reshape(-1, 1), zmat_test[:, 14].reshape(-1, 1)), dim=1) for x, zmat_test in zip(xs, zmats_test)])
+# join real center coordinates, energies, and logdetjacs in a single tensor
+xs = torch.stack([torch.cat((x[0], x[2].reshape(-1, 1), zmat_test[:, 13].reshape(-1, 1), x[1].reshape(-1, 1)), dim=1) for x, zmat_test in zip(xs, zmats_test)])
 xs = xs.flatten(start_dim=0, end_dim=1).to(torch.float32)
 
 # configs to initialize the chains
-
 xs = xs[torch.randperm(xs.size()[0])]
 xs = xs[:n_chains]
 
-# mlp models
-
-mlps_dic = [load_pickle_file(args.folder_path + 'is{:d}_mlp_dic_training_{:d}.pkl'.format(mode_label, id_)) for mode_label, id_ in zip(mode_labels, ids[:len(mode_labels)]) ]
-mlp_models = np.array([mlp_dic['model'] for mlp_dic in mlps_dic])
-
-print('# models: ', len(mlp_models))
-
-# flow models
-
-flows_dic = [load_pickle_file(args.folder_path + 'is{:d}_flow_dic_training_{:d}.pkl'.format(mode_label, id_)) for mode_label, id_ in zip(mode_labels, ids[len(mode_labels):]) ]
+# load flow models
+flows_dic = [load_pickle_file('models/is{:d}_flow_dic_training_{:d}.pkl'.format(mode_label, id_), path=path_datasets) for mode_label, id_ in zip(mode_labels, ids[:len(mode_labels)])]
 flow_models = np.array([flow_dic['model'] for flow_dic in flows_dic])
 
+print('# flow models: ', len(flows_dic))
+
+# load mlp models
+if args.energy_type == 'mlp':
+    mlps_dic = [load_pickle_file('models/is{:d}_mlp_dic_training_{:d}.pkl'.format(mode_label, id_), path=path_datasets) for mode_label, id_ in zip(mode_labels, ids[:len(mode_labels)]) ]
+    mlp_models = np.array([mlp_dic['model'] for mlp_dic in mlps_dic])
+    print('# mlp models: ', len(mlp_models))
+else:
+    mlp_models = None
+
+# whether to use a mixture of flows
 if len(mode_labels)==1:
     mixture = False
     flow_model = flow_models[0]
-    mlp_models = mlp_models[0]
+
+    if "mlp" in energy_type: 
+        mlp_models = mlp_models[0]
 else:
     flow_model = Mixture(flow_models, torch.tensor([0.5, 0.5]).detach())
     mixture = True
 
-# initialize metropolis simulation
-# run mcmc
+if mixture:
+    simulation_name = "mixture"
+else:
+    simulation_name = "is{:d}".format(mode_labels[0])
 
-out = run_metropolis(
+# path to save results
+folder_to_save_results = 'results_metropolis_{:s}_{:d}'.format(simulation_name, args.process_id)
+path_to_save_results = os.getcwd() + '/' + folder_to_save_results
+if rank == 0:
+    if not os.path.exists(path_to_save_results):
+        os.makedirs(path_to_save_results)
+
+mpi.world.barrier()
+
+# initialize metropolis simulation
+metropolis_dic = run_metropolis(
     model=flow_model,
     init=xs,
     n_chains=n_chains,
     n_steps=n_steps,
-    name_run="", # TODO: number of runs
+    id_run=0, # TODO: number of runs
     energy_type=energy_type,
     frac_dft=0.2,
     mlp_models=mlp_models,
     mixture=mixture,
-    T=300,
-    with_tqdm=True,
+    T=350,
+    with_tqdm=False,
+    return_ratio = False,
+    return_proposals = False,
+    dft_folder_name=path_to_save_results+'/DFTComputations_{:d}'.format(args.process_id),
+    scheduler=5,
 )
 
-date_end = time.strftime('%Y-%m-%d %H:%M:%S')
-args.date_end = date_end
+mpi.world.barrier()
+
+date_end = np.array([0])
+
+# save end time
+if rank == 0:
+    date_end = np.array([set_str_date_to_int(time.strftime('%Y-%m-%d %H:%M:%S'))])
+
+comm.broadcast(date_end, 0)
+date_end = date_end[0]
+
+mpi.world.barrier()
+args.date_end = str(date_end)
 
 args.algorithm = 'metropolis.py'
 
-argparse_dict = vars(args)
-out['args'] = argparse_dict
+argparse_dic = vars(args)
+metropolis_dic['args'] = argparse_dic
 
-save_json_args(args, 'metropolis', args.process_id, os.getcwd() + '/')
+# save output to pickle file
+save_pickle_file(metropolis_dic, "{:s}_mcmc_dic_{:d}.pkl".format(simulation_name, args.process_id), path = path_to_save_results)
 
-if mixture:
-    f = "mixture_mcmc_chains_{:d}.pkl".format(args.process_id)
-else:
-    f = "is{:d}_mcmc_chains_{:d}.pkl".format(mode_labels[0], args.process_id)
-
-save_pickle_file(out, f, path = os.getcwd() + '/')
+# save output to json file
+save_json_args(args, 'metropolis', args.process_id, path_to_save_results)
 
 import matplotlib.pyplot as plt
+from flonacomldft.utils.plots import set_plot_iteration 
+from flonacomldft.utils.plots import Flonaco_Plotter
 
-accs = out['accs'].mean(dim=1)
+accs = metropolis_dic['accs']
 
-plt.figure()
-plt.plot(accs)
-plt.xlabel('steps')
-plt.ylabel('acceptance rate')
-plt.savefig('acceptance_rate_{:d}.png'.format(args.process_id))
+fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+set_plot_iteration(accs.mean(dim=1), avg=True, window_size=10, axis=1, ax=ax, label='acc_ratio')
+ax.set_xlabel('Iteration')
+ax.set_ylabel('Acceptance rate')
+plt.savefig(path_to_save_results + '/acceptance_rate_{:d}.png'.format(args.process_id))
+
+#xs = metropolis_dic['xs']

@@ -1,4 +1,5 @@
 ### Import modules
+import time
 import copy
 import tqdm
 import torch
@@ -17,6 +18,8 @@ def train_mlp(
     step_schedule=1000,
     save_splits=10,
     with_tqdm=False,
+    dim=12,
+    batch_size=512,
 ):
     """Train a MLP model on a dataset.
 
@@ -51,14 +54,19 @@ def train_mlp(
         )
 
     ### Input and output data
-    xs_train, us_train = train[:, :12], train[:, 12]
-    xs_test, us_test = test[:, :12], test[:, 12] #(nsample_train, dims), (nsamples)
+    xs_train, us_train = train[:, :dim].clone(), train[:, dim].clone()
+    xs_test, us_test = test[:, :dim].clone(), test[:, dim].clone() #(nsample_train, dims), (nsamples)
     
     if with_tqdm:
         pbar = tqdm.tqdm(range(n_iter))
     else:
         pbar = range(n_iter)
 
+
+    print("train shape: ", xs_train.shape)
+    print("test shape: ", xs_test.shape)
+
+    permutation = torch.randperm(xs_train.shape[0])
 
     ### Logs
     losses_train = []
@@ -69,16 +77,21 @@ def train_mlp(
     ### Training loop
     for t in pbar:
 
-        optimizer.zero_grad()
-        loss = loss_func(xs_train, us_train)
+        for k in range(0, xs_train.shape[0], batch_size):
+            indexes = permutation[k:k+batch_size]
+            batch_xs_train = xs_train[indexes].clone().detach().requires_grad_(True)
+            batch_us_train = us_train[indexes].clone().detach().requires_grad_(True)
 
-        if torch.isinf(loss).any():
-            print("Stopped because loss became inf!")
-            return model, losses_train
-
-        ### Backpropagation
-        loss.backward()
-        optimizer.step()
+            optimizer.zero_grad()
+            loss = loss_func(batch_xs_train, batch_us_train)
+    
+            if torch.isinf(loss).any():
+                print("Stopped because loss became inf!")
+                return model, losses_train
+    
+            ### Backpropagation
+            loss.backward(retain_graph=True)
+            optimizer.step()
 
         ### Losses
         losses_train.append(loss.item())
@@ -112,7 +125,8 @@ def train_mlp(
 
     to_return = {
         "model": model,
-        "losses": (losses_train, losses_test),
+        "train_loss": torch.tensor(losses_train),
+        "test_loss": torch.tensor(losses_test),
         "models": models,
         "grad_norms": grad_norms,
     }

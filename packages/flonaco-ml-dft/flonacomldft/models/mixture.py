@@ -53,8 +53,10 @@ class Mixture(nn.Module):
     def U(self, x):
         return self.nll(x)
 
-def get_models(training):
+def get_models(models_dic):
     """
     Get the models for the mixture from a list of dictionnaries storing the models.
     """
-    return [training[0]['model'], training[1]['model']]
+    return [model_dic['model'] for model_dic in models_dic]
+
+    
