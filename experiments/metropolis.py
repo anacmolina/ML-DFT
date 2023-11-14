@@ -57,7 +57,7 @@ parser = argparse.ArgumentParser(description='Prepare experiment')
 parser.add_argument('-np', '--num-procs', type=int, default=len(ranks))
 parser.add_argument('-pid', '--process-id', type=int, default=date_start)
 parser.add_argument('-rs', '--random-seed', type=int, default=num_seed)
-parser.add_argument('-path', '--folder-path', type=str, default='berendsen/')
+parser.add_argument('-path', '--folder-path', type=str, default='andersen/')
 # sampling params
 parser.add_argument('-isomer', '--mode-label', type=int, nargs='+', default=[0])
 parser.add_argument('-ids', '--ids', type=int, nargs='+', default=[None]) # Ideally this should load not be here, but its for identifying flow models
@@ -156,7 +156,7 @@ metropolis_dic = run_metropolis(
     frac_dft=0.2,
     mlp_models=mlp_models,
     mixture=mixture,
-    T=300,
+    T=350,
     with_tqdm=False,
     return_ratio = False,
     return_proposals = False,

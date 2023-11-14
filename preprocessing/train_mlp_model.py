@@ -104,9 +104,12 @@ def get_dataset(name, path, isomer_label):
     #xs = xs.flatten(start_dim=0, end_dim=1).to(torch.float32)
 
     return xs, zmats
+ 
+# xs_train_mlp, zmat_train_mlp = get_dataset('mlp_train', path_datasets, isomer_label)
+# xs_test_mlp, zmat_test_mlp = get_dataset('mlp_test', path_datasets, isomer_label)
 
-xs_train_mlp, zmat_train_mlp = get_dataset('mlp_train', path_datasets, isomer_label)
-xs_test_mlp, zmat_test_mlp = get_dataset('mlp_test', path_datasets, isomer_label)
+xs_train_mlp = load_csv_file('is{:d}_adaptive_train.csv'.format(args.isomer_label), path=path_datasets)
+xs_test_mlp = load_csv_file('is{:d}_adaptive_test.csv'.format(args.isomer_label), path=path_datasets)
 
 print('mlp shape: ', xs_train_mlp.shape, xs_test_mlp.shape)
 

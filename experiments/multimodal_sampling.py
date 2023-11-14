@@ -161,6 +161,7 @@ print('xs_init shape: ', xs_init.shape)
 if len(isomer_labels) == 1:
     mixture = False
     simulation_name = 'is{:d}'.format(isomer_labels[0])
+    mixture_model = flow_models[0]
 else:
     mixture = True
     simulation_name = 'mixture'
@@ -169,8 +170,13 @@ else:
 if "mlp" in energy_type: 
     path_models = get_path() + '/' + args.folder_path + '/' + 'models'
 
-    mlps_dic = [load_pickle_file("dict_mlp_model_is{:d}_adaptive.pkl".format(
-                                isomer_labels[i]), 
+    if args.load_mlp_flow:
+        extension  = '_adaptive_mlp'
+    else:
+        extension = '_adaptive'
+
+    mlps_dic = [load_pickle_file("dict_mlp_model_is{:d}{:s}.pkl".format(
+                                isomer_labels[i], extension), 
                                 path=path_models)['model'] 
                                 for i in range(len(isomer_labels))]
 else:
@@ -200,11 +206,11 @@ mh = run_metropolis(
     frac_dft=0.2,
     with_tqdm=False,
     return_ratio=False,
-    return_proposals=False,
+    return_proposals=True,
     dft_folder_name=path_to_save_results + '/' + 'DFTComputations_{:d}'.format(args.process_id),
-    scheduler=5,
+    scheduler=10,
     update_weigth=True,
-    alpha = 0.1,
+    alpha = 0.5,
     mlp_models=mlps_dic,
 )
 

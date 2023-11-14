@@ -111,6 +111,7 @@ def run_metropolis(
         if(mlp_models is None):
             raise RuntimeError("No MLP model to calculate energy")
         if mixture:
+            print('Mixture model')
             model_mlp_is0, model_mlp_is1 = mlp_models
         else:
             if(isomer_init.sum()==0):
@@ -163,9 +164,13 @@ def run_metropolis(
             
             u_new = torch.zeros((n_chains, 1)).squeeze()
 
+            print(u_new)
+
             if mixture:
                 u_new[~(isomer_new.bool())] = model_mlp_is0(x_new[~(isomer_new.bool())]).reshape(1, -1)
+                print(u_new, isomer_new)
                 u_new[isomer_new.bool()] = model_mlp_is1(x_new[isomer_new.bool()]).reshape(1, -1)
+                print(u_new, isomer_new)
             else:
                 if(isomer_new.sum()==0):
                     u_new = model_mlp_is0[0](x_new)
@@ -369,7 +374,7 @@ def run_metropolis(
         to_return["us_dft"] = torch.tensor(us_dft).float().detach()
         to_return['isomers_dft'] = torch.stack(isomers_dft)
 
-    if mixture:
-        to_return["weights"] = torch.stack(weights)
+    if mixture and update_weigth:
+        to_return["weights"] = weights
 
     return to_return
