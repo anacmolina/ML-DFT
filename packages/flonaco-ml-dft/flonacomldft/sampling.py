@@ -97,19 +97,19 @@ def run_metropolis(model,
 
         if "dft" in energy_type:
 
-            # import gpaw.mpi as mpi
-            # from flonacomldft.dft_calculator import DFTCalculator
-            # from flonacomldft.internal_coordinates import Coordinates_mapping
-        # 
-            # coord_mapping = Coordinates_mapping(etype='dft')
-            # calculator = DFTCalculator()
-# 
-            # #mpi.world.barrier()
-# 
-            # if folder_name is not None:
-            #     calculator.initialize_calculator(foldername=folder_name)
-            # else:
-            #     calculator.initialize_calculator()
+            import gpaw.mpi as mpi
+            from flonacomldft.dft_calculator import DFTCalculator
+            from flonacomldft.internal_coordinates import Coordinates_mapping
+        
+            coord_mapping = Coordinates_mapping(etype='dft')
+            calculator = DFTCalculator()
+
+            mpi.world.barrier()
+
+            if folder_name is not None:
+                calculator.initialize_calculator(foldername=folder_name)
+            else:
+                calculator.initialize_calculator()
 
             print("Use DFT Calculator: {:s}".format(str(use_calc)))
 
@@ -216,41 +216,41 @@ def run_metropolis(model,
 
                 if flag_computed:
 
-                    try: 
+                    #try: 
 
-                        molecule, logdetjac = coord_mapping.build_molecule_from_real_centered(
-                            x_new[i].reshape(1, -1), 
-                            isomer=isomer_new[i].int().item(),
+                    molecule, logdetjac = coord_mapping.build_molecule_from_real_centered(
+                        x_new[i].reshape(1, -1), 
+                        isomer=isomer_new[i].int().item(),
+                    )
+
+                    input_calculator = {'atoms': molecule, }
+
+                    if "dft" in energy_type:
+
+                        input_calculator['filename'] = 'ag6_{:s}_{:d}_{:d}.out'.format(
+                            id_run, dt, i
                         )
 
-                        input_calculator = {'atoms': molecule, }
+                        mpi.world.barrier()
 
-                        if "dft" in energy_type:
+                    u = calculator.calculate_potential_energy(**input_calculator)
 
-                            input_calculator['filename'] = 'ag6_{:d}_{:d}_{:d}.out'.format(
-                                id_run, dt, i
-                            )
+                    u_new[i] = coord_mapping.compute_energy_in_new_frame(
+                        u,
+                        logdetjac*(-1),
+                        temperature=temperature,
+                    )
 
-                            # mpi.world.barrier()
+                    xs_calc.append(x_new[i])
+                    us_calc.append(u_new[i])
+                    isomers_calc.append(isomer_new[i])
 
-                        u = calculator.calculate_energy(**input_calculator)
-
-                        u_new[i] = coord_mapping.compute_energy_in_new_frame(
-                            u,
-                            logdetjac*(-1),
-                            temperature=temperature,
-                        )
-
-                        xs_calc.append(x_new[i])
-                        us_calc.append(u_new[i])
-                        isomers_calc.append(isomer_new[i])
-
-                    except:
-
-                        ind_not_computed[i] = 1
-                        u_new[i] = 0.0
-
-                        write_not_compute(x_new[i], isomer_new[i], id_run, dt, i)
+                    #except:
+#
+                    #    ind_not_computed[i] = 1
+                    #    u_new[i] = 0.0
+#
+                    #    write_not_compute(x_new[i], isomer_new[i], id_run, dt, i)
 
             if use_calc and "dft" in energy_type:
 
@@ -313,7 +313,17 @@ def run_metropolis(model,
             pbar.set_description("Step {:d} \t Acceptance Rate {:.3f}".format(
                 dt, acc.float().mean().item()))
         else:
-            print("{:d} \t {:.3f} \t\t {:3f}".format( dt, 
+            if "dft" in energy_type:
+                
+                mpi.world.barrier()
+                
+                print("{:d} \t {:.3f} \t\t {:3f}".format( dt, 
+                                        acc.float().mean().item(), 
+                                        isomer_new.float().mean().item(),
+                                        )
+                )
+            else:
+                print("{:d} \t {:.3f} \t\t {:3f}".format( dt, 
                                         acc.float().mean().item(), 
                                         isomer_new.float().mean().item()
                                         )
