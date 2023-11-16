@@ -8,8 +8,11 @@ import numpy as np
 import torch
 import tqdm
 
-#from ase.parallel import parprint as print
+from ase.parallel import parprint as print
 from ase.units import kB
+
+#TODO: Add calculator for MLP
+#TODO: Add cv values to return
 
 def run_metropolis(model, 
                     init, 
@@ -19,16 +22,15 @@ def run_metropolis(model,
                     energy_type,
                     temperature,
                     mixture,
-                    nn_predictor=None,
+                    mlp_models=None,
                     frac_computed=0.2,
                     dim=12,
-                    init_weights=None,
                     update_weights=True,
-                    scheduler_weights=100,
+                    scheduler_weights=10,
                     alpha=0.5,
-                    return_ratios=False,
+                    return_ratios=True,
                     return_proposals=True,
-                    with_tqdm=True,
+                    with_tqdm=False,
                     device='cpu',
                     folder_name=None,
                  ):
@@ -58,17 +60,17 @@ def run_metropolis(model,
     if "mlp" in energy_type:
         #TODO: Add calculator for MLP
         
-        if (nn_predictor is None):
+        if (mlp_models is None):
             raise RuntimeError("No model to calculate energy")
         
         if mixture:
             print('Mixture model')
-            model_mlp_is0, model_mlp_is1 = nn_predictor
+            model_mlp_is0, model_mlp_is1 = mlp_models
         else:
             if(isomer_init.sum()==0):
-                model_mlp_is0 = nn_predictor
+                model_mlp_is0 = mlp_models[0]
             else:
-                model_mlp_is1 = nn_predictor
+                model_mlp_is1 = mlp_models[0]
         
         print("Use Neural Predictor: True")
     
@@ -128,9 +130,7 @@ def run_metropolis(model,
     print("Mixture Model: {:s}".format(str(mixture)))
 
     if mixture:
-        if init_weights is None:
-            init_weights = [0.5, 0.5]
-        weights = [init_weights]
+        weights = [model.weights.clone().detach()]
 
     xs = []
     us = []
@@ -228,7 +228,7 @@ def run_metropolis(model,
                     if "dft" in energy_type:
 
                         input_calculator['filename'] = 'ag6_{:s}_{:d}_{:d}.out'.format(
-                            id_run, dt, i
+                            str(id_run), dt, i
                         )
 
                         mpi.world.barrier()
@@ -247,10 +247,20 @@ def run_metropolis(model,
 
                     #except:
 #
+                    #    print("Molecule {:d} not computed".format(i))
+#
                     #    ind_not_computed[i] = 1
                     #    u_new[i] = 0.0
 #
-                    #    write_not_compute(x_new[i], isomer_new[i], id_run, dt, i)
+                    #    if "dft" in energy_type:
+                    #        
+                    #        rank = mpi.world.rank
+                    #        
+                    #        if rank==0:
+                    #            write_not_compute(x_new[i], isomer_new[i], id_run, dt, i)
+                    #    else:
+                    #        
+                    #        write_not_compute(x_new[i], isomer_new[i], id_run, dt, i)
 
             if use_calc and "dft" in energy_type:
 
@@ -317,13 +327,13 @@ def run_metropolis(model,
                 
                 mpi.world.barrier()
                 
-                print("{:d} \t {:.3f} \t\t {:3f}".format( dt, 
+                print("{:d} \t {:.3f} \t\t {:.3f}".format( dt, 
                                         acc.float().mean().item(), 
                                         isomer_new.float().mean().item(),
                                         )
                 )
             else:
-                print("{:d} \t {:.3f} \t\t {:3f}".format( dt, 
+                print("{:d} \t {:.3f} \t\t {:.3f}".format( dt, 
                                         acc.float().mean().item(), 
                                         isomer_new.float().mean().item()
                                         )
