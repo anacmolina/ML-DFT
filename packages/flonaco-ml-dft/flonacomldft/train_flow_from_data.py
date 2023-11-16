@@ -76,8 +76,8 @@ def train_flow(
 
             optimizer.step()
 
-            losses.append(loss.item())
-            time_step.append(time.time())
+        losses.append(loss.item())
+        time_step.append(time.time())
 
         if t % (n_iter / 100) == 0:
             total_norm = 0

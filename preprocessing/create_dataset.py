@@ -22,9 +22,6 @@ coord_mapping = Coordinates_mapping(etype=args.energy_type)
 
 file_names = os.listdir(args.path)
 
-print(args.path)
-print(len(file_names))
-
 if args.low_index is None:
     low = 0
 else:
@@ -35,10 +32,7 @@ if args.num_samples is None:
 else:
     N = args.num_samples
 
-
-
 molecules = [read(args.path + '/' + file_name) for file_name in file_names[low:low+N]]
-print(len(molecules))
 zmats = coord_mapping.get_internal_from_trajectory(molecules, isomer=args.isomer_label, temperature=args.temperature, max_samples=N).detach()
 
 print(zmats.shape)

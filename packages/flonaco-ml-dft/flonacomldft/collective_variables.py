@@ -42,49 +42,7 @@ def get_collective_variables(atoms):
     """Get the collective variables of the system."""
     return  np.array((compute_C(atoms), compute_R(atoms)))
 
-### Define collective variables function: Get collective variables from internal coordinates
-#TODO: Use internal coordinates to compute collective variables
-#def get_CVs(data):
-#   
-#   C_vals = []
-#   R_vals = []
-#   
-#   for x in data:
-#   
-#      coord_maps = Coordinates_mapping()
-#      molecule = coord_maps.build_molecule_from_zmat(x)
-#                                                                               
-#      C_vals.append(compute_C(molecule))
-#      R_vals.append(compute_R(molecule))
-#   
-#   return C_vals, R_vals
 
 def get_cvs_from_traj(traj):
     """Get the collective variables from a trajectory."""
     return np.array([get_collective_variables(atoms) for atoms in traj])
-
-#def get_cvs_from_zmat(data):
-#
-#   cvs = []
-#
-#   for x in data:
-#         
-#      coord_maps = Coordinates_mapping()
-#      molecule = coord_maps.build_molecule_from_zmat(x)
-#
-#      cvs.append(get_collective_variables(molecule))
-#
-#   return np.array(cvs)
-#
-#def get_cvs_from_real_centered(data, isomer):
-#
-#   cvs = []
-#
-#   for x in data:
-#         
-#      coord_maps = Coordinates_mapping()
-#      molecule = coord_maps.build_molecule_from_real_centered(x.reshape(1, -1), isomer)
-#
-#      cvs.append(get_collective_variables(molecule[0]))
-#
-#   return np.array(cvs)

@@ -77,10 +77,10 @@ def train_mlp(
 
             optimizer.step()
 
-            train_losses.append(loss.item())
-            test_losses.append(loss_func(x_test, y_test).item())
+        train_losses.append(loss.item())
+        test_losses.append(loss_func(x_test, y_test).item())
 
-            time_step.append(time.time())
+        time_step.append(time.time())
 
         if t % (n_iter / 100) == 0:
             total_norm = 0
