@@ -4,22 +4,23 @@ import torch
 from flonacomldft.train_flow_from_data import train_flow
 from flonacomldft.train_mlp_from_data import train_mlp
 from flonacomldft.sampling import run_metropolis
-from flonacomldft.models.mixture import Mixture#, #get_models
-#from flonacomldft.internal_coordinates import join_data
-#from flonacomldft.utils.data_processing import load_datasets
+from flonacomldft.models.mixture import Mixture
 
 from ase.parallel import parprint as print
 
 def Transpose(x):
     return x.permute(*torch.arange(x.ndim - 1, -1, -1))
 
-def adaptive_sampling(
+#TODO: save cvs
+#TODO: save weights
+#TODO: add docstrings
+
+def run_adaptive_sampling(
     mcmc_init,
     n_chains,
     n_steps,
     n_runs,
     flow_init_train,
-    flow_init_test,
     dict_flows_init,
     flow_hyperparams,
     energy_type,
@@ -52,13 +53,13 @@ def adaptive_sampling(
     isomer_labels = torch.unique(torch.cat(flow_init_train)[:, dim+1]).int()
     n_isomers = isomer_labels.shape[0]
 
+    assert mixture == (n_isomers > 1), 'Model setup is not consistent with the number of isomers'
+
     print('Isomer labels: ', isomer_labels.tolist())
 
     xs_for_flows_train = [ flow_init_train[i] for i in range(n_isomers) ]
-    xs_for_flows_test = [ flow_init_test[i] for i in range(n_isomers) ]
 
     print('Flow train dataset shapes: ', [ list(xs_for_flows_train[i].shape) for i in range(n_isomers) ])
-    print('Flow test dataset shapes: ', [ list(xs_for_flows_test[i].shape) for i in range(n_isomers) ])
 
     if (energy_type == 'mlp') or (energy_type == 'dft') or (energy_type == 'emt'):
         train_mlp_models = False
@@ -73,7 +74,7 @@ def adaptive_sampling(
             xs_for_mlps_test = [ mlp_init_test[i] for i in range(n_isomers) ]
 
             n_samples_train_mlp = torch.tensor( [ xs_for_mlps_train[i].shape[0] for i in range(n_isomers) ] )
-            mlp_batch_size = torch.tensor( [ mlp_hyperparams[i]['batch_size'] for i in range(n_isomers) ] )
+            mlp_batch_size = torch.tensor( [ mlp_hyperparams[i]['bs'] for i in range(n_isomers) ] )
 
             fix_iters_per_batch = torch.ceil(n_samples_train_mlp / mlp_batch_size).int()
 
@@ -212,6 +213,7 @@ def adaptive_sampling(
             )
         )
 
+
         chains_flatten = chains_flatten.reshape(n_steps * n_chains, 
                                                 chains_flatten.shape[-1])
         
@@ -263,10 +265,8 @@ def adaptive_sampling(
             dict_new_flow = train_flow(
                 model=flow_model,
                 train=xs_for_flows_train[mode][-n_samples_train_flow[mode]:],
-                test=xs_for_flows_test[mode],
                 **flow_hyperparams[mode],
                 dim=dim,
-                mlp_model=mlp_models[mode],
             )
 
             time_step_flow.append(time.time())
@@ -301,10 +301,10 @@ def adaptive_sampling(
                 print('MLP test dataset shape: ', list(xs_for_mlps_test[mode].shape))
 
                 new_batch_size = torch.ceil(xs_for_mlps_train[mode].shape[0] / fix_iters_per_batch[mode]).int().item()
-                mlp_hyperparams[mode]['batch_size'] = new_batch_size
+                mlp_hyperparams[mode]['bs'] = new_batch_size
 
-                print("Number of gradient steps per epoch: ", xs_for_mlps_train[mode].shape[0] / mlp_hyperparams[mode]['batch_size'], 
-                      mlp_hyperparams[mode]['n_iter'], (xs_for_mlps_train[mode].shape[0] / mlp_hyperparams[mode]['batch_size']) * mlp_hyperparams[mode]['n_iter'] )
+                print("Number of gradient steps per epoch: ", xs_for_mlps_train[mode].shape[0] / mlp_hyperparams[mode]['bs'], 
+                      mlp_hyperparams[mode]['n_iter'], (xs_for_mlps_train[mode].shape[0] / mlp_hyperparams[mode]['bs']) * mlp_hyperparams[mode]['n_iter'] )
 
                 dict_new_mlp = train_mlp(
                     model=mlp_models[mode],
@@ -341,6 +341,9 @@ def adaptive_sampling(
         'us_proposals': us_proposals,
         'isomers_proposals': isomers_proposals,
         'dict_flows': dict_flows,
+        'flows_dataset': xs_for_flows_train,
+        'mlps_datasets':  {'train': xs_for_mlps_train,
+                            'test': xs_for_mlps_test},
     }
 
     if use_calc:

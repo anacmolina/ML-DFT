@@ -13,6 +13,7 @@ from ase.units import kB
 
 #TODO: Add calculator for MLP
 #TODO: Add cv values to return
+#TODO: add docstrings
 
 def run_metropolis(model, 
                     init, 
@@ -141,7 +142,7 @@ def run_metropolis(model,
 
     if with_tqdm == False:
 
-        print("Step \t Acc Rate \t Population")
+        print("Step \t Acc Rate")
 
     if with_tqdm:
         pbar = tqdm.tqdm(range(n_steps))
@@ -323,19 +324,18 @@ def run_metropolis(model,
             pbar.set_description("Step {:d} \t Acceptance Rate {:.3f}".format(
                 dt, acc.float().mean().item()))
         else:
+
             if "dft" in energy_type:
                 
                 mpi.world.barrier()
                 
-                print("{:d} \t {:.3f} \t\t {:.3f}".format( dt, 
-                                        acc.float().mean().item(), 
-                                        isomer_new.float().mean().item(),
+                print("{:d} \t {:.3f}".format( dt, 
+                                        acc.float().mean().item() 
                                         )
                 )
             else:
-                print("{:d} \t {:.3f} \t\t {:.3f}".format( dt, 
-                                        acc.float().mean().item(), 
-                                        isomer_new.float().mean().item()
+                print("{:d} \t {:.3f}".format( dt, 
+                                        acc.float().mean().item()
                                         )
             )
 
