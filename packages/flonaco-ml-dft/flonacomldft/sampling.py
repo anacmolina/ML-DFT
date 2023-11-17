@@ -36,7 +36,6 @@ def run_metropolis(model,
                     folder_name=None,
                  ):
 
-    assert init[:, :-2].shape[1] == dim
     assert init.shape[0] == n_chains
 
     if mixture:
@@ -55,7 +54,7 @@ def run_metropolis(model,
 
     print("Number of chains: {:d}".format(n_chains))
     print("Number of steps: {:d}".format(n_steps))
-    print("Temperature: {:d}K".format(temperature))
+    print("Temperature: {:.1f}K".format(temperature))
     print("Energy Type: {:s}".format(energy_type))
 
     if "mlp" in energy_type:

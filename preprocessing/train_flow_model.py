@@ -88,7 +88,7 @@ model = RealNVP_MLP(dim=train[:, :dim].shape[1],
 
 
 # path to save results
-folder_to_save_results = 'results_training_flow_is{:d}_{:d}'.format(args.isomer_label, args.process_id)
+folder_to_save_results = 'results_flow_is{:d}_{:d}'.format(args.isomer_label, args.process_id)
 path_to_save_results = os.getcwd() + '/' + folder_to_save_results
 
 if not os.path.exists(path_to_save_results):
@@ -151,4 +151,4 @@ cvs = get_cvs_from_traj(molecules)
 plot_energy_surface(fig=fig, ax=axs[2])
 axs[2].scatter(cvs[:, 0], cvs[:, 1], s=25)
 
-plt.savefig(path_to_save_results + '/is{:d}_flow_trained_{:d}.png'.format(args.isomer_label, args.process_id))
+plt.savefig(path_to_save_results + '/is{:d}_flow_training_{:d}.png'.format(args.isomer_label, args.process_id))

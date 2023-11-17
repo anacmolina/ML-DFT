@@ -342,8 +342,6 @@ def run_adaptive_sampling(
         'isomers_proposals': isomers_proposals,
         'dict_flows': dict_flows,
         'flows_dataset': xs_for_flows_train,
-        'mlps_datasets':  {'train': xs_for_mlps_train,
-                            'test': xs_for_mlps_test},
     }
 
     if use_calc:
@@ -353,8 +351,12 @@ def run_adaptive_sampling(
         to_return['isomers_calc'] = isomers_calc
         to_return['inds_calc'] = inds_calc
 
-        if train_mlp_models:
+    if ('mlp' in energy_type):
+        to_return['dict_mlps'] = dict_mlps
 
-            to_return['dict_mlps'] = dict_mlps
+    if train_mlp_models:
+    
+        to_return['mlps_datasets'] =  {'train': xs_for_mlps_train,
+                        'test': xs_for_mlps_test},
 
     return to_return
