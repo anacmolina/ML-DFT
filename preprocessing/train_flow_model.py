@@ -121,7 +121,7 @@ argparse_dic = vars(args)
 flow_dic['args'] = argparse_dic
 
 # save output to pickle file
-save_pickle_file(flow_dic, "is{:d}_flow_dic_training_{:d}.pkl".format(args.isomer_label, args.process_id), path=path_to_save_results)
+save_pickle_file(flow_dic, "is{:d}_flow_dic_{:d}.pkl".format(args.isomer_label, args.process_id), path=path_to_save_results)
 
 # save arguments to json file
 save_json_args(args, 'train_flow_model', args.process_id, path=path_to_save_results)

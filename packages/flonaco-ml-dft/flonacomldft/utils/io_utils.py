@@ -35,6 +35,7 @@ def get_path():
     """
     return get_project_path() + '/database'
 
+# TODO: delete this function
 # created to save all the information of the simulations
 def create_simulation_folder(name='flowMC', path=os.getcwd()):
     

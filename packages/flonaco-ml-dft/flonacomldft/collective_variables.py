@@ -1,10 +1,8 @@
-# TODO: Clean up
 # TODO: Try to vectorize this code
 
 # libraries
 
 import numpy as np
-#from flonacomldft.internal_coordinates import Coordinates_mapping
 
 ### Define collective variables constants    
 d=2.8
@@ -46,3 +44,4 @@ def get_collective_variables(atoms):
 def get_cvs_from_traj(traj):
     """Get the collective variables from a trajectory."""
     return np.array([get_collective_variables(atoms) for atoms in traj])
+

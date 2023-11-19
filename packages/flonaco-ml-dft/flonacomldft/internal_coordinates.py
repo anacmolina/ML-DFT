@@ -614,3 +614,18 @@ def join_data(xs, energies, isomers, logdetjacs=None):
             logdetjacs.reshape(-1, 1)), dim=1)
 
     return data
+
+def get_collective_variables_from_xs(xss, isomerss):
+    cvss = []
+
+    coord_mapping = Coordinates_mapping()
+
+    for xs, isomers in zip(xss, isomerss):
+        cvs = []
+        for x, isomer in zip(xs, isomers):
+            molecule = coord_mapping.build_molecule_from_real_centered(x.reshape(1, -1), 
+                                                                       isomer=isomer.int().item())[0]
+            cvs.append(torch.tensor(get_collective_variables(molecule)))
+        cvss.append(torch.stack(cvs))
+    
+    return torch.stack(cvss)

@@ -237,4 +237,14 @@ def R_hat(chains, burn_in=100, n_split=10, var_names=None, filter_vars=None):
         ])
     
     return rhat_s, draw_divisions, labels
+
+
+def get_participation_ratio_from_nlls(us, nlls, kB, T):
+    
+    n_prop = us.shape[0]
+    
+    log_weight = -us.squeeze()/(kB*T) + nlls
+    log_ratio = torch.logsumexp(2 * log_weight, dim=0) - 2 * torch.logsumexp(log_weight, dim=0)
+    
+    return torch.exp(-log_ratio) / n_prop
     

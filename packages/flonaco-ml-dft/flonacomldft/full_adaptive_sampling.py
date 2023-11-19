@@ -76,11 +76,8 @@ def run_adaptive_sampling(
             n_samples_train_mlp = torch.tensor( [ xs_for_mlps_train[i].shape[0] for i in range(n_isomers) ] )
             mlp_batch_size = torch.tensor( [ mlp_hyperparams[i]['bs'] for i in range(n_isomers) ] )
 
-            fix_iters_per_batch = torch.ceil(n_samples_train_mlp / mlp_batch_size).int()
+            fix_iters_per_batch = torch.ceil(n_samples_train_mlp / mlp_batch_size).clone().detach().int()
 
-            print(n_samples_train_mlp)
-            print(mlp_batch_size)
-            print(fix_iters_per_batch)
 
             print('MLP train dataset shapes: ', [ list(xs_for_mlps_train[i].shape) for i in range(n_isomers) ])
             print('MLP test dataset shapes: ', [ list(xs_for_mlps_test[i].shape) for i in range(n_isomers) ])
@@ -98,13 +95,6 @@ def run_adaptive_sampling(
         mlp_models = [None] * n_isomers
 
         print('MLPs will not be used')
-
-
-    dict_flows = [ copy.deepcopy(dict_flows_init) ]
-
-    xs_proposals = []
-    us_proposals = []
-    isomers_proposals = []
 
     if mixture and init_weights is None:
         
@@ -133,10 +123,18 @@ def run_adaptive_sampling(
 
         use_calc = False
 
+    dict_flows = [ copy.deepcopy(dict_flows_init) ]
+
+    xs_proposals = []
+    us_proposals = []
+    isomers_proposals = []
+    nlls_proposals = []
+
     xs = []
     us = []
     accs = []
     isomers = []
+    nlls = []
     time_mcmc = []
 
     time_step_flow = []
@@ -145,6 +143,8 @@ def run_adaptive_sampling(
     init = mcmc_init
 
     for i in range(n_runs):
+
+        print('Run: ', i)
 
         if mixture:
             flow_models = [ dict_flows[i][j]['model'] for j in range(n_isomers)]
@@ -184,11 +184,13 @@ def run_adaptive_sampling(
         us.append(mcmc['us'])
         accs.append(mcmc['accs'])
         isomers.append(mcmc['isomers'])
+        nlls.append(mcmc['nlls'])
         time_mcmc.append(mcmc['time_mcmc'])
 
         xs_proposals.append(mcmc['xs_proposals'])
         us_proposals.append(mcmc['us_proposals'])
         isomers_proposals.append(mcmc['isomers_proposals'])
+        nlls_proposals.append(mcmc['nlls_proposals'])
 
         if use_calc:
 
@@ -205,9 +207,9 @@ def run_adaptive_sampling(
         chains_flatten = Transpose(
             torch.cat(
                 (
-                    Transpose(torch.stack(xs[i]).clone()),
-                    Transpose(torch.stack(us[i]).clone().reshape(n_steps, n_chains, 1)),
-                    Transpose(torch.stack(isomers[i]).clone().reshape(n_steps, n_chains, 1)),
+                    Transpose(xs[i].clone()),
+                    Transpose(us[i].clone().reshape(n_steps, n_chains, 1)),
+                    Transpose(isomers[i].clone().reshape(n_steps, n_chains, 1)),
                 ),
                 dim=0,
             )
@@ -225,9 +227,9 @@ def run_adaptive_sampling(
 
             dict_new_mlps = []
 
-            xs_calc_run = torch.stack(mcmc['xs_calc'])
-            us_calc_run = torch.stack(mcmc['us_calc'])
-            isomers_calc_run = torch.stack(mcmc['isomers_calc'])
+            xs_calc_run = mcmc['xs_calc']
+            us_calc_run = mcmc['us_calc']
+            isomers_calc_run = mcmc['isomers_calc']
 
             configs_dft_flatten = Transpose(
                 torch.cat(
@@ -241,7 +243,6 @@ def run_adaptive_sampling(
                 )
 
             mask_mlp = configs_dft_flatten[:, -1]
-
 
         for mode in range(n_isomers):
 
@@ -303,9 +304,11 @@ def run_adaptive_sampling(
                 new_batch_size = torch.ceil(xs_for_mlps_train[mode].shape[0] / fix_iters_per_batch[mode]).int().item()
                 mlp_hyperparams[mode]['bs'] = new_batch_size
 
-                print("Number of gradient steps per epoch: ", xs_for_mlps_train[mode].shape[0] / mlp_hyperparams[mode]['bs'], 
-                      mlp_hyperparams[mode]['n_iter'], (xs_for_mlps_train[mode].shape[0] / mlp_hyperparams[mode]['bs']) * mlp_hyperparams[mode]['n_iter'] )
-
+                print("Number of gradient steps per epoch: ", new_batch_size, 
+                      #fix_iters_per_batch[mode],
+                      #xs_for_mlps_train[mode].shape[0],
+                      int(xs_for_mlps_train[mode].shape[0] / new_batch_size)*mlp_hyperparams[mode]['n_iter'] )
+                      
                 dict_new_mlp = train_mlp(
                     model=mlp_models[mode],
                     train=xs_for_mlps_train[mode],
@@ -316,10 +319,6 @@ def run_adaptive_sampling(
 
                 dict_new_mlps.append(dict_new_mlp)
 
-        else:
-
-            dict_new_flows.append(copy.deepcopy(dict_flows[i][mode]))
-
         dict_flows.append(dict_new_flows)
 
         if train_mlp_models and use_calc:
@@ -327,6 +326,7 @@ def run_adaptive_sampling(
             dict_mlps.append(dict_new_mlps)
 
         if mixture and update_weights:
+        
             init_weights = model.weights
 
     to_return = {
@@ -334,12 +334,14 @@ def run_adaptive_sampling(
         'us': us,
         'accs': accs,
         'isomers': isomers,
+        'nlls': nlls,
         'time_mcmc': time_mcmc,
         'time_step_flow': time_step_flow,
         'time_step_adaptive': time_step_adaptive,
         'xs_proposals': xs_proposals,
         'us_proposals': us_proposals,
         'isomers_proposals': isomers_proposals,
+        'nlls_proposals': nlls_proposals,
         'dict_flows': dict_flows,
         'flows_dataset': xs_for_flows_train,
     }

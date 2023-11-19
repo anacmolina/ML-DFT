@@ -8,6 +8,7 @@ import numpy as np
 import torch
 import tqdm
 
+from flonacomldft.collective_variables import get_collective_variables
 from ase.parallel import parprint as print
 from ase.units import kB
 
@@ -126,6 +127,7 @@ def run_metropolis(model,
         xs_proposals = [init[:, :dim]]
         us_proposals = [init[:, dim]]
         isomers_proposals = [init[:, dim+1]]
+        nlls_proposals = [model.nll(init[:, :dim])]
 
     print("Mixture Model: {:s}".format(str(mixture)))
 
@@ -136,6 +138,7 @@ def run_metropolis(model,
     us = []
     accs = []
     isomers = []
+    nlls = []
 
     time_step_mcmc = []
 
@@ -167,13 +170,14 @@ def run_metropolis(model,
 
         x_new = x_new.clone().detach() #set float
         isomer_new = isomer_new.clone().detach() #set dype
+        
+        nll_x = model.nll(x_new)
+        nll_x_init = model.nll(x_init)
 
         if return_proposals:
             xs_proposals.append(x_new)
             isomers_proposals.append(isomer_new)
-
-        nll_x = model.nll(x_new)
-        nll_x_init = model.nll(x_init)
+            nlls_proposals.append(nll_x)
 
         if "mlp" in energy_type:
 
@@ -222,24 +226,26 @@ def run_metropolis(model,
                         x_new[i].reshape(1, -1), 
                         isomer=isomer_new[i].int().item(),
                     )
-
+    
                     input_calculator = {'atoms': molecule, }
-
+    
                     if "dft" in energy_type:
-
+                    
                         input_calculator['filename'] = 'ag6_{:s}_{:d}_{:d}.out'.format(
                             str(id_run), dt, i
                         )
-
+    
                         mpi.world.barrier()
-
+    
                     u = calculator.calculate_potential_energy(**input_calculator)
-
+    
                     u_new[i] = coord_mapping.compute_energy_in_new_frame(
                         u,
                         logdetjac*(-1),
                         temperature=temperature,
                     )
+
+                    #u_new[i] = model_mlp_is0(x_new[i].reshape(1, -1))
 
                     xs_calc.append(x_new[i])
                     us_calc.append(u_new[i])
@@ -262,19 +268,19 @@ def run_metropolis(model,
                     #        
                     #        write_not_compute(x_new[i], isomer_new[i], id_run, dt, i)
 
-            if use_calc and "dft" in energy_type:
+        if use_calc and "dft" in energy_type:
 
-                rank = mpi.world.rank
+            rank = mpi.world.rank
 
-                if rank == 0:
-
-                    time_step_mcmc.append(time.time())
-
-                mpi.world.barrier()
-
-            else:
+            if rank == 0:
 
                 time_step_mcmc.append(time.time())
+
+            mpi.world.barrier()
+
+        else:
+
+            time_step_mcmc.append(time.time())
 
         if return_proposals:
             us_proposals.append(u_new)
@@ -309,11 +315,13 @@ def run_metropolis(model,
         else:
 
             isomer_new = isomer_init.clone()
-
+        
+        
         xs.append(x_new.clone().detach())
         us.append(u_new.clone().detach())
         accs.append(acc.clone().detach())
         isomers.append(isomer_new.clone().detach())
+        nlls.append(model.nll(x_new).clone().detach())
 
         x_init = x_new.clone().detach()
         u_init = u_new.clone().detach()
@@ -351,47 +359,33 @@ def run_metropolis(model,
 
             weights.append(model.weights.clone().detach())
 
-    time_mcmc = np.zeros(n_steps)
-
-    if use_calc and "dft" in energy_type:
-
-        rank = mpi.world.rank
-        ranks = np.arange(mpi.world.size)
-        comm = mpi.world.new_communicator(ranks)
-
-        mpi.world.barrier()
-
-        if rank == 0:
-
-            time_mcmc = np.array(time_step_mcmc)
-
-        comm.broadcast(time_mcmc, 0)
-
     to_return = {
-        'xs': xs,
-        'us': us,
-        'accs': accs,
-        'isomers': isomers,
-        'time_mcmc': time_mcmc,
+        'xs': torch.stack(xs),
+        'us': torch.stack(us),
+        'accs': torch.stack(accs),
+        'isomers': torch.stack(isomers),
+        'nlls': torch.stack(nlls),
+        'time_mcmc': time_step_mcmc,
     }
 
     if return_ratios:
-        to_return['ratios'] = ratios
+        to_return['ratios'] = torch.stack(ratios)
 
     if return_proposals:
-        to_return['xs_proposals'] = xs_proposals
-        to_return['us_proposals'] = us_proposals
-        to_return['isomers_proposals'] = isomers_proposals
+        to_return['xs_proposals'] = torch.stack(xs_proposals)
+        to_return['us_proposals'] = torch.stack(us_proposals)
+        to_return['isomers_proposals'] = torch.stack(isomers_proposals)
+        to_return['nlls_proposals'] = torch.stack(nlls_proposals)
 
     if use_calc:
             
-        to_return['xs_calc'] = xs_calc
-        to_return['us_calc'] = us_calc
-        to_return['isomers_calc'] = isomers_calc
-        to_return['inds_calc'] = inds_calc
+        to_return['xs_calc'] = torch.stack(xs_calc)
+        to_return['us_calc'] = torch.stack(us_calc)
+        to_return['isomers_calc'] = torch.stack(isomers_calc)
+        to_return['inds_calc'] = torch.stack(inds_calc)
 
     if mixture and update_weights:
-        to_return['weights'] = weights
+        to_return['weights'] = torch.stack(weights)
 
     return to_return
 
