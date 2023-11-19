@@ -150,8 +150,17 @@ path_datasets = get_path() + '/' + args.folder_path + '/' + 'datasets'
 flows_dataset = [load_csv_file('is{:d}_{:s}_train.csv'.format(isomer_labels[i], 
                                                             'flow'), path=path_datasets)[:args.N, :dim+2]
                                                             for i in range(len(isomer_labels))]
+flows_train = []
+flows_test = []
 
-print('Flow dataset shape: ', flows_dataset[0].shape)
+for i in range(len(isomer_labels)):
+    
+    train_md, test_md = list(split_data_from_dataframe(flows_dataset[i], 0.8, 42))
+    
+    flows_train.append(train_md)
+    flows_test.append(test_md)
+
+print('Flow dataset shape: ', flows_train[0].shape)
 
 if 'mlp' in energy_type:
 
@@ -209,10 +218,10 @@ if args.load_models==False:
 
     #set covariance matrix for flows
 
-    cov = [torch.cov(flows_dataset[i][:, :dim].T).detach() + 1e-5 * torch.eye(flows_dataset[i][:, :dim].shape[1]).detach() 
+    cov = [torch.cov(flows_train[i][:, :dim].T).detach() + 1e-5 * torch.eye(flows_train[i][:, :dim].shape[1]).detach() 
            for i in range(len(isomer_labels))]
 
-    models = [RealNVP_MLP(dim=flows_dataset[i][:, :dim].shape[1],
+    models = [RealNVP_MLP(dim=flows_train[i][:, :dim].shape[1],
                         n_blocks=args.n_blocks,
                         block_depth=1,
                         init_weight_scale=1e-3,
@@ -235,7 +244,7 @@ if args.load_models==False:
         save_splits=1,
         grad_clip=1e4,
         with_tqdm=False,
-    ) for model, flow_dataset in zip(models, flows_dataset)]
+    ) for model, flow_dataset in zip(models, flows_train)]
 
 else:
 
@@ -292,8 +301,8 @@ mpi.world.barrier()
 
 
 # init chains
-shuffle = torch.randperm(torch.cat(flows_dataset).shape[0]) # this works only for one isomer
-mcmc_init = torch.cat(flows_dataset)[shuffle].clone()[:n_chains] # TODO: generalize for more isomers
+shuffle = torch.randperm(torch.cat(flows_test).shape[0]) 
+mcmc_init = torch.cat(flows_test)[shuffle].clone()[:n_chains] 
 
 if rank == 0:
     time_init = time.time()

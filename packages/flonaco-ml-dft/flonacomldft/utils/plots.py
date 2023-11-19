@@ -48,9 +48,9 @@ def set_plot_sequential_data(y, x=None, avg=True, window_size=10, axis=1, ax=Non
             x_avg = avg_windows(x, window_size, axis)
         y_avg = avg_windows(y, window_size, axis)
 
-        ax.plot(x_avg, y_avg, color=color, **kwargs)
+        ax.plot(x_avg, y_avg, color=color, label=label, **kwargs)
 
-    ax.plot(x, y, alpha=alpha, color=color, label=label, **kwargs)
+    ax.plot(x, y, alpha=alpha, color=color, **kwargs)
 
     return ax
 
