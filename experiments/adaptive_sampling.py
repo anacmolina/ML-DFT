@@ -213,6 +213,8 @@ if "mlp" in energy_type:
 else:
 
     mlps_dic = [None for i in range(len(isomer_labels))]
+    mlps_train = [None for i in range(len(isomer_labels))]
+    mlps_test = [None for i in range(len(isomer_labels))]
 
 if args.load_models==False:
 
@@ -318,7 +320,7 @@ adaptive =run_adaptive_sampling(
     n_chains=n_chains,
     n_steps=n_steps,
     n_runs=n_runs,
-    flow_init_train=flows_dataset,
+    flow_init_train=flows_train,
     dict_flows_init=flows_dic,
     flow_hyperparams=[flow_hyperparams, flow_hyperparams],
     energy_type=energy_type,
@@ -387,7 +389,7 @@ if rank == 0:
     df_acc.to_csv(path_to_save_results + '/' + 'accs_{:s}_{:d}.csv'.format(simulation_name, args.process_id), 
                   index=False)
 
-    energies = {'md': flows_dataset[0][:, 12].detach().numpy()}
+    energies = {'md': flows_train[0][:, 12].detach().numpy()}
 
     xss = torch.cat(adaptive['xs'])
     isomerss = torch.cat(adaptive['isomers'])
@@ -411,6 +413,10 @@ if rank == 0:
                                             T=args.temperature))
 
     part_ratios = torch.stack(part_ratios).detach().numpy()
+
+    df_part = pd.DataFrame(part_ratios, columns=['part_ratio'])
+    df_part.to_csv(path_to_save_results + '/' + 'part_ratios_{:s}_{:d}.csv'.format(simulation_name, args.process_id), 
+                  index=False)
 
     accs = torch.cat(adaptive['accs']).float().mean(dim=1).detach().numpy()
     us = torch.cat(adaptive['us']).flatten().detach().numpy()
