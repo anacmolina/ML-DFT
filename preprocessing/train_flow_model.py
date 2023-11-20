@@ -24,7 +24,7 @@ from flonacomldft.internal_coordinates import (
     Coordinates_mapping,
     )
 from flonacomldft.collective_variables import get_cvs_from_traj
-
+from flonacomldft.utils.data_processing import split_data_from_dataframe
 # nf training
 from flonacomldft.models.real_nvp import RealNVP_MLP
 from flonacomldft.train_flow_from_data import train_flow
@@ -70,8 +70,10 @@ torch.manual_seed(args.random_seed)
 path_datasets = get_path() + '/' + args.folder_path + '/' + 'datasets'
 
 # real centered coordinates datasets
-train = load_csv_file("is{:d}_flow_train.csv".format(args.isomer_label), path=path_datasets)[:args.N]
-
+flows_dataset = load_csv_file("is{:d}_flow_train.csv".format(args.isomer_label), path=path_datasets)[:args.N]
+    
+train, test = list(split_data_from_dataframe(flows_dataset, 0.8, 42))
+    
 # init flow model
 dim = 12
 cov = torch.cov(train[:, :dim].T).detach() + 1e-5 * torch.eye(train[:, :dim].shape[1]).detach()
