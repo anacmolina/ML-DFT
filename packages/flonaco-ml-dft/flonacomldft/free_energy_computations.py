@@ -45,8 +45,9 @@ def compute_TFP_from_samples(logprob_prop, logprob_target):
     # TODO: rewrite with logsumexp - no log?
     # err = np.sqrt(np.var(np.exp(logr_per_sample)) / np.exp(2 * logr)  / n_prop)
     # logr_err =  np.log(err)
-    logr_err = 0
-    return logr, logr_err
+    # std_r = np.std(np.exp(logr_per_sample)) / np.sqrt(n_prop)
+    std_r = 0
+    return logr, std_r
 
 
 def compute_TFP_logratio(n_prop, target_log_prob, mix_prop):
@@ -161,8 +162,6 @@ def compute_BAR_from_samples(logprop_prop, logprop_mc, logtgt_prop, logtgt_mc,
     logr_err = (re2_p + re2_q)**0.5
 
     return - logr, logr_err
-
-
 
 
 
