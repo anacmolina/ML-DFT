@@ -124,10 +124,10 @@ def run_metropolis(model,
         ratios = []
 
     if return_proposals:
-        xs_proposals = [init[:, :dim]]
-        us_proposals = [init[:, dim]]
-        isomers_proposals = [init[:, dim+1]]
-        nlls_proposals = [model.nll(init[:, :dim])]
+        xs_proposals = []
+        us_proposals = []
+        isomers_proposals = []
+        nlls_proposals = []
 
     print("Mixture Model: {:s}".format(str(mixture)))
 
