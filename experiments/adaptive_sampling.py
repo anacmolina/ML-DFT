@@ -420,7 +420,7 @@ if rank == 0:
 
     accs = torch.cat(adaptive['accs']).float().mean(dim=1).detach().numpy()
     us = torch.cat(adaptive['us']).flatten().detach().numpy()
-    losses = torch.cat([torch.tensor(frame[0]['losses']) for frame in adaptive['dict_flows']]).detach().numpy()
+    losses = torch.cat([torch.tensor(frame[0]['train_losses']) for frame in adaptive['dict_flows']]).detach().numpy()
     nlls = torch.cat(adaptive['nlls']).flatten().detach().numpy()
     
     energies['adaptive'] = us

@@ -36,13 +36,13 @@ from flonacomldft.utils.plots import set_plot_sequential_data, plot_energy_surfa
 num_seed = np.random.randint(0, 100)
 date_start = set_str_date_to_int(time.strftime('%Y-%m-%d %H:%M:%S'))
 
-print('seed: ', num_seed)
-print('date_start: ', date_start)
+print('Seed: ', num_seed)
+print('Date_start: ', date_start)
 
 # define arpase arguments
 parser = argparse.ArgumentParser(description='Prepare experiment')
 # execution params
-parser.add_argument('-threads', '--threads', type=int)
+parser.add_argument('-threads', '--threads', type=int, default=None)
 parser.add_argument('-pid', '--process-id', type=int, default=date_start)
 parser.add_argument('-rs', '--random-seed', type=int, default=num_seed)
 parser.add_argument('-path', '--folder-path', type=str, default='andersen')
@@ -62,9 +62,14 @@ parser.add_argument('-N', '--N', type=int, default=1000)
 args = parser.parse_args()
 args.date_start = date_start
 
+print('Flow training')
+
 # torch settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-torch.set_num_threads(args.threads)
+print('Device: ', device)
+if args.threads is not None:
+    torch.set_num_threads(args.threads)
+    
 torch.manual_seed(args.random_seed)
 
 path_datasets = get_path() + '/' + args.folder_path + '/' + 'datasets'
@@ -73,6 +78,11 @@ path_datasets = get_path() + '/' + args.folder_path + '/' + 'datasets'
 flows_dataset = load_csv_file("is{:d}_flow_train.csv".format(args.isomer_label), path=path_datasets)[:args.N]
     
 train, test = list(split_data_from_dataframe(flows_dataset, 0.8, 42))
+
+print('Train size: ', train.shape[0])
+print('Test size: ', test.shape[0])
+
+cvs_test = test[:, 15:].detach().numpy()
     
 # init flow model
 dim = 12
@@ -102,6 +112,7 @@ path_to_save_results = os.getcwd() + '/' + folder_to_save_results + '/'
 flow_dic = train_flow(
     model,
     train,
+    test=test,
     n_iter=args.n_iter,
     lr=args.learning_rate,
     bs=args.batch_size,
@@ -130,27 +141,32 @@ save_json_args(args, 'train_flow_model', args.process_id, path=path_to_save_resu
 
 fig, axs = plt.subplots(1, 3, figsize=(30, 7))
 
-losses = torch.tensor(flow_dic['losses']).detach()
+train_losses = torch.tensor(flow_dic['train_losses']).detach()
+test_losses = torch.tensor(flow_dic['test_losses']).detach()
 
 axs[0].set_title("Isomer: {:d}, nb: {:d}, hdm: {:d}, hdp: {:d}".format(args.isomer_label, args.n_blocks, args.hidden_dim, args.hidden_depth))
-set_plot_sequential_data(losses, avg=False, ax=axs[0], alpha=1, label='train', color='blue')
+set_plot_sequential_data(train_losses, avg=False, ax=axs[0], alpha=1, label='train', color='blue')
+set_plot_sequential_data(test_losses, avg=False, ax=axs[0], alpha=1, label='test', color='orange')
 axs[0].legend()
 axs[0].set_xlabel('Iterations')
 axs[0].set_ylabel('Loss')
 
-set_plot_sequential_data(torch.abs(losses), avg=False, ax=axs[1], alpha=1, label='train')
-axs[1].legend()
+set_plot_sequential_data(torch.abs(train_losses), avg=False, ax=axs[1], alpha=1, label='train', color='blue')
+set_plot_sequential_data(torch.abs(test_losses), avg=False, ax=axs[1], alpha=1, label='test', color='orange')
 axs[1].set_yscale('log')
 axs[1].set_xlabel('Iterations')
 axs[1].set_ylabel('|Loss|')
+axs[1].legend()
 
 coord_mapping = Coordinates_mapping(etype=args.energy_type)
 
-xs = flow_dic['model'].sample(100)
+xs = flow_dic['model'].sample(test.shape[0])
 molecules = [coord_mapping.build_molecule_from_real_centered(x.reshape(1, -1), isomer=args.isomer_label)[0] for x in xs]
 cvs = get_cvs_from_traj(molecules)
 
 plot_energy_surface(fig=fig, ax=axs[2])
-axs[2].scatter(cvs[:, 0], cvs[:, 1], s=25)
+axs[2].scatter(cvs_test[:, 0], cvs_test[:, 1], s=25, label='test', color='orange')
+axs[2].scatter(cvs[:, 0], cvs[:, 1], s=25, label='flow', color='cyan')
+axs[2].legend()
 
 plt.savefig(path_to_save_results + '/is{:d}_flow_training_{:d}.png'.format(args.isomer_label, args.process_id))

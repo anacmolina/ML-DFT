@@ -17,6 +17,7 @@ def train_flow(
         n_iter,
         lr,
         bs,
+        test=None,
         use_scheduler=False,
         step_scheduler=10,
         save_splits=1,
@@ -39,9 +40,12 @@ def train_flow(
     if save_splits > 1:
         models = [copy.deepcopy(model)]
 
-    losses = []
+    train_losses = []
     grad_norms = []
     time_step = []
+
+    if test is not None:
+        test_losses = []
 
     if with_tqdm:
         
@@ -50,7 +54,7 @@ def train_flow(
     else:
         
         pbar = range(n_iter)
-        print('Epoch \t\t Lr \t\t Loss \t\t Grad norm')
+        print('Epoch \t\t Train Lr \t Loss \t\t Grad norm')
 
 
     x = train[:, :dim].clone().detach()
@@ -68,16 +72,23 @@ def train_flow(
 
             if torch.isinf(loss).any():
                 print('Stopped because loss became inf!')
-                return {'model': model, 
-                        'losses': losses}
+                to_return = {'model': model, 
+                        'train_losses': train_losses}
+                if test is not None:
+                    to_return['test_losses'] = test_losses
+                
+                return to_return
             
             loss.backward()
             clip_grad_norm_(model.parameters(), max_norm=grad_clip)
 
             optimizer.step()
 
-        losses.append(loss.item())
+        train_losses.append(loss.item())
         time_step.append(time.time())
+
+        if test is not None:
+            test_losses.append(loss_func(test[:, :dim]).item())
 
         if t % (n_iter / 100) == 0:
             total_norm = 0
@@ -97,11 +108,11 @@ def train_flow(
                 for param_group in optimizer.param_groups:
                     lr_ = param_group['lr']
 
-                print('{:0.1e} \t {:0.2e} \t {:3.2e} \t {:0.0e}'.format(t, lr_, losses[-1], grad_norms[-1]))
+                print('{:0.1e} \t {:0.2e} \t {:3.2e} \t {:0.0e}'.format(t, lr_, train_losses[-1], grad_norms[-1]))
 
         else:
 
-            pbar.set_description('Loss: {:.4f}'.format(losses[-1]))
+            pbar.set_description('Loss: {:.4f}'.format(train_losses[-1]))
 
         if save_splits > 1:
             if t % (n_iter // save_splits) == 0:
@@ -109,12 +120,15 @@ def train_flow(
 
     to_return = {
         'model': model,
-        'losses': losses,
+        'train_losses': train_losses,
         'grad_norms': grad_norms,
         'time_step': time_step,
     }     
 
     if save_splits > 1:
         to_return['models'] = models
+
+    if test is not None:
+        to_return['test_losses'] = test_losses
 
     return to_return
