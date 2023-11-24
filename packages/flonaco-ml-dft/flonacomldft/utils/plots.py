@@ -16,9 +16,11 @@ import cmocean.cm as cmo
 from ase.units import kB
 from flonacomldft.FES.plotter2 import Plotter
 
-#from flonacomldft.collective_variables import (get_cvs_from_real_centered, 
- #                                              get_cvs_from_zmat)
+from PIL import Image
+import numpy as np
+from flonacomldft.utils.io_utils import get_project_path
 
+load_ag6_image = lambda i: np.asarray(Image.open(get_project_path() + '/images/ag6_is{:d}.png'.format(i)))
 
 def set_plot_sequential_data(y, x=None, avg=True, window_size=10, axis=1, ax=None, init=0, color='k', alpha=0.3, label=None, **kwargs):
     """
