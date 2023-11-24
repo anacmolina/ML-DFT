@@ -629,3 +629,43 @@ def get_collective_variables_from_xs(xss, isomerss):
         cvss.append(torch.stack(cvs))
     
     return torch.stack(cvss)
+
+
+def load_DFTAdaptive_folder(folder_path, n_runs, n_steps, n_chains, isomer, temperature=350):
+
+    zmats = []
+    coord_mapping = Coordinates_mapping()
+    from ase.io import read
+    
+    for i in range(n_runs):
+    
+        for j in range(n_steps):
+    
+            for k in range(n_chains):
+
+                try:
+    
+                    file = 'ag6_{:d}_{:d}_{:d}.out'.format(i, j, k)
+    
+                    molecule = read(folder_path+'/'+file)
+                    u = molecule.get_potential_energy()
+                    cv = torch.from_numpy(get_collective_variables(molecule))
+    
+                    zmat, logdetjac = coord_mapping.get_internal_from_molecule(molecule, temperature=temperature)
+                    u_zmat = coord_mapping.compute_energy_in_new_frame(u, logdetjac=logdetjac, temperature=temperature)
+    
+                    row = torch.cat((zmat.reshape(1, -1), 
+                                        u_zmat.reshape(1, -1), 
+                                        torch.tensor([isomer]).reshape(1, -1), 
+                                        logdetjac.reshape(1, -1), 
+                                        cv.reshape(1, -1)), dim=1
+    
+                        )
+    
+                    zmats.append(row)
+
+                except:
+
+                    continue
+    
+    return torch.stack(zmats).squeeze()

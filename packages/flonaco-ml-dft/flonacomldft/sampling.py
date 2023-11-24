@@ -175,9 +175,9 @@ def run_metropolis(model,
         nll_x_init = model.nll(x_init)
 
         if return_proposals:
-            xs_proposals.append(x_new)
-            isomers_proposals.append(isomer_new)
-            nlls_proposals.append(nll_x)
+            xs_proposals.append(x_new.clone().detach())
+            isomers_proposals.append(isomer_new.clone().detach())
+            nlls_proposals.append(nll_x.clone().detach())
 
         if "mlp" in energy_type:
 
@@ -247,9 +247,9 @@ def run_metropolis(model,
 
                     #u_new[i] = model_mlp_is0(x_new[i].reshape(1, -1))
 
-                    xs_calc.append(x_new[i])
-                    us_calc.append(u_new[i])
-                    isomers_calc.append(isomer_new[i])
+                    xs_calc.append(x_new[i].clone().detach())
+                    us_calc.append(u_new[i].clone().detach())
+                    isomers_calc.append(isomer_new[i].clone().detach())
 
                     #except:
 #
@@ -283,7 +283,7 @@ def run_metropolis(model,
             time_step_mcmc.append(time.time())
 
         if return_proposals:
-            us_proposals.append(u_new)
+            us_proposals.append(u_new.clone().detach())
 
         ratio = -beta * u_new + nll_x
         ratio += beta * u_init - nll_x_init

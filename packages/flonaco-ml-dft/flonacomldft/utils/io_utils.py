@@ -106,3 +106,4 @@ def save_json_args(args, script_name, id, path=os.getcwd()):
 def set_str_date_to_int(date):
     id = date.replace(' ', '').replace(':', '').replace('-', '')
     return int(id)
+
