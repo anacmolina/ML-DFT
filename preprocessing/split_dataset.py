@@ -3,10 +3,9 @@ import os
 import time
 import argparse
 
-from flonacomldft.utils.io_utils import load_csv_file, save_json_args
+from flonacomldft.utils.io_utils import load_csv_file, save_json_args, get_path
 from flonacomldft.utils.data_processing import split_data_from_dataframe
 from flonacomldft.internal_coordinates import (
-    get_construction_table,
     save_internal_coordinates_to_csv,
 )
 from flonacomldft.utils.io_utils import set_str_date_to_int
@@ -26,24 +25,29 @@ parser.add_argument("-low", "--low-index", type=int, default=0)
 parser.add_argument("-pid", "--process-id", type=int, default=date)
 
 args = parser.parse_args()
+ 
+dim = 12
 
 # dataset params
 train_size = args.train_size
 sk_seed = args.sk_seed
 
 # full dataset
-zmat = load_csv_file(args.file, path = os.getcwd() + '/')[args.low_index : args.low_index + args.num_samples]
-zmat_train_test = list(split_data_from_dataframe(zmat, train_size, sk_seed))
+xs = load_csv_file(args.file, path = os.getcwd() + '/')[args.low_index : args.low_index + args.num_samples]
+xs_train_test = list(split_data_from_dataframe(xs, train_size, sk_seed))
+
+folder = args.file.split("/")[-1].split(".")[0].split("_")[2] + "/datasets"
+columns = ['rc{:d}'.format(i) for i in range(dim)]
 
 # save train and test dataset in separate files
-for zmat_, split_type in zip(zmat_train_test, ["train", "test"]):
+for xs_, split_type in zip(xs_train_test, ["train", "test"]):
     save_internal_coordinates_to_csv(
-        zmat_,
-        get_construction_table(),
-        add_isomer=True,
+        xs_,
+        columns=columns,
         filename="is{:d}_{:s}_{:s}.csv".format(
             args.isomer_label, args.for_model, split_type
         ),
+        path=get_path() + '/' + folder,
     )
     
 args.algorithms = "split_dataset.py"

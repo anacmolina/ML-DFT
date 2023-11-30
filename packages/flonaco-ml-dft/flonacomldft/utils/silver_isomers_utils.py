@@ -81,6 +81,9 @@ params_calc = {
             'spinpol': True,
             'symmetry': 'off',
             #'nbands': -4,
+            'parallel': dict(augment_grids=True,  # use all cores for XC/Poisson
+                sl_auto=True,  # enable ScaLAPACK parallelization
+                use_elpa=True),  # use ELPA for ScaLAPACK
             },
 }
 

@@ -58,6 +58,7 @@ class MD_Properties:
             self.collective_variables = self.get_collective_variables(trajectory)
 
 #TODO: Add docstring
+#TODO: Fix for new data saving in flonacomldft
 class NF_Results:
 
     def __init__(self, flow_dic, dtype=torch.float32, device='cpu'):

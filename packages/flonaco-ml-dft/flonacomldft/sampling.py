@@ -1,5 +1,5 @@
 """
-Script with all sampling methods. 
+Script with Metropolis-Hasting algorithm. 
 
 """
 
@@ -8,373 +8,384 @@ import numpy as np
 import torch
 import tqdm
 
-#from ase.parallel import parprint as print
+from flonacomldft.collective_variables import get_collective_variables
+from ase.parallel import parprint as print
 from ase.units import kB
 
-from ase.parallel import parprint as print
+#TODO: Add calculator for MLP
+#TODO: Add cv values to return
+#TODO: add docstrings
 
-#kb = 8.617333262e-5
-
-def run_metropolis(
-    model,
-    init,
-    n_chains,
-    n_steps,
-    dim=12,
-    id_run=None,
-    energy_type=None,
-    frac_dft=0.1,
-    mlp_models=None,
-    mixture=False,
-    T=350,
-    with_tqdm=False,
-    return_ratio = False,
-    return_proposals = False,
-    dft_folder_name = None,
-    scheduler = 10,
-    update_weigth = False,
-    alpha=0.1,
-):
-    """
-    Run Metropolis-Hastings algorithm to sample from a model.
-    
-    Args:
-        model (torch.nn.Module): model to sample from
-        init (torch.Tensor): initial positions of shape (n_chains, n_dim + 2) - xs, us, isomers
-        n_chains (int): number of chains to run
-        n_steps (int): number of steps to run
-        id_run (int): id of the run
-        energy_type (str): type of energy to use (dft, mlp, dft+mlp)
-        frac_dft (float): fraction of chains for which to use DFT per step
-        mlp_models (torch.nn.Module): MLP model to use for energy calculation
-        mixture (bool): whether the model is a mixture
-        T (float): temperature in K
-        with_tqdm (bool): whether to use tqdm progress bar
-    
-    Returns:
-        dictionary reporting all the progress
-    """
-
-    # add data dimension and data structure compatibility
+def run_metropolis(model, 
+                    init, 
+                    n_chains,
+                    n_steps,
+                    id_run,
+                    energy_type,
+                    temperature,
+                    mixture,
+                    mlp_models=None,
+                    frac_computed=0.2,
+                    dim=12,
+                    update_weights=True,
+                    scheduler_weights=10,
+                    alpha=0.5,
+                    return_ratios=True,
+                    return_proposals=True,
+                    with_tqdm=False,
+                    device='cpu',
+                    folder_name=None,
+                 ):
 
     assert init.shape[0] == n_chains
+
+    if mixture:
+        try:
+            assert len(model.models) > 1
+        except:
+            raise RuntimeError("Model is not a mixture")
+    
+    print("Running Metropolis-Hastings")
 
     x_init = init[:, :dim]
     u_init = init[:, dim]
     isomer_init = init[:, dim+1]
 
-    beta = 1 / (kB * T)
+    beta = 1 / (kB * temperature)
 
-    if "dft" in energy_type:
-        import gpaw.mpi as mpi
-        from flonacomldft.dft_calculator import DFTCalculator
-        from flonacomldft.internal_coordinates import Coordinates_mapping
-        
-        coord_maps = Coordinates_mapping(etype='dft')
-        calculator = DFTCalculator()
-
-        mpi.world.barrier()
-
-        if dft_folder_name is not None:
-            calculator.initialize_calculator(foldername=dft_folder_name)
-        else:
-            calculator.initialize_calculator()
-    
-        use_dft = True
-
-        xs_dft = []
-        us_dft = []
-        isomers_dft = []
-        inds_dft = []
-
-    else:
-        use_dft = False
-
-    if "emt" in energy_type:
-        from flonacomldft.dft_calculator import EMTCalculator
-        from flonacomldft.internal_coordinates import Coordinates_mapping
-
-        coord_maps = Coordinates_mapping(etype=energy_type)
-        calculator = EMTCalculator()
-
-        use_dft = True
-
-        xs_dft = []
-        us_dft = []
-        isomers_dft = []
-        inds_dft = []
-
-    print("Use DFT: ", use_dft)
+    print("Number of chains: {:d}".format(n_chains))
+    print("Number of steps: {:d}".format(n_steps))
+    print("Temperature: {:.1f}K".format(temperature))
+    print("Energy Type: {:s}".format(energy_type))
 
     if "mlp" in energy_type:
         #TODO: Add calculator for MLP
-        if(mlp_models is None):
-            raise RuntimeError("No MLP model to calculate energy")
+        
+        if (mlp_models is None):
+            raise RuntimeError("No model to calculate energy")
+        
         if mixture:
             print('Mixture model')
             model_mlp_is0, model_mlp_is1 = mlp_models
         else:
             if(isomer_init.sum()==0):
-                model_mlp_is0 = mlp_models
+                model_mlp_is0 = mlp_models[0]
             else:
-                model_mlp_is1 = mlp_models
+                model_mlp_is1 = mlp_models[0]
+        
+        print("Use Neural Predictor: True")
+    
+    else:
+        
+        print("No Neural Predictor")
 
-    if return_ratio:
+    if ("dft" in energy_type) or ("emt" in energy_type):
+
+        use_calc = True
+
+        xs_calc = []
+        us_calc = []
+        isomers_calc = []
+        inds_calc = []
+
+        if "emt" in energy_type:
+
+            from flonacomldft.dft_calculator import EMTCalculator
+            from flonacomldft.internal_coordinates import Coordinates_mapping
+
+            coord_mapping = Coordinates_mapping(etype='emt')
+            calculator = EMTCalculator()
+
+            print("Use EMT Calculator: {:s}".format(str(use_calc)))
+
+        if "dft" in energy_type:
+
+            import gpaw.mpi as mpi
+            from flonacomldft.dft_calculator import DFTCalculator
+            from flonacomldft.internal_coordinates import Coordinates_mapping
+        
+            coord_mapping = Coordinates_mapping(etype='dft')
+            calculator = DFTCalculator()
+
+            mpi.world.barrier()
+
+            if folder_name is not None:
+                calculator.initialize_calculator(foldername=folder_name)
+            else:
+                calculator.initialize_calculator()
+
+            print("Use DFT Calculator: {:s}".format(str(use_calc)))
+
+    else:
+    
+        use_calc = False
+
+    if return_ratios:
         ratios = []
 
     if return_proposals:
-        xs_props = [init[:, :dim]]
+        xs_proposals = []
+        us_proposals = []
+        isomers_proposals = []
+        nlls_proposals = []
+
+    print("Mixture Model: {:s}".format(str(mixture)))
 
     if mixture:
-        weights = []
+        weights = [model.weights.clone().detach()]
 
     xs = []
     us = []
     accs = []
-    nlls = []
     isomers = []
+    nlls = []
+
+    time_step_mcmc = []
+
+    if with_tqdm == False:
+
+        print("Step \t Acc Rate")
 
     if with_tqdm:
         pbar = tqdm.tqdm(range(n_steps))
     else:
         pbar = range(n_steps)
 
-    timestep_mcmc = []
-    
+    def write_not_compute(x, isomer, id_run, dt, i):
+
+        with open('not_computed_molecules.txt', 'w') as f:
+
+            f.write("Molecule run {:s} step {:d} chain {:d} not computed\n".format(
+                str(id_run),
+                dt, 
+                i))
+
     for dt in pbar:
 
         if mixture:
             x_new, isomer_new = model.sample(n_chains, return_mus=True)
         else:
             x_new = model.sample(n_chains)
-            isomer_new = isomer_init
+            isomer_new = isomer_init.clone()
 
-        x_new = x_new.clone().detach().float()
-        isomer_new = isomer_new.clone().detach().float()
+        x_new = x_new.clone().detach() #set float
+        isomer_new = isomer_new.clone().detach() #set dype
+        
+        nll_x = model.nll(x_new)
+        nll_x_init = model.nll(x_init)
 
         if return_proposals:
-            xs_props.append(x_new)
+            xs_proposals.append(x_new.clone().detach())
+            isomers_proposals.append(isomer_new.clone().detach())
+            nlls_proposals.append(nll_x.clone().detach())
 
-        nll_x = model.nll(x_new)
-        nll_x_init = model.nll(x_init)  
-
-        print('energy type: ', energy_type)          
-       
         if "mlp" in energy_type:
-            
+
             u_new = torch.zeros((n_chains, 1)).squeeze()
 
-            print(u_new)
-
             if mixture:
-                u_new[~(isomer_new.bool())] = model_mlp_is0(x_new[~(isomer_new.bool())]).reshape(1, -1)
-                print(u_new, isomer_new)
+
+                u_new[~isomer_new.bool()] = model_mlp_is0(x_new[~isomer_new.bool()]).reshape(1, -1)
                 u_new[isomer_new.bool()] = model_mlp_is1(x_new[isomer_new.bool()]).reshape(1, -1)
-                print(u_new, isomer_new)
+
             else:
+
                 if(isomer_new.sum()==0):
-                    u_new = model_mlp_is0[0](x_new)
+                    u_new = model_mlp_is0(x_new)
                 else:
-                    u_new = model_mlp_is1[0](x_new)
+                    u_new = model_mlp_is1(x_new)
 
-            u_new = u_new.squeeze().float()
+            u_new = u_new.squeeze()
 
-        if "dft" or "emt" in energy_type:
-            
-            ind_not_computed = torch.zeros(n_chains) # keeps indices where DFT fails
-            ind_dft = torch.zeros(n_chains) # boolean table of where DFT is used
-            
-            if energy_type == "dft" or energy_type == "emt":
-                ind_dft = torch.ones(n_chains)
+        if use_calc:
+
+            ind_not_computed = torch.zeros(n_chains)
+            ind_computed = torch.zeros(n_chains)
+
+            if (energy_type == "dft") or (energy_type == "emt"):
+
+                ind_computed = torch.ones(n_chains)
                 u_new = torch.zeros((n_chains))
+
             else:
-                n_dft = int(u_new.shape[0] * frac_dft)
+
+                n_computed = int(u_new.shape[0] * frac_computed)
                 u_sort, ind_u_sort = u_new.sort()
-                for idx in ind_u_sort[:n_dft]:
-                    ind_dft[idx] = 1
-            
-            # TODO: type of isomer_dft
-            for i,flag_dft in enumerate(ind_dft):
-                if flag_dft:
-                    try: # Avoid try if possible
-                            
-                        molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer=int(isomer_new[i].item()))
-                        input_calculator = {
-                            'atoms': molecule,
-                        }
-    
-                        if "dft" in energy_type:
-                            input_calculator['filename'] = 'ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
-    
-                        u_ = calculator.calculate_potential_energy(**input_calculator
-                            #molecule, 
-                            #filename='ag6_{:d}_{:d}_{:d}.out'.format(id_run, dt, i)
-                                                )
-                        u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1), temperature=T)
-                        #u_new[i] = torch.tensor(-6.8+torch.rand(1)*0.5)
-    
-                        xs_dft.append(x_new[i])
-                        us_dft.append(u_new[i])
-                        isomers_dft.append(isomer_new[i])
+                
+                for idx in ind_u_sort[:n_computed]:
+                    
+                    ind_computed[idx] = 1
 
-                    except:
-                        u_new[i] = 0.
-                        ind_not_computed[i] = 1
+            for i, flag_computed in enumerate(ind_computed):
 
-        #if "emt" in energy_type:
+                if flag_computed:
+
+                    #try: 
+
+                    molecule, logdetjac = coord_mapping.build_molecule_from_real_centered(
+                        x_new[i].reshape(1, -1), 
+                        isomer=isomer_new[i].int().item(),
+                    )
+    
+                    input_calculator = {'atoms': molecule, }
+    
+                    if "dft" in energy_type:
+                    
+                        input_calculator['filename'] = 'ag6_{:s}_{:d}_{:d}.out'.format(
+                            str(id_run), dt, i
+                        )
+    
+                        mpi.world.barrier()
+    
+                    u = calculator.calculate_potential_energy(**input_calculator)
+    
+                    u_new[i] = coord_mapping.compute_energy_in_new_frame(
+                        u,
+                        logdetjac*(-1),
+                        temperature=temperature,
+                    )
+
+                    #u_new[i] = model_mlp_is0(x_new[i].reshape(1, -1))
+
+                    xs_calc.append(x_new[i].clone().detach())
+                    us_calc.append(u_new[i].clone().detach())
+                    isomers_calc.append(isomer_new[i].clone().detach())
+
+                    #except:
 #
-        #    u_new = torch.zeros(n_chains)
-        #    for i in range(n_chains):
-        #        molecule, logdetjac = coord_maps.build_molecule_from_real_centered(x_new[i].reshape(1, -1), isomer=int(isomer_new[i].item()))
-        #        u_ = calculator.calculate_potential_energy(molecule)
+                    #    print("Molecule {:d} not computed".format(i))
 #
-        #        u_new[i] = coord_maps.compute_energy_in_new_frame(u_, logdetjac*(-1))
+                    #    ind_not_computed[i] = 1
+                    #    u_new[i] = 0.0
+#
+                    #    if "dft" in energy_type:
+                    #        
+                    #        rank = mpi.world.rank
+                    #        
+                    #        if rank==0:
+                    #            write_not_compute(x_new[i], isomer_new[i], id_run, dt, i)
+                    #    else:
+                    #        
+                    #        write_not_compute(x_new[i], isomer_new[i], id_run, dt, i)
 
-            
-        if use_dft and 'dft' in energy_type:
+        if use_calc and "dft" in energy_type:
 
             rank = mpi.world.rank
 
             if rank == 0:
-                timestep_mcmc.append(time.time())
+
+                time_step_mcmc.append(time.time())
 
             mpi.world.barrier()
 
         else:
 
-            timestep_mcmc.append(time.time())
+            time_step_mcmc.append(time.time())
+
+        if return_proposals:
+            us_proposals.append(u_new.clone().detach())
 
         ratio = -beta * u_new + nll_x
         ratio += beta * u_init - nll_x_init
         ratio = torch.exp(ratio)
 
-        if return_ratio:
-            ratios.append(torch.min(ratio.clone(), torch.ones_like(ratio)))
+        if return_ratios:
+            ratios.append( torch.min(ratio.clone().detach(), 
+                            torch.ones_like(ratio)) )
 
-        u = torch.rand_like(ratio)
+        s = torch.rand_like(ratio)
 
-        acc = u < torch.min(ratio, torch.ones_like(ratio))
+        acc = s < torch.min(ratio.detach(), torch.ones_like(ratio))
 
-        if use_dft:
-            
-            if ind_not_computed is not None and ind_not_computed.sum() != 0:
+        if use_calc:
+    
+            if ind_not_computed.sum() > 0:
+
                 acc[ind_not_computed.bool()] = False
 
-            ind_dft[~acc] = 0
-            inds_dft.append(ind_dft.float().clone())
+            inds_calc.append(ind_computed)
 
         x_new[~acc] = x_init[~acc]
         u_new[~acc] = u_init[~acc]
 
-        print('mixtue: ', mixture)
-
         if mixture:
-            print('sampling new - old', isomer_new, isomer_init)
-            isomer_new[~acc] = isomer_init[~acc]
-            print('sampling new', isomer_new)
-        else:
-            isomer_new = isomer_init
-
-        xs.append(x_new.float().clone())
-        us.append(u_new.float().clone())
-        accs.append(acc.float().clone())
-        nlls.append(nll_x.float().clone())
-        isomers.append(isomer_new.float().clone())
         
+            isomer_new[~acc] = isomer_init[~acc]
+        
+        else:
+
+            isomer_new = isomer_init.clone()
+        
+        
+        xs.append(x_new.clone().detach())
+        us.append(u_new.clone().detach())
+        accs.append(acc.clone().detach())
+        isomers.append(isomer_new.clone().detach())
+        nlls.append(model.nll(x_new).clone().detach())
+
         x_init = x_new.clone().detach()
         u_init = u_new.clone().detach()
         isomer_init = isomer_new.clone().detach()
 
         if with_tqdm:
-            pbar.set_description(f'acc: {acc.float().mean():.2f}')
+            pbar.set_description("Step {:d} \t Acceptance Rate {:.3f}".format(
+                dt, acc.float().mean().item()))
+        else:
 
-        #TODO: Add parameter to save
-        print("step: {:d} \t acc: {:0.2f}".format(dt, acc.float().mean()))
+            if "dft" in energy_type:
+                
+                mpi.world.barrier()
+                
+                print("{:d} \t {:.3f}".format( dt, 
+                                        acc.float().mean().item() 
+                                        )
+                )
+            else:
+                print("{:d} \t {:.3f}".format( dt, 
+                                        acc.float().mean().item()
+                                        )
+            )
 
-        if mixture and update_weigth and dt % scheduler == 0 and dt != 0:
+        if mixture and update_weights and dt > 0 and dt % scheduler_weights == 0:
 
-            #print("dt, isomers shape: ", dt, torch.stack(isomers).shape)
-            #print("populations window", torch.stack(isomers)[-scheduler:].shape, (~torch.stack(isomers).bool()).float()[-scheduler:].detach().mean(), (torch.stack(isomers).bool()).float()[-scheduler:].detach().mean())
-            
-            weigths_window_populations = torch.tensor([(~torch.stack(isomers).bool())[-scheduler:].float().mean(), 
-                                    (torch.stack(isomers).bool()).float()[-scheduler:].detach().mean()]).float().detach()
-            
-            print("current model weights: ", model.weights)
-            print("window population: ", weigths_window_populations)
+            window_weights = torch.stack( [(~torch.stack(isomers).bool())[-scheduler_weights:].float().mean(),
+                              torch.stack(isomers)[-scheduler_weights:].float().mean()] )
 
-            new_weights = alpha*model.weights.clone() + (1-alpha)*weigths_window_populations.clone()
-            
-            #print("new weights: ", new_weights)
+            new_weights = alpha * model.weights.clone() + (1 - alpha) * window_weights.clone()
 
-            print(model.weights, new_weights < 0.75, torch.all(new_weights  < 0.75))
-
-            if torch.all(new_weights  < 0.75):
+            if torch.all(new_weights < 0.75):
 
                 model.weights = new_weights.clone()
-                #model.weights = alpha*model.weights.clone() + (1-alpha)*weigths_current_populations.clone()
-                print("updated weights: ", model.weights)
 
-            weights.append(model.weights.clone().float().detach())
-
-    print(isomer_init)
-
-    #TODO: Check if this is necessary
-
-    if use_dft and 'dft' in energy_type:
-
-        timestep_mcmc_min = np.array([0])
-        
-        ranks = np.arange(mpi.world.size)
-        comm = mpi.world.new_communicator(ranks)
-        rank = mpi.world.rank
-        mpi.world.barrier()
-
-        if rank==0:
-            timestep_mcmc_min = np.min(timestep_mcmc).astype(int)
-            timestep_mcmc = [t-timestep_mcmc_min for t in timestep_mcmc]
-            timestep_mcmc_min = timestep_mcmc_min.reshape(1,)
-            timestep_mcmc = np.array(timestep_mcmc)
-            
-        else:
-            timestep_mcmc = np.array([0.]*n_steps)
-
-        comm.broadcast(timestep_mcmc_min, 0)
-        comm.broadcast(timestep_mcmc, 0)
-
-
-        mpi.world.barrier()
-
-        timestep_mcmc_min = timestep_mcmc_min[0]
-        timestep_mcmc = timestep_mcmc.tolist()
-        timestep_mcmc = [t+timestep_mcmc_min for t in timestep_mcmc]
-    
-        mpi.world.barrier()
-
-    #print(timestep_mcmc, rank)
-    #print(torch.stack(accs), rank)
-
+            weights.append(model.weights.clone().detach())
 
     to_return = {
-        "xs": torch.stack(xs),
-        "us": torch.stack(us),
-        "accs": torch.stack(accs),
-        "isomers": torch.stack(isomers),
-        "time_mcmc": timestep_mcmc,
+        'xs': torch.stack(xs),
+        'us': torch.stack(us),
+        'accs': torch.stack(accs),
+        'isomers': torch.stack(isomers),
+        'nlls': torch.stack(nlls),
+        'time_mcmc': time_step_mcmc,
     }
 
-    if return_ratio:
-        to_return["ratios"] = torch.stack(ratios)
+    if return_ratios:
+        to_return['ratios'] = torch.stack(ratios)
 
     if return_proposals:
-        to_return["xs_props"] = torch.stack(xs_props)
+        to_return['xs_proposals'] = torch.stack(xs_proposals)
+        to_return['us_proposals'] = torch.stack(us_proposals)
+        to_return['isomers_proposals'] = torch.stack(isomers_proposals)
+        to_return['nlls_proposals'] = torch.stack(nlls_proposals)
 
-    if use_dft:
-        to_return["inds_dft"] = torch.stack(inds_dft)
-        to_return["xs_dft"] = torch.stack(xs_dft)
-        to_return["us_dft"] = torch.tensor(us_dft).float().detach()
-        to_return['isomers_dft'] = torch.stack(isomers_dft)
+    if use_calc:
+            
+        to_return['xs_calc'] = torch.stack(xs_calc)
+        to_return['us_calc'] = torch.stack(us_calc)
+        to_return['isomers_calc'] = torch.stack(isomers_calc)
+        to_return['inds_calc'] = torch.stack(inds_calc)
 
-    if mixture and update_weigth:
-        to_return["weights"] = weights
+    if mixture and update_weights:
+        to_return['weights'] = torch.stack(weights)
 
     return to_return
+

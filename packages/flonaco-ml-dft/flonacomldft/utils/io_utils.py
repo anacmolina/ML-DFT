@@ -16,14 +16,14 @@ def get_project_path():
     """
     Get the path to the project folder.
     """
-    if os.path.isdir('/mnt/home/amolina/ceph/ml-dft/'):
-        ceph_home = '/mnt/home/amolina/ceph/ml-dft'
+    if os.path.isdir('/mnt/home/amolina/ceph/adaptive-flow-mc'):
+        ceph_home = '/mnt/home/amolina/ceph/adaptive-flow-mc'
     elif os.path.isdir('/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft'):
         ceph_home = '/Users/marylou/Dropbox/Prof/Experiments/_ceph/ml-dft'
-    elif os.path.isdir('/home/ana/ml-dft/'):
-        ceph_home = '/home/ana/ml-dft'
-    elif os.path.isdir('/home/amolina/ml-dft/'):
-        ceph_home = '/home/amolina/ml-dft'    
+    elif os.path.isdir('/home/ana/adaptive-flow-mc'):
+        ceph_home = '/home/ana/adaptive-flow-mc'
+    elif os.path.isdir('/home/amolina/adaptive-flow-mc'):
+        ceph_home = '/home/amolina/adaptive-flow-mc'    
     else:
         raise RuntimeError('Data path not understood')
     return ceph_home
@@ -35,6 +35,7 @@ def get_path():
     """
     return get_project_path() + '/database'
 
+# TODO: delete this function
 # created to save all the information of the simulations
 def create_simulation_folder(name='flowMC', path=os.getcwd()):
     
@@ -105,3 +106,4 @@ def save_json_args(args, script_name, id, path=os.getcwd()):
 def set_str_date_to_int(date):
     id = date.replace(' ', '').replace(':', '').replace('-', '')
     return int(id)
+
