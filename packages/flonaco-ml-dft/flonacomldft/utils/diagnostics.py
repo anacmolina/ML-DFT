@@ -213,7 +213,7 @@ def my_gelman_rubin(x):
     return s2
 
 
-def R_hat(chains, burn_in=100, n_split=10, var_names=None, filter_vars=None):
+def R_hat(chains, burn_in=100, n_split=10, var_names=None, filter_vars=None, labels=None):
     
     idata = az.convert_to_inference_data(chains[:, burn_in:, :])
     coords = {}
@@ -223,7 +223,6 @@ def R_hat(chains, burn_in=100, n_split=10, var_names=None, filter_vars=None):
     n_draws = data.dims["draw"]
     n_samples = n_draws * data.dims["chain"]
     first_draw = data.draw.values[0] # int of where where things should start
-    labels = ['x{:d}'.format(i) for i in range(12)]
 
     ## Compute where to split the data to diagnostic the convergence
     xdata = np.linspace(n_samples / n_split, n_samples, n_split)
