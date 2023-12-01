@@ -87,7 +87,7 @@ def plot_conformations(conformations, cols=5, inds=None, figsize=(15, 5)):
     return fig, axs
 
 
-def plot_energy_histogram(energy_molecules, axis_labels='default', ax=None, **kwargs):
+def plot_energy_histogram(energy_molecules, axis_labels='default', stat='density', common_bins=False, common_norm=False, ax=None, **kwargs):
     """ Plot the histogram of the energies of a list of molecules.
     Args:
         energy_molecules (dataframe): Dataframe with the energies of the molecules.
@@ -101,7 +101,7 @@ def plot_energy_histogram(energy_molecules, axis_labels='default', ax=None, **kw
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize=(10, 5))
 
-    sns.histplot(energy_molecules, stat='density', ax=ax, common_bins=False, common_norm=False, **kwargs)
+    sns.histplot(energy_molecules, stat=stat, ax=ax, common_bins=common_bins, common_norm=common_norm, **kwargs)
 
     if axis_labels == 'default':
         ax.set_xlabel('Energy (eV)')

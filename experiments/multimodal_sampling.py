@@ -1,20 +1,20 @@
 import warnings
 warnings.filterwarnings('ignore')
 
-# standard library imports
+# standar libraries
 import os
 import time
 import argparse
 
-# scientific library imports
+# scientific libraries
 import torch
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# flonaco library imports
+# flonaco functions
 from flonacomldft.utils.io_utils import (
-    get_path,
+    get_project_path,
     load_csv_file,
     load_pickle_file,
     save_csv_file,
@@ -25,10 +25,16 @@ from flonacomldft.utils.io_utils import (
 
 # coordinates handling
 from flonacomldft.internal_coordinates import Coordinates_mapping
-# normalizing flows
+from flonacomldft.utils.data_processing import split_data_from_dataframe
+# models building
 from flonacomldft.models.mixture import Mixture
 # sampling methods
 from flonacomldft.sampling import run_metropolis
+# collective variables
+from flonacomldft.internal_coordinates import get_collective_variables_from_xs
+# plots
+import matplotlib.pyplot as plt
+from flonacomldft.utils.plots import set_plot_sequential_data
 
 # parallelization
 import gpaw.mpi as mpi
@@ -41,7 +47,7 @@ comm = mpi.world.new_communicator(ranks)
 print(f"Rank {rank} of {mpi.world.size} is running.")
 mpi.world.barrier()
 
-# set the random seed
+# share random seed
 num_seed = np.array([0])
 date_start = np.array([0])
 
@@ -58,11 +64,10 @@ date_start = date_start[0]
 mpi.world.barrier()
 
 print('Rank {} of {} has seed {}.'.format(rank, mpi.world.size, num_seed))
-print('Rank {} of {} has date start {}.'.format(rank, mpi.world.size, date_start))
+print('Rank {} of {} has date {}.'.format(rank, mpi.world.size, date_start))
 
-# def argparser arguments
-parser = argparse.ArgumentParser(description='Multimodal sampling')
-# execution arguments
+parser = argparse.ArgumentParser(description='Multimodal sampling of the potential energy surface.')
+# execution parameters
 parser.add_argument('-threads', '--threads', type=int, default=None, help='Number of threads')
 parser.add_argument('-pid', '--process-id', type=int, default=date_start, help='Process ID')
 parser.add_argument('-rs', '--random_seed', type=int, default=num_seed, help='Random seed')
@@ -74,8 +79,15 @@ parser.add_argument('-nchains', '--n-chains', type=int, default=5, help='Number 
 parser.add_argument('-nsteps', '--n-steps', type=int, default=10, help='Number of steps')
 parser.add_argument('-etype', '--energy-type', type=str, default='dft', help='Energy type')
 parser.add_argument('-T', '--temperature', type=float, default=350, help='Temperature')
-parser.add_argument('-lmlpf', '--load-mlp-flow', type=bool, default=False, help='Load mlp flow model')
+parser.add_argument('-ftype', '--flow_type', type=str, default=None)
+parser.add_argument('-upw', '--update-weights', type=bool, default=True)
+parser.add_argument('-schw', '--scheduler-weights', type=int, default=10)
+parser.add_argument('-alpha', '--alpha', type=float, default=0.5)
+parser.add_argument('-frac', '--frac-computed', type=float, default=0.2)
+parser.add_argument('-npsID', '--mlps-id', type=int, nargs='+', default=None, help='Neural predictors ID')
+parser.add_argument('-nfsID', '--flows-id', type=int, nargs='+', default=None, help='Number of neural predictors')
 
+# parse arguments
 args = parser.parse_args()
 args.date_start = date_start
 
@@ -86,14 +98,14 @@ if args.threads is not None:
     torch.set_num_threads(args.threads)
 
 print('Device: ', device)
-print('Number of threads {} per rank {}'.format(torch.get_num_threads(), rank))
 
 # set random seed
-torch.manual_seed(args.random_seed)
+torch.manual_seed(int(args.random_seed))
 mpi.world.barrier()
 
 # isomer labels
 isomer_labels = args.isomer_label
+dim=12
 
 # mcmc parameters
 n_chains = args.n_chains
@@ -101,124 +113,127 @@ n_steps = args.n_steps
 energy_type = args.energy_type
 
 # path to datasets
-path_datasets = get_path() + '/' + args.folder_path + '/' + 'datasets'
+path_datasets = get_project_path() + '/database/' + args.folder_path + '/' + 'datasets'
 
 # load datasets
-coord_mapping = Coordinates_mapping()
 
-def get_dataset(name, path, isomer_labels):
-    
-    zmats = [load_csv_file("is{:d}_{:s}.csv".format(isomer_label, name), path) for isomer_label in isomer_labels] 
-    xs = [coord_mapping.get_real_centered_from_internal(
-                                    zmat_test[:, :12],
-                                    zmat_test[:, 14],
-                                    isomer=isomer_label,
-                                    energies=zmat_test[:, 12]
-                                    ) for isomer_label, zmat_test in zip(isomer_labels, zmats)]
+flows_dataset = [load_csv_file('is{:d}_flow_train.csv'.format(isomer_labels[i] 
+                                                                ), 
+                                 path_datasets) for i in range(len(isomer_labels))]
 
-    xs = [torch.cat((x[0], x[2].reshape(-1, 1), 
-                                 zmat[:, 13].reshape(-1, 1), 
-                                 #x[1].reshape(-1, 1),
-                                 ), dim=1) for x, zmat in zip(xs, zmats)]
-    
-    #xs = xs.flatten(start_dim=0, end_dim=1).to(torch.float32)
-
-    return xs, zmats
-
-dataset_labels = ['flow_train', 'flow_test']
-
-flow_xs_test, flow_zmats_test = get_dataset(dataset_labels[1], path_datasets, isomer_labels)
+flows_train = []
+flows_test = []
 
 for i in range(len(isomer_labels)):
-    print('Isomer {:d} has {:d} samples'.format(isomer_labels[i], flow_xs_test[i].shape[0]))
+    
+    train_md, test_md = list(split_data_from_dataframe(flows_dataset[i], 0.8, 42))
+    
+    flows_train.append(train_md)
+    flows_test.append(test_md)
+
+for i in range(len(isomer_labels)):
+    print('Isomer {:d} has {:d} samples.'.format(isomer_labels[i], flows_test[i].shape[0]))
 
 # load models
 
-# path to models
+path_flow_models = get_project_path() + '/' + args.flow_type
 
-if args.load_mlp_flow:
-        add_mlp = '_mlp'
+flows_dic = [load_pickle_file("results_adaptive_is{:d}_{:d}/is{:d}_flow_dic_{:d}.pkl".format(
+                            isomer_labels[i],
+                            args.flows_id[i],
+                            isomer_labels[i],
+                            args.flows_id[i]), 
+                            path=path_flow_models) 
+                            for i in range(len(isomer_labels))]
+
+flow_models = [flows_dic[i]['model'] for i in range(len(isomer_labels))]
+
+if 'mlp' in args.energy_type:
+    print('if MLP')
+    if args.flow_type == '1-adaptive' and args.mlps_id is not None:
+        
+        path_mlp_models = get_project_path() + '/0-train-mlp'                                                                      
+        mlps_dic = [load_pickle_file("results_mlp_is{:d}_{:d}/is{:d}_mlp_dic_training_{:d}.pkl".format(
+                                isomer_labels[i],
+                                args.mlps_id[i],
+                                isomer_labels[i],
+                                args.mlps_id[i]), 
+                                path=path_mlp_models) 
+                                for i in range(len(isomer_labels))]
+
+        mlp_models = [mlps_dic[i]['model'] for i in range(len(isomer_labels))]
+    
+    elif args.flow_type == '2-adaptive-mlp':
+
+        mlps_dic = [load_pickle_file("results_adaptive_is{:d}_{:d}/adaptive_sampling_is{:d}_{:d}.pkl".format(
+                            isomer_labels[i],
+                            args.flows_id[i],
+                            isomer_labels[i],
+                            args.flows_id[i]), 
+                            path=path_flow_models)['dict_mlps'][-1][0]
+                            for i in range(len(isomer_labels))]
+
+        mlp_models = [mlps_dic[i]['model'] for i in range(len(isomer_labels))]
+
+    else:
+        
+        raise ValueError('Flow type not recognized for NPs.')
+
 else:
-    add_mlp = ''
 
-path_models = get_path() + '/' + args.folder_path + '/' + 'models'
-
-flow_models = [load_pickle_file("dict_flow_model_is{:d}{:s}.pkl".format(
-                                isomer_labels[i], add_mlp), 
-                                path=path_models)['model'] for i in range(len(isomer_labels)) ]
-
-#flow_models = [load_pickle_file("dict_flow_model_is{:d}.pkl".format(
-#                                isomer_labels[i]), 
-#                                path=path_models)['model'] for i in range(len(isomer_labels)) ]
+    mlps_models = [None]*len(isomer_labels)
 
 # initizalize mcmc chains
-xs_init = torch.cat(flow_xs_test).clone()
+
+xs_init = torch.cat(flows_test).clone()
 xs_init = xs_init[torch.randperm(xs_init.shape[0])]
 xs_init = xs_init[:n_chains]
 
 print('xs_init shape: ', xs_init.shape)
 
 if len(isomer_labels) == 1:
+
     mixture = False
     simulation_name = 'is{:d}'.format(isomer_labels[0])
-    mixture_model = flow_models[0]
-else:
+    mixture_model = flows_dic[0]['model']
+
+elif len(isomer_labels) > 1:
+
     mixture = True
     simulation_name = 'mixture'
-    mixture_model = Mixture(flow_models, torch.tensor([0.5, 0.5]).detach())
-
-if "mlp" in energy_type: 
-    path_models = get_path() + '/' + args.folder_path + '/' + 'models'
-
-    if args.load_mlp_flow:
-        extension  = '_adaptive_mlp'
-    else:
-        extension = '_adaptive'
-
-    mlps_dic = [load_pickle_file("dict_mlp_model_is{:d}{:s}.pkl".format(
-                                isomer_labels[i], extension), 
-                                path=path_models)['model'] 
-                                for i in range(len(isomer_labels))]
-else:
-    mlps_dic = None
+    mixture_model = Mixture(flow_models, 
+                            torch.tensor([0.5, 0.5]).detach())
 
 folder_to_save_results = 'results_multimodal_sampling_{:s}_{:d}'.format(simulation_name, args.process_id)
 path_to_save_results = os.getcwd() + '/' + folder_to_save_results
 
 if rank == 0:
-    if not os.path.exists(folder_to_save_results):
-        os.makedirs(folder_to_save_results)
-        print('Folder created: ', folder_to_save_results)
+    if not os.path.exists(path_to_save_results):
+        os.makedirs(path_to_save_results)
+        print('Folder created: ', path_to_save_results)
 
 mpi.world.barrier()
-
-
 
 mh = run_metropolis(
     model=mixture_model,
     init=xs_init,
-    n_chains=n_chains,
+    mlp_models=mlp_models,
     n_steps=n_steps,
-    id_run=0,
-    energy_type=energy_type,
+    n_chains=n_chains,
+    id_run='N/A',
     mixture=mixture,
-    T=args.temperature,
-    frac_dft=0.2,
-    with_tqdm=False,
-    return_ratio=False,
-    return_proposals=True,
-    dft_folder_name=path_to_save_results + '/' + 'DFTComputations_{:d}'.format(args.process_id),
-    scheduler=10,
-    update_weigth=True,
-    alpha = 0.5,
-    mlp_models=mlps_dic,
+    temperature=args.temperature,
+    energy_type='mlp',
+    alpha=args.alpha,
+    update_weights=args.update_weights,
+    scheduler_weights=args.scheduler_weights,
+    frac_computed=args.frac_computed,
 )
 
 mpi.world.barrier()
 
 date_end = np.array([0])
 
-# save end time
 if rank == 0:
     date_end = np.array([set_str_date_to_int(time.strftime('%Y-%m-%d %H:%M:%S'))])
 
@@ -226,9 +241,9 @@ comm.broadcast(date_end, 0)
 date_end = date_end[0]
 
 mpi.world.barrier()
-args.date_end = str(date_end)
+args.date_end = date_end
 
-args.algorithm = 'metropolis.py'
+args.algorithm = 'multimodal_sampling.py'
 
 argparse_dic = vars(args)
 mh['args'] = argparse_dic
@@ -236,16 +251,23 @@ mh['args'] = argparse_dic
 # save output to pickle file
 save_pickle_file(mh, "{:s}_mcmc_dic_{:d}.pkl".format(simulation_name, args.process_id), path = path_to_save_results)
 
-# save output to json file
-save_json_args(args, 'metropolis', args.process_id, path_to_save_results)
+# save arguments to json file
+save_json_args(args, 'multimodal_sampling', args.process_id, path_to_save_results)
 
-import matplotlib.pyplot as plt
-from flonacomldft.utils.plots import set_plot_sequential_data 
+# plot acceptance ratio
 
-accs = mh['accs']
+accs = mh['accs'].float().mean(dim=1).detach()
 
-fig, ax = plt.subplots(1, 1, figsize=(8, 6))
-set_plot_sequential_data(accs.mean(dim=1), avg=True, window_size=10, axis=1, ax=ax, label='acc_ratio')
+fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+set_plot_sequential_data(accs, ax=ax, avg=True, window_size=25, color='blue', label='Acceptance ratio')
 ax.set_xlabel('Iteration')
-ax.set_ylabel('Acceptance rate')
-plt.savefig(path_to_save_results + '/acceptance_rate_{:d}.png'.format(args.process_id))
+ax.set_ylabel('Acceptance ratio')
+plt.savefig(path_to_save_results + '/' + 'acceptance_ratio_{:d}.png'.format(args.process_id), dpi=300)
+
+xss = mh['xs']
+isomerss = mh['isomers']
+cvss = get_collective_variables_from_xs(xss, isomerss)
+
+save_pickle_file(cvss, 
+                'cvs_{:s}_{:d}.pkl'.format(simulation_name, args.process_id), 
+                path=path_to_save_results)
