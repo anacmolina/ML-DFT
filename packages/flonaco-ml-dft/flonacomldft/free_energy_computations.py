@@ -23,9 +23,10 @@ def compute_TFP(n_prop, target_log_prob, prop):
     Returns
     -------
     logr : ``float``
+        F_target - F_prop = log(Z_prop / Z_target)
         Estimate of log partition of target.
-    logr_err : ``float``
-        Estimate of the variance of the log partition computation.
+    std_r : ``float``
+        Estimate of variance of Z_target / Z_prop. CAREFULL - no log + inverse
     """
     xs_prop = prop.sample(n_prop)
 
@@ -42,11 +43,19 @@ def compute_TFP_from_samples(logprob_prop, logprob_target):
     logr_per_sample = logprob_target - logprob_prop
     logr = - logsumexp(logr_per_sample) + np.log(n_prop)
 
-    # TODO: rewrite with logsumexp - no log?
+
     # err = np.sqrt(np.var(np.exp(logr_per_sample)) / np.exp(2 * logr)  / n_prop)
     # logr_err =  np.log(err)
-    # std_r = np.std(np.exp(logr_per_sample)) / np.sqrt(n_prop)
-    std_r = 0
+
+    ### TO DO TEST!!!
+    # log_particip_ratio
+    log_w2 = logsumexp(2 * logr_per_sample)
+    log_neff = log_w2 - 2 * logsumexp(logr_per_sample) 
+    log_var = log_w2 + np.log1p(- np.exp(log_neff) / n_prop ** 2)
+    # var_r =  np.exp(logsumexp(2 * -logr_per_sample)) 
+    # var_r -= (np.exp(logsumexp(-logr_per_sample)) / n_prop) ** 2
+    std_r = np.sqrt(np.exp(log_var) / n_prop)
+
     return logr, std_r
 
 
@@ -81,6 +90,7 @@ def compute_BAR(xs, target_log_prob, prop, n_prop=None,
     r"""
     Bridge Sampling/Bennett Acceptance Ratio estimator for the log partition of target.
     Refs: https://arxiv.org/abs/1912.06073, pocomc, deepbar
+
     Parameters
     ----------
     xs : torch.Tensor
@@ -106,7 +116,7 @@ def compute_BAR(xs, target_log_prob, prop, n_prop=None,
     Returns
     -------
     logr : ``float``
-        Estimate of log partition of target.
+        Estimate of log partition of target - log partition of prop.
     logr_err : ``float``
         Estimate of the variance of the log partition computation.
     """
