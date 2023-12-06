@@ -116,7 +116,7 @@ def compute_BAR(xs, target_log_prob, prop, n_prop=None,
     Returns
     -------
     logr : ``float``
-        Estimate of log partition of target - log partition of prop.
+        Estimate of - log (partition of target / log partition of prop).
     logr_err : ``float``
         Estimate of the variance of the log partition computation.
     """
