@@ -148,6 +148,7 @@ flows_dic = [load_pickle_file("results_adaptive_is{:d}_{:d}/is{:d}_flow_dic_{:d}
 
 flow_models = [flows_dic[i]['model'] for i in range(len(isomer_labels))]
 
+
 if 'mlp' in args.energy_type:
     print('if MLP')
     if args.flow_type == '1-adaptive' and args.mlps_id is not None:
@@ -181,7 +182,8 @@ if 'mlp' in args.energy_type:
 
 else:
 
-    mlps_models = [None]*len(isomer_labels)
+    print('No MLPs')
+    mlp_models = [None]*len(isomer_labels)
 
 # initizalize mcmc chains
 
@@ -220,14 +222,15 @@ mh = run_metropolis(
     mlp_models=mlp_models,
     n_steps=n_steps,
     n_chains=n_chains,
-    id_run='N/A',
+    id_run='NA',
     mixture=mixture,
     temperature=args.temperature,
-    energy_type='mlp',
+    energy_type=args.energy_type,
     alpha=args.alpha,
     update_weights=args.update_weights,
     scheduler_weights=args.scheduler_weights,
     frac_computed=args.frac_computed,
+    folder_name=path_to_save_results,
 )
 
 mpi.world.barrier()
