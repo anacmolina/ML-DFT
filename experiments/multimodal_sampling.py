@@ -88,6 +88,7 @@ parser.add_argument('-frac', '--frac-computed', type=float, default=0.2)
 parser.add_argument('-npsID', '--mlps-id', type=int, nargs='+', default=None, help='Neural predictors ID')
 parser.add_argument('-nfsID', '--flows-id', type=int, nargs='+', default=None, help='Number of neural predictors')
 parser.add_argument('-savepts', '--checkpoints', type=int, default=None, help='Checkpoints scheduler')
+parser.add_argument('-slice', '--slice', type=int, default=30, help='Slice of the dataset')
 
 # parse arguments
 args = parser.parse_args()
@@ -140,12 +141,12 @@ for i in range(len(isomer_labels)):
 
 path_flow_models = get_project_path() + '/' + args.flow_type
 
-flows_dic = [load_pickle_file("results_adaptive_is{:d}_{:d}/is{:d}_flow_dic_{:d}.pkl".format(
+flows_dic = [load_pickle_file("results_adaptive_is{:d}_{:d}/adaptive_sampling_is{:d}_{:d}.pkl".format(
                             isomer_labels[i],
                             args.flows_id[i],
                             isomer_labels[i],
                             args.flows_id[i]), 
-                            path=path_flow_models) 
+                            path=path_flow_models)['dict_flows'][args.slice][0] 
                             for i in range(len(isomer_labels))]
 
 flow_models = [flows_dic[i]['model'] for i in range(len(isomer_labels))]
