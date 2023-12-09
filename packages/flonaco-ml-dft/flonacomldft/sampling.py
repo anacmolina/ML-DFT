@@ -365,38 +365,38 @@ def run_metropolis(model,
             print("Saving checkpoint {:d}".format(dt))
 
             checkpoint_data = {
-                'xs': torch.stack(xs),
-                'us': torch.stack(us),
-                'accs': torch.stack(accs),
-                'isomers': torch.stack(isomers),
-                'nlls': torch.stack(nlls),
+                'xs': torch.stack(xs).clone(),
+                'us': torch.stack(us).clone(),
+                'accs': torch.stack(accs).clone(),
+                'isomers': torch.stack(isomers).clone(),
+                'nlls': torch.stack(nlls).clone(),
                 'time_mcmc': time_step_mcmc,
             }
 
             if return_ratios:
-                checkpoint_data['ratios'] = torch.stack(ratios)
+                checkpoint_data['ratios'] = torch.stack(ratios).clone()
 
             if return_proposals:
-                checkpoint_data['xs_proposals'] = torch.stack(xs_proposals)
-                checkpoint_data['us_proposals'] = torch.stack(us_proposals)
-                checkpoint_data['isomers_proposals'] = torch.stack(isomers_proposals)
-                checkpoint_data['nlls_proposals'] = torch.stack(nlls_proposals)
+                checkpoint_data['xs_proposals'] = torch.stack(xs_proposals).clone()
+                checkpoint_data['us_proposals'] = torch.stack(us_proposals).clone()
+                checkpoint_data['isomers_proposals'] = torch.stack(isomers_proposals).clone()
+                checkpoint_data['nlls_proposals'] = torch.stack(nlls_proposals).clone()
 
             if use_calc:
                     
-                checkpoint_data['xs_calc'] = torch.stack(xs_calc)
-                checkpoint_data['us_calc'] = torch.stack(us_calc)
-                checkpoint_data['isomers_calc'] = torch.stack(isomers_calc)
-                checkpoint_data['inds_calc'] = torch.stack(inds_calc)
+                checkpoint_data['xs_calc'] = torch.stack(xs_calc).clone()
+                checkpoint_data['us_calc'] = torch.stack(us_calc).clone()
+                checkpoint_data['isomers_calc'] = torch.stack(isomers_calc).clone()
+                checkpoint_data['inds_calc'] = torch.stack(inds_calc).clone()
 
             if mixture and update_weights:
 
-                checkpoint_data['weights'] = torch.stack(weights)
+                checkpoint_data['weights'] = torch.stack(weights).clone()
 
             save_pickle_file(
                 checkpoint_data,
                 'checkpoint_{:s}_{:d}.pkl'.format(str(id_run), dt),
-                path=folder_name,
+                path=folder_name.split('/')[-2],
             )
 
     to_return = {
