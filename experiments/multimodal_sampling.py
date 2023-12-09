@@ -38,6 +38,7 @@ from flonacomldft.utils.plots import set_plot_sequential_data
 
 # parallelization
 import gpaw.mpi as mpi
+from ase.parallel import parprint as print
 
 # get rank size and set up communicator
 ranks = np.arange(0, mpi.world.size)
@@ -86,6 +87,7 @@ parser.add_argument('-alpha', '--alpha', type=float, default=0.5)
 parser.add_argument('-frac', '--frac-computed', type=float, default=0.2)
 parser.add_argument('-npsID', '--mlps-id', type=int, nargs='+', default=None, help='Neural predictors ID')
 parser.add_argument('-nfsID', '--flows-id', type=int, nargs='+', default=None, help='Number of neural predictors')
+parser.add_argument('-savepts', '--checkpoints', type=int, default=None, help='Checkpoints scheduler')
 
 # parse arguments
 args = parser.parse_args()
@@ -231,6 +233,7 @@ mh = run_metropolis(
     scheduler_weights=args.scheduler_weights,
     frac_computed=args.frac_computed,
     folder_name=path_to_save_results,
+    checkpoints=args.checkpoints,
 )
 
 mpi.world.barrier()
