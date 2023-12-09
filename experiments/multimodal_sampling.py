@@ -232,7 +232,7 @@ mh = run_metropolis(
     update_weights=args.update_weights,
     scheduler_weights=args.scheduler_weights,
     frac_computed=args.frac_computed,
-    folder_name=path_to_save_results,
+    folder_name=path_to_save_results+'/DFTComputations_{:d}'.format(args.process_id),
     checkpoints=args.checkpoints,
 )
 
