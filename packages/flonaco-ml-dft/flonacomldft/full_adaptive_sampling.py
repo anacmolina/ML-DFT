@@ -359,6 +359,6 @@ def run_adaptive_sampling(
     if train_mlp_models:
     
         to_return['mlps_datasets'] =  {'train': xs_for_mlps_train,
-                        'test': xs_for_mlps_test},
+                        'test': xs_for_mlps_test}
 
     return to_return

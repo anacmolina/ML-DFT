@@ -89,6 +89,13 @@ parser.add_argument('-npsID', '--mlps-id', type=int, nargs='+', default=None, he
 parser.add_argument('-nfsID', '--flows-id', type=int, nargs='+', default=None, help='Number of neural predictors')
 parser.add_argument('-savepts', '--checkpoints', type=int, default=None, help='Checkpoints scheduler')
 parser.add_argument('-slice', '--slice', type=int, default=30, help='Slice of the dataset')
+parser.add_argument('-trainmlps', '--train-mlp-models', type=bool, default=False, help='Train MLP models')
+parser.add_argument('-tmlpss', '--train-mlp-scheduler', type=int, default=None, help='Train flow models')
+parser.add_argument('-lr', '--mlp-learning-rate', type=float, default=1e-4, help='Learning rate')
+parser.add_argument('-bs', '--mlp-batch-size', type=int, default=1000, help='Batch size')
+parser.add_argument('-niter', '--mlp-n-iter', type=int, default=100, help='Number of iterations')
+parser.add_argument('-us', '--mlp-use-scheduler', type=bool, default=False, help='Use scheduler')
+parser.add_argument('-ss', '--mlp-step-scheduler', type=int, default=100, help='Step scheduler')
 
 # parse arguments
 args = parser.parse_args()
@@ -179,6 +186,43 @@ if 'mlp' in args.energy_type:
 
         mlp_models = [mlps_dic[i]['model'] for i in range(len(isomer_labels))]
 
+        if args.train_mlp_models:
+
+            xs_mlp_train = []
+            xs_mlp_test = []
+
+            for i in range(len(isomer_labels)):
+            
+                datasets = load_pickle_file("results_adaptive_is{:d}_{:d}/adaptive_sampling_is{:d}_{:d}.pkl".format(
+                            isomer_labels[i],
+                            args.flows_id[i],
+                            isomer_labels[i],
+                            args.flows_id[i]), 
+                            path=path_flow_models)['mlps_datasets'][0]
+                #print(len(datasets['mlps_datasets'][0]),
+                #      datasets['mlps_datasets'][0]['train'].shape,
+                #      datasets['mlps_datasets'][0]['test'].shape)
+                
+                xs_mlp_train.append(datasets['train'][0])
+                xs_mlp_test.append(datasets['test'][0])
+
+                print('Shape of xs_mlp_train: ', xs_mlp_train[i].shape)
+                print('Shape of xs_mlp_test: ', xs_mlp_test[i].shape)
+
+                mlp_hyperparams = {'n_iter': args.mlp_n_iter,
+                                    'lr': args.mlp_learning_rate,
+                                    'bs': args.mlp_batch_size,
+                                    'use_scheduler': args.mlp_use_scheduler,
+                                    'step_scheduler': args.mlp_step_scheduler,
+                                    'save_splits': 1,
+                                    }
+
+        else:
+    
+            xs_mlp_train = None
+            xs_mlp_test = None
+            mlp_hyperparams = None
+    
     else:
         
         raise ValueError('Flow type not recognized for NPs.')
@@ -235,6 +279,11 @@ mh = run_metropolis(
     frac_computed=args.frac_computed,
     folder_name=path_to_save_results+'/DFTComputations_{:d}'.format(args.process_id),
     checkpoints=args.checkpoints,
+    train_mlp_models=args.train_mlp_models,
+    mlp_init_train=xs_mlp_train,
+    mlp_init_test=xs_mlp_test,
+    mlp_hyperparams=[mlp_hyperparams]*len(isomer_labels),
+    train_mlp_scheduler=args.train_mlp_scheduler,
 )
 
 mpi.world.barrier()

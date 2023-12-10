@@ -8,6 +8,7 @@ import numpy as np
 import torch
 import tqdm
 
+from flonacomldft.train_mlp_from_data import train_mlp
 from flonacomldft.utils.io_utils import save_pickle_file
 from ase.parallel import parprint as print
 from ase.units import kB
@@ -36,6 +37,11 @@ def run_metropolis(model,
                     device='cpu',
                     folder_name=None,
                     checkpoints=None,
+                    train_mlp_models=False,
+                    mlp_init_train=None,
+                    mlp_init_test=None,
+                    mlp_hyperparams=None,
+                    train_mlp_scheduler=None,
                  ):
 
     assert init.shape[0] == n_chains
@@ -51,6 +57,10 @@ def run_metropolis(model,
     x_init = init[:, :dim]
     u_init = init[:, dim]
     isomer_init = init[:, dim+1]
+
+    isomer_labels = isomer_init.int().unique().numpy()
+
+    print("Number of isomers: ", isomer_labels)
 
     beta = 1 / (kB * temperature)
 
@@ -75,7 +85,16 @@ def run_metropolis(model,
                 model_mlp_is1 = mlp_models[0]
         
         print("Use Neural Predictor: True")
-    
+
+        if train_mlp_models:
+
+            idx_train = 0
+
+            xs_for_mlps_train = [ mlp_init_train[i] for i in isomer_labels ]
+            xs_for_mlps_test = [ mlp_init_test[i] for i in isomer_labels ]
+
+            dict_mlp_models = []
+
     else:
         
         print("No Neural Predictor")
@@ -399,6 +418,76 @@ def run_metropolis(model,
                 path=folder_name.split('/')[-2],
             )
 
+        if train_mlp_models and use_calc and dt > 0 and dt % train_mlp_scheduler == 0:
+
+            new_mlp_dataset = torch.cat(
+                  (torch.stack(xs_calc).clone(),
+                  torch.stack(us_calc).reshape(-1, 1).clone(),
+                  torch.stack(isomers_calc).reshape(-1, 1).clone()),
+                  dim=1)[idx_train:]
+            
+            print('new_mlp_dataset shape: ', new_mlp_dataset.shape)
+            
+            mask_mlp = new_mlp_dataset[:, -1]
+
+            for mode in isomer_labels:
+
+                print("Training MLP for isomer {:d}".format(mode))
+
+                mask_mlp_mode = mask_mlp == isomer_labels[mode]
+                xs_chains_dataset = new_mlp_dataset[mask_mlp_mode]
+
+                print('Shape xs: ', xs_chains_dataset.shape)
+
+                indexes = torch.randperm(xs_chains_dataset.shape[0])
+
+                split_ratio = 0.8
+
+                split_index = int(xs_chains_dataset.shape[0] * split_ratio)
+                
+                xs_chains_dataset_train = xs_chains_dataset[indexes[:split_index]]
+                xs_chains_dataset_test = xs_chains_dataset[indexes[split_index:]]
+
+                print('MLP chains train dataset shape: ', list(xs_chains_dataset_train.shape))
+                print('MLP chains test dataset shape: ', list(xs_chains_dataset_test.shape))
+
+                xs_for_mlps_train[mode] = torch.cat(
+                        (xs_for_mlps_train[mode].clone(), 
+                         xs_chains_dataset_train.clone())
+                    )
+                
+                xs_for_mlps_test[mode] = torch.cat(
+                        (xs_for_mlps_test[mode].clone(), 
+                         xs_chains_dataset_test.clone())
+                    )
+
+                print('xs_for_mlps_train shape: ', xs_for_mlps_train[mode].shape)
+                print('xs_for_mlps_test shape: ', xs_for_mlps_test[mode].shape)      
+
+                dict_new_mlp = train_mlp(
+                    model=mlp_models[mode],
+                    train=xs_for_mlps_train[mode],
+                    test=xs_for_mlps_test[mode],
+                    **mlp_hyperparams[mode],
+                    dim=dim,
+                )
+
+                dict_mlp_models.append(dict_new_mlp)
+
+            idx_train = dt
+
+            print('new idx_train: ', idx_train)
+
+            mlp_models = [dict_mlp_models[mode]['model'] for mode in isomer_labels]
+
+            if mixture:
+                model_mlp_is0, model_mlp_is1 = mlp_models
+            else:
+                if(isomer_init.sum()==0):
+                    model_mlp_is0 = mlp_models[0]
+                else:
+                    model_mlp_is1 = mlp_models[0]
+
     to_return = {
         'xs': torch.stack(xs),
         'us': torch.stack(us),
@@ -426,6 +515,11 @@ def run_metropolis(model,
 
     if mixture and update_weights:
         to_return['weights'] = torch.stack(weights)
+
+    if train_mlp_models:
+        to_return['dict_mlps'] = dict_mlp_models
+        to_return['mlps_datasets'] = {'train': xs_for_mlps_train, 
+                                    'test': xs_for_mlps_test}
 
     return to_return
 
