@@ -91,9 +91,9 @@ parser.add_argument('-savepts', '--checkpoints', type=int, default=None, help='C
 parser.add_argument('-slice', '--slice', type=int, default=30, help='Slice of the dataset')
 parser.add_argument('-trainmlps', '--train-mlp-models', type=bool, default=False, help='Train MLP models')
 parser.add_argument('-tmlpss', '--train-mlp-scheduler', type=int, default=None, help='Train flow models')
-parser.add_argument('-lr', '--mlp-learning-rate', type=float, default=1e-4, help='Learning rate')
-parser.add_argument('-bs', '--mlp-batch-size', type=int, default=1000, help='Batch size')
-parser.add_argument('-niter', '--mlp-n-iter', type=int, default=100, help='Number of iterations')
+parser.add_argument('-lr', '--mlp-learning-rate', type=float, default=1e-5, help='Learning rate')
+parser.add_argument('-bs', '--mlp-batch-size', type=int, default=500, help='Batch size')
+parser.add_argument('-niter', '--mlp-n-iter', type=int, default=2500, help='Number of iterations')
 parser.add_argument('-us', '--mlp-use-scheduler', type=bool, default=False, help='Use scheduler')
 parser.add_argument('-ss', '--mlp-step-scheduler', type=int, default=100, help='Step scheduler')
 
