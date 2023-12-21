@@ -71,8 +71,8 @@ def load_csv_file(filename, path=get_project_path(), dtype=torch.float32):
     return zmat
 
 # function that saves data to csv
-def save_csv_file(dataframe, filename, path=os.getcwd()):
-    dataframe.to_csv(path + '/' + filename)
+def save_csv_file(dataframe, filename, path=os.getcwd(), index=False):
+    dataframe.to_csv(path + '/' + filename, index=index)
 
 
 def save_ase_molecules_as_traj(configs, filename='configs.traj', path=os.getcwd()):

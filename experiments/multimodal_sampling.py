@@ -231,6 +231,10 @@ else:
 
     print('No MLPs')
     mlp_models = [None]*len(isomer_labels)
+    xs_mlp_train = [None]*len(isomer_labels)
+    xs_mlp_test = [None]*len(isomer_labels)
+    mlp_hyperparams = [None]*len(isomer_labels)
+
 
 # initizalize mcmc chains
 

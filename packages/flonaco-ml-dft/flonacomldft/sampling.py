@@ -290,11 +290,7 @@ def run_metropolis(model,
 
         if use_calc and "dft" in energy_type:
 
-            rank = mpi.world.rank
-
-            if rank == 0:
-
-                time_step_mcmc.append(time.time())
+            time_step_mcmc.append(time.time())
 
             mpi.world.barrier()
 
