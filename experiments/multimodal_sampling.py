@@ -64,9 +64,6 @@ date_start = date_start[0]
 
 mpi.world.barrier()
 
-print('Rank {} of {} has seed {}.'.format(rank, mpi.world.size, num_seed))
-print('Rank {} of {} has date {}.'.format(rank, mpi.world.size, date_start))
-
 parser = argparse.ArgumentParser(description='Multimodal sampling of the potential energy surface.')
 # execution parameters
 parser.add_argument('-threads', '--threads', type=int, default=None, help='Number of threads')
@@ -101,6 +98,9 @@ parser.add_argument('-ss', '--mlp-step-scheduler', type=int, default=100, help='
 args = parser.parse_args()
 args.date_start = date_start
 
+print('Rank {} of {} has seed {}.'.format(rank, mpi.world.size, args.random_seed))
+print('Rank {} of {} has date {}.'.format(rank, mpi.world.size, args.date_start))
+
 # torch settings
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -129,7 +129,7 @@ path_datasets = get_project_path() + '/database/' + args.folder_path + '/' + 'da
 
 flows_dataset = [load_csv_file('is{:d}_flow_train.csv'.format(isomer_labels[i] 
                                                                 ), 
-                                 path_datasets) for i in range(len(isomer_labels))]
+                                 path_datasets)[:5000] for i in range(len(isomer_labels))]
 
 flows_train = []
 flows_test = []
