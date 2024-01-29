@@ -57,7 +57,7 @@ parser.add_argument('-hdm', '--hidden-dim', type=int, default=64, help='Set hidd
 parser.add_argument('-hdp', '--hidden-depth', type=int, default=3, help='Set hidden depth')
 parser.add_argument('-us', '--use-scheduler', type=bool, default=False, help='Set scheduler')
 parser.add_argument('-ss', '--step-scheduler', type=int, default=50, help='Set step size')
-parser.add_argument('-N', '--N', type=int, default=5000, help='Set number of data points')
+parser.add_argument('-N', '--N', type=int, default=-1, help='Set number of data points')
 
 args = parser.parse_args()
 args.date_start = date_start
@@ -82,19 +82,19 @@ isomer_label = args.isomer_label
 path_datasets = get_path() + '/' + args.folder_path + '/' + 'datasets'
 
 # real center coordinates
-flow_dataset = load_csv_file('is{:d}_{:s}_train.csv'.format(args.isomer_label, 
-                                                            'flow'), path=path_datasets)[:args.N]
-
-
-xs_train_md, xs_test_md = list(split_data_from_dataframe(flow_dataset, 0.8, 42))
+#flow_dataset = load_csv_file('is{:d}_{:s}_train.csv'.format(args.isomer_label, 
+#                                                            'flow'), path=path_datasets)[:args.N]
+#
+#
+#xs_train_md, xs_test_md = list(split_data_from_dataframe(flow_dataset, 0.8, 42))
 
 xs_train_mlp = load_csv_file('is{:d}_{:s}_train.csv'.format(args.isomer_label, 
-                                                            args.dataset), path=path_datasets)
+                                                            args.dataset), path=path_datasets)[:args.N]
 xs_test_mlp = load_csv_file('is{:d}_{:s}_test.csv'.format(args.isomer_label, 
-                                                            args.dataset), path=path_datasets)
+                                                            args.dataset), path=path_datasets)[:args.N]
 
-xs_train = torch.cat((xs_train_md, xs_train_mlp) )
-xs_test = torch.cat((xs_test_md, xs_test_mlp) )
+xs_train = xs_train_mlp.clone() #torch.cat((xs_train_md, xs_train_mlp) )
+xs_test = xs_test_mlp.clone() #torch.cat((xs_test_md, xs_test_mlp) )
 
 print("Train data shape: {}".format(xs_train.shape))
 print("Test data shape: {}".format(xs_test.shape))

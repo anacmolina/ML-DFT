@@ -111,6 +111,7 @@ parser.add_argument('-schw', '--scheduler-weights', type=int, default=10)
 parser.add_argument('-alpha', '--alpha', type=float, default=0.5)
 parser.add_argument('-npsID', '--mlps-id', type=int, nargs='+', default=None)
 parser.add_argument('-nfsID', '--flows-id', type=int, nargs='+', default=None)
+parser.add_argument('-window', '--window', type=int, default=None, help='Set window size')
 
 args = parser.parse_args()
 args.date_start = str(date_start)
@@ -130,7 +131,12 @@ mpi.world.barrier()
 
 # isomer labels
 isomer_labels = args.isomer_label
+
+if args.window is None:
+    args.window = [ args.n_steps * args.n_chains + args.N for i in range(len(isomer_labels)) ]
+
 dim = 12
+
 
 print('Isomer labels: ', isomer_labels)
 
@@ -337,7 +343,7 @@ adaptive =run_adaptive_sampling(
     update_weights=args.update_weights,
     scheduler_weights=args.scheduler_weights,
     alpha=args.alpha,
-    n_samples_train_flow=None,
+    n_samples_train_flow=args.window,
     folder_name=path_to_save_results,
     )
 
