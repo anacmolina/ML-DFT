@@ -167,7 +167,7 @@ for i in range(len(isomer_labels)):
 print('Flow dataset shape: ', flows_train[0].shape)
 
 if args.window is None:
-    args.window = torch.tensor([ args.n_steps * args.n_chains + flows_train[i].shape[0] for i in range(len(isomer_labels)) ])
+    args.window = [ args.n_steps * args.n_chains + flows_train[i].shape[0] for i in range(len(isomer_labels)) ]
 
 
 if 'mlp' in energy_type:
@@ -345,7 +345,7 @@ adaptive =run_adaptive_sampling(
     update_weights=args.update_weights,
     scheduler_weights=args.scheduler_weights,
     alpha=args.alpha,
-    n_samples_train_flow=args.window,
+    n_samples_train_flow=torch.tensor(args.window),
     folder_name=path_to_save_results,
     )
 
