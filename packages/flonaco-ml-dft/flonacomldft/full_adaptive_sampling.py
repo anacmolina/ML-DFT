@@ -108,7 +108,7 @@ def run_adaptive_sampling(
     if n_samples_train_flow is None:
         n_samples_train_flow = torch.tensor( [ xs_for_flows_train[i].shape[0] for i in range(n_isomers) ] )
     
-    print('Number of samples for training flows: ', n_samples_train_flow.tolist())
+    print('Number of samples for training flows: ', n_samples_train_flow)
     
     if ("dft" in energy_type) or ("emt" in energy_type):
 

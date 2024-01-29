@@ -133,7 +133,7 @@ mpi.world.barrier()
 isomer_labels = args.isomer_label
 
 if args.window is None:
-    args.window = [ args.n_steps * args.n_chains + args.N for i in range(len(isomer_labels)) ]
+    args.window = torch.tensor([ args.n_steps * args.n_chains + args.N for i in range(len(isomer_labels)) ])
 
 dim = 12
 
