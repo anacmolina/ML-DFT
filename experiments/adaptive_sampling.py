@@ -132,8 +132,6 @@ mpi.world.barrier()
 # isomer labels
 isomer_labels = args.isomer_label
 
-if args.window is None:
-    args.window = torch.tensor([ args.n_steps * args.n_chains + args.N for i in range(len(isomer_labels)) ])
 
 dim = 12
 
@@ -167,6 +165,10 @@ for i in range(len(isomer_labels)):
     flows_test.append(test_md)
 
 print('Flow dataset shape: ', flows_train[0].shape)
+
+if args.window is None:
+    args.window = torch.tensor([ args.n_steps * args.n_chains + flows_train[i].shape[0] for i in range(len(isomer_labels)) ])
+
 
 if 'mlp' in energy_type:
 
