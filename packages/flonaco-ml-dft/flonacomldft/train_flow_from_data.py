@@ -40,27 +40,42 @@ def train_flow(
     if save_splits > 1:
         models = [copy.deepcopy(model)]
 
+
+    if bs <= train.shape[0]:
+        n_epochs = round( n_iter * bs / train.shape[0] )
+    else:
+        n_epochs = n_iter
+
+    print('Train size: ', train.shape[0])
+    print('Batch size: ', bs)
+    print('Number of iterations: ', n_iter)
+
+    print('Number of epochs: ', n_epochs)
+
     train_losses = []
+    avg_train_losses = []
     grad_norms = []
     time_step = []
 
     if test is not None:
         test_losses = []
+        avg_test_losses = []
 
     if with_tqdm:
         
-        pbar = tqdm.tqdm(range(n_iter))
+        pbar = tqdm.tqdm(range(n_epochs))
     
     else:
         
-        pbar = range(n_iter)
+        pbar = range(n_epochs)
         print('Epoch \t\t Train Lr \t Loss \t\t Grad norm')
-
 
     x = train[:, :dim].clone().detach()
     permutation = torch.randperm(x.shape[0])
 
     for t in pbar:
+
+        avg_train_loss = 0
 
         for k in range(0, x.shape[0], bs):
 
@@ -84,7 +99,13 @@ def train_flow(
 
             optimizer.step()
 
-        train_losses.append(loss.item())
+            avg_train_loss += loss.item()
+
+            train_losses.append(loss.item())
+
+        avg_train_loss /= (x.shape[0] / bs)
+        avg_train_losses.append(avg_train_loss)
+
         time_step.append(time.time())
 
         if test is not None:
@@ -121,6 +142,7 @@ def train_flow(
     to_return = {
         'model': model,
         'train_losses': train_losses,
+        'avg_train_losses': avg_train_losses,
         'grad_norms': grad_norms,
         'time_step': time_step,
     }     

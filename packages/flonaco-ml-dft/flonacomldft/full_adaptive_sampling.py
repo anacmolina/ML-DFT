@@ -11,8 +11,6 @@ from ase.parallel import parprint as print
 def Transpose(x):
     return x.permute(*torch.arange(x.ndim - 1, -1, -1))
 
-#TODO: save cvs
-#TODO: save weights
 #TODO: add docstrings
 
 def run_adaptive_sampling(
@@ -73,10 +71,10 @@ def run_adaptive_sampling(
             xs_for_mlps_train = [ mlp_init_train[i] for i in range(n_isomers) ]
             xs_for_mlps_test = [ mlp_init_test[i] for i in range(n_isomers) ]
 
-            n_samples_train_mlp = torch.tensor( [ xs_for_mlps_train[i].shape[0] for i in range(n_isomers) ] )
-            mlp_batch_size = torch.tensor( [ mlp_hyperparams[i]['bs'] for i in range(n_isomers) ] )
-
-            fix_iters_per_batch = torch.ceil(n_samples_train_mlp / mlp_batch_size).clone().detach().int()
+            #n_samples_train_mlp = torch.tensor( [ xs_for_mlps_train[i].shape[0] for i in range(n_isomers) ] )
+            #mlp_batch_size = torch.tensor( [ mlp_hyperparams[i]['bs'] for i in range(n_isomers) ] )
+#
+            #fix_iters_per_batch = torch.ceil(n_samples_train_mlp / mlp_batch_size).clone().detach().int()
 
 
             print('MLP train dataset shapes: ', [ list(xs_for_mlps_train[i].shape) for i in range(n_isomers) ])
@@ -106,7 +104,7 @@ def run_adaptive_sampling(
         print('Initial weights: ', init_weights.tolist())
 
     if n_samples_train_flow is None:
-        n_samples_train_flow = torch.tensor( [ xs_for_flows_train[i].shape[0] for i in range(n_isomers) ] )
+        n_samples_train_flow = torch.tensor( [ n_chains * n_steps * 5  +  xs_for_flows_train[i].shape[0] for i in range(n_isomers) ] )
     
     print('Number of samples for training flows: ', n_samples_train_flow)
     
@@ -301,13 +299,13 @@ def run_adaptive_sampling(
                 print('MLP train dataset shape: ', list(xs_for_mlps_train[mode].shape))
                 print('MLP test dataset shape: ', list(xs_for_mlps_test[mode].shape))
 
-                new_batch_size = torch.ceil(xs_for_mlps_train[mode].shape[0] / fix_iters_per_batch[mode]).int().item()
-                mlp_hyperparams[mode]['bs'] = new_batch_size
+                #new_batch_size = torch.ceil(xs_for_mlps_train[mode].shape[0] / fix_iters_per_batch[mode]).int().item()
+                #mlp_hyperparams[mode]['bs'] = new_batch_size
 
-                print("Number of gradient steps per epoch: ", new_batch_size, 
-                      #fix_iters_per_batch[mode],
-                      #xs_for_mlps_train[mode].shape[0],
-                      int(xs_for_mlps_train[mode].shape[0] / new_batch_size)*mlp_hyperparams[mode]['n_iter'] )
+                #print("Number of gradient steps per epoch: ", new_batch_size, 
+                #      #fix_iters_per_batch[mode],
+                #      #xs_for_mlps_train[mode].shape[0],
+                #      int(xs_for_mlps_train[mode].shape[0] / new_batch_size)*mlp_hyperparams[mode]['n_iter'] )
                       
                 dict_new_mlp = train_mlp(
                     model=mlp_models[mode],

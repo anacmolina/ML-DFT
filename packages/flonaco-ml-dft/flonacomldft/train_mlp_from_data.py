@@ -35,19 +35,28 @@ def train_mlp(
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 
                                                     step_size=step_scheduler, 
                                                     gamma=0.5)
-        
+
+    if bs <= train.shape[0]:
+        n_epochs = round( n_iter * bs / train.shape[0] )
+    else:
+        n_epochs = n_iter
+
+    print('Number of epochs: ', n_epochs)
+
     if save_splits > 1:
         models = [copy.deepcopy(model)]
 
     if with_tqdm:
-        pbar = tqdm.tqdm(range(n_iter))
+        pbar = tqdm.tqdm(range(n_epochs))
     else:
-        pbar = range(n_iter)
+        pbar = range(n_epochs)
         print('Epoch \t\t Lr \t\t Train Loss \t Test Loss \t Grad norm')
 
 
     train_losses = []
     test_losses = []
+    avg_train_losses = []
+    avg_test_losses = []
     grad_norms = []
     time_step = []
 
@@ -57,6 +66,9 @@ def train_mlp(
     permutation = torch.randperm(x_train.size()[0])
 
     for t in pbar:
+
+        avg_train_loss = 0
+        avg_test_loss = 0
 
         for k in range(0, x_train.size()[0], bs):
 
@@ -77,12 +89,21 @@ def train_mlp(
 
             optimizer.step()
 
-        train_losses.append(loss.item())
-        test_losses.append(loss_func(x_test, y_test).item())
+            train_losses.append(loss.item())
+            test_losses.append(loss_func(x_test, y_test).item())
+
+            avg_train_loss += loss.item()
+            avg_test_loss += loss_func(x_test, y_test).item()
+
+        avg_train_loss /= (x_train.size()[0] / bs)
+        avg_test_loss /= (x_test.size()[0] / bs)
+
+        avg_train_losses.append(avg_train_loss)
+        avg_test_losses.append(avg_test_loss)
 
         time_step.append(time.time())
 
-        if t % (n_iter / 100) == 0:
+        if t % (n_epochs / 100) == 0:
             total_norm = 0
             for p in model.parameters():
                 param_norm = p.grad.detach().data.norm(2)
@@ -95,7 +116,7 @@ def train_mlp(
 
         if with_tqdm == False:
 
-            if t % (n_iter // n_partial_loss) == 0:
+            if t % (n_epochs // n_partial_loss) == 0:
 
                 for param_group in optimizer.param_groups:
                     lr_ = param_group['lr']
@@ -108,12 +129,14 @@ def train_mlp(
 
 
         if save_splits > 1:
-            if t % (n_iter // save_splits) == 0:
+            if t % (n_epochs // save_splits) == 0:
                 models.append(copy.deepcopy(model))
 
     to_return = {'model': model,
                 'train_losses': train_losses,
                 'test_losses': test_losses,
+                'avg_train_losses': avg_train_losses,
+                'avg_test_losses': avg_test_losses,
                 'grad_norms': grad_norms,
                 'time_step': time_step}
     

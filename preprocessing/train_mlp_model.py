@@ -57,7 +57,8 @@ parser.add_argument('-hdm', '--hidden-dim', type=int, default=64, help='Set hidd
 parser.add_argument('-hdp', '--hidden-depth', type=int, default=3, help='Set hidden depth')
 parser.add_argument('-us', '--use-scheduler', type=bool, default=False, help='Set scheduler')
 parser.add_argument('-ss', '--step-scheduler', type=int, default=50, help='Set step size')
-parser.add_argument('-N', '--N', type=int, default=-1, help='Set number of data points')
+parser.add_argument('-Nmd', '--N-md-points', type=int, default=500, help='Set number of data points from MD')
+parser.add_argument('-Nrd', '--N-random-points', type=int, default=500, help='Set number of data points from random gaussian sampling')
 
 args = parser.parse_args()
 args.date_start = date_start
@@ -82,24 +83,30 @@ isomer_label = args.isomer_label
 path_datasets = get_path() + '/' + args.folder_path + '/' + 'datasets'
 
 # real center coordinates
-#flow_dataset = load_csv_file('is{:d}_{:s}_train.csv'.format(args.isomer_label, 
-#                                                            'flow'), path=path_datasets)[:args.N]
-#
-#
-#xs_train_md, xs_test_md = list(split_data_from_dataframe(flow_dataset, 0.8, 42))
 
-xs_train_mlp = load_csv_file('is{:d}_{:s}_train.csv'.format(args.isomer_label, 
-                                                            args.dataset), path=path_datasets)[:args.N]
-xs_test_mlp = load_csv_file('is{:d}_{:s}_test.csv'.format(args.isomer_label, 
-                                                            args.dataset), path=path_datasets)[:args.N]
+# md dataset
+flow_dataset = load_csv_file('is{:d}_{:s}_train.csv'.format(args.isomer_label, 
+                                                            'flow'), path=path_datasets)[:args.N_md_points]
 
-xs_train = xs_train_mlp.clone() #torch.cat((xs_train_md, xs_train_mlp) )
-xs_test = xs_test_mlp.clone() #torch.cat((xs_test_md, xs_test_mlp) )
+# random dataset
+mlp_dataset = load_csv_file('is{:d}_{:s}_train.csv'.format(args.isomer_label, 
+                                                            'mlp'), path=path_datasets)[:args.N_random_points]
+
+# split data into train and test
+xs_train_md, xs_test_md = list(split_data_from_dataframe(flow_dataset, 0.8, 42))
+xs_train_mlp, xs_test_mlp = list(split_data_from_dataframe(mlp_dataset, 0.8, 42))
+
+# concatenate datasets
+xs_train = torch.cat((xs_train_md, xs_train_mlp) )
+xs_test = torch.cat((xs_test_md, xs_test_mlp) )
+
 
 print("Train data shape: {}".format(xs_train.shape))
 print("Test data shape: {}".format(xs_test.shape))
 
+# folder name
 simulation_name = "is{:d}".format(isomer_label)
+
 
 # path to save results
 folder_to_save_results = 'results_mlp_{:s}_{:d}'.format(simulation_name, args.process_id)
@@ -142,8 +149,8 @@ save_json_args(args, 'train_mlp_model', args.process_id, path=path_to_save_resul
 # plot training and validation loss
 fig, axs = plt.subplots(1, 2, figsize=(16, 6))
 
-axs[0].plot(mlp_dic['train_losses'], label='train')
-axs[0].plot(mlp_dic['test_losses'], label='test')
+axs[0].plot(mlp_dic['avg_train_losses'], label='train')
+axs[0].plot(mlp_dic['avg_test_losses'], label='test')
 axs[0].set_yscale('log')
 axs[0].set_xlabel('Epoch')
 axs[0].set_ylabel('Loss')

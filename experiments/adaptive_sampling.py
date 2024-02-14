@@ -78,7 +78,8 @@ parser.add_argument('-pid', '--process-id', type=int, default=date_start)
 parser.add_argument('-rs', '--random-seed', type=int, default=num_seed)
 parser.add_argument('-path', '--folder-path', type=str, default='andersen')
 parser.add_argument('-dataset', '--dataset', type=str, default='mlp')
-parser.add_argument('-N', '--N', type=int, default=5000)
+parser.add_argument('-Nmd', '--N-md-points', type=int, default=500)
+parser.add_argument('-Nrd', '--N-random-points', type=int, default=500)
 # training params
 parser.add_argument('-isomer', '--isomer-label', type=int, nargs='+', default=[0])
 # flow params
@@ -111,7 +112,7 @@ parser.add_argument('-schw', '--scheduler-weights', type=int, default=10)
 parser.add_argument('-alpha', '--alpha', type=float, default=0.5)
 parser.add_argument('-npsID', '--mlps-id', type=int, nargs='+', default=None)
 parser.add_argument('-nfsID', '--flows-id', type=int, nargs='+', default=None)
-parser.add_argument('-window', '--window', type=int, default=None, help='Set window size')
+parser.add_argument('-ncycles', '--cycles', type=int, default=None, help='Set window size')
 
 args = parser.parse_args()
 args.date_start = str(date_start)
@@ -152,7 +153,7 @@ path_datasets = get_path() + '/' + args.folder_path + '/' + 'datasets'
 # real center coordinates
 
 flows_dataset = [load_csv_file('is{:d}_{:s}_train.csv'.format(isomer_labels[i], 
-                                                            'flow'), path=path_datasets)[:args.N, :dim+2]
+                                                            'flow'), path=path_datasets)[:args.N_md_points, :dim+2]
                                                             for i in range(len(isomer_labels))]
 flows_train = []
 flows_test = []
@@ -166,8 +167,10 @@ for i in range(len(isomer_labels)):
 
 print('Flow dataset shape: ', flows_train[0].shape)
 
-if args.window is None:
-    args.window = [ args.n_steps * args.n_chains + flows_train[i].shape[0] for i in range(len(isomer_labels)) ]
+if args.cycles is None:
+    args.cycles = 5
+
+n_train_samples_flow = [ args.n_steps * args.n_chains * args.cycles + flows_train[i].shape[0] for i in range(len(isomer_labels)) ]
 
 
 if 'mlp' in energy_type:
@@ -182,9 +185,9 @@ if 'mlp' in energy_type:
         xs_train_md, xs_test_md = list(split_data_from_dataframe(flows_dataset[i], 0.8, 42))
 
         xs_train_mlp = load_csv_file('is{:d}_{:s}_train.csv'.format(isomer_labels[i], 
-                                                                    args.dataset), path=path_datasets)[:, :dim+2]
+                                                                    args.dataset), path=path_datasets)[:args.N_random_points, :dim+2]
         xs_test_mlp = load_csv_file('is{:d}_{:s}_test.csv'.format(isomer_labels[i], 
-                                                                    args.dataset), path=path_datasets)[:, :dim+2]
+                                                                    args.dataset), path=path_datasets)[:args.N_random_points, :dim+2]
 
         xs_train = torch.cat((xs_train_md, xs_train_mlp) )
         xs_test = torch.cat((xs_test_md, xs_test_mlp) )
@@ -345,7 +348,7 @@ adaptive =run_adaptive_sampling(
     update_weights=args.update_weights,
     scheduler_weights=args.scheduler_weights,
     alpha=args.alpha,
-    n_samples_train_flow=torch.tensor(args.window),
+    n_samples_train_flow=n_train_samples_flow,
     folder_name=path_to_save_results,
     )
 
