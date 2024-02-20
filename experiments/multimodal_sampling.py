@@ -129,7 +129,7 @@ path_datasets = get_project_path() + '/database/' + args.folder_path + '/' + 'da
 
 flows_dataset = [load_csv_file('is{:d}_flow_train.csv'.format(isomer_labels[i] 
                                                                 ), 
-                                 path_datasets)[:5000] for i in range(len(isomer_labels))]
+                                 path_datasets)[:500] for i in range(len(isomer_labels))]
 
 flows_train = []
 flows_test = []
@@ -147,6 +147,22 @@ for i in range(len(isomer_labels)):
 # load models
 
 path_flow_models = get_project_path() + '/' + args.flow_type
+
+for i in range(len(isomer_labels)):
+    print(path_flow_models + '/results_adaptive_is{:d}_{:d}/adaptive_sampling_is{:d}_{:d}.pkl'.format(
+                            isomer_labels[i],
+                            args.flows_id[i],
+                            isomer_labels[i],
+                            args.flows_id[i]) )
+
+    model = load_pickle_file("results_adaptive_is{:d}_{:d}/adaptive_sampling_is{:d}_{:d}.pkl".format(
+                            isomer_labels[i],
+                            args.flows_id[i],
+                            isomer_labels[i],
+                            args.flows_id[i]), 
+                            path=path_flow_models)
+
+    #print(model['mlps_datasets'])
 
 flows_dic = [load_pickle_file("results_adaptive_is{:d}_{:d}/adaptive_sampling_is{:d}_{:d}.pkl".format(
                             isomer_labels[i],
@@ -192,13 +208,13 @@ if 'mlp' in args.energy_type:
             xs_mlp_test = []
 
             for i in range(len(isomer_labels)):
-            
+                
                 datasets = load_pickle_file("results_adaptive_is{:d}_{:d}/adaptive_sampling_is{:d}_{:d}.pkl".format(
                             isomer_labels[i],
                             args.flows_id[i],
                             isomer_labels[i],
                             args.flows_id[i]), 
-                            path=path_flow_models)['mlps_datasets'][0]
+                            path=path_flow_models)['mlps_datasets']
                 #print(len(datasets['mlps_datasets'][0]),
                 #      datasets['mlps_datasets'][0]['train'].shape,
                 #      datasets['mlps_datasets'][0]['test'].shape)
