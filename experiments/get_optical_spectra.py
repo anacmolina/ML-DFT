@@ -34,7 +34,7 @@ xs = torch.cat(load_pickle_file(adaptive_path[args.energy_type], path=get_projec
 
 coord_mapping = Coordinates_mapping()
 
-for i in [8, 15]:#range(args.range[0], args.range[1]):
+for i in range(args.range[0], args.range[1]):
     print('Computing Sample {:d}'.format(i))
     x = xs[i].reshape(1, -1)
     molecule = coord_mapping.build_molecule_from_real_centered(x, isomer=args.isomer)[0]
