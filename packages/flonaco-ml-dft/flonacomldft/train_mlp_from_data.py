@@ -116,12 +116,15 @@ def train_mlp(
 
         if with_tqdm == False:
 
+            if n_partial_loss > n_epochs:
+                n_partial_loss = n_epochs
+
             if t % (n_epochs // n_partial_loss) == 0:
 
                 for param_group in optimizer.param_groups:
                     lr_ = param_group['lr']
 
-                print('{:0.1e} \t {:0.2e} \t {:3.2e} \t {:3.2e} \t {:0.1e}'.format(t, lr_, train_losses[-1], test_losses[-1], grad_norms[-1]))
+                print('{:0.1e} \t {:0.2e} \t {:3.2e} \t {:3.2e} \t {:0.1e}'.format(t, lr_, avg_train_losses[-1], avg_test_losses[-1], grad_norms[-1]))
 
         else:
 
