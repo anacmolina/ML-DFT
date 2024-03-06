@@ -10,7 +10,8 @@ from ase.io.trajectory import Trajectory
 
 
 DATABASE_PATH = None
-PROJECT_PATH = None
+PROJECT_PATH = Noneb
+
 
 
 def set_project_path(path):
