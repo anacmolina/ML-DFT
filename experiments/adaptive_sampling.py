@@ -182,15 +182,18 @@ if 'mlp' in energy_type:
 
     for i in range(len(isomer_labels)):
 
-        xs_train_md, xs_test_md = list(split_data_from_dataframe(flows_dataset[i], 0.8, 42))
+        #xs_train_md, xs_test_md = list(split_data_from_dataframe(flows_dataset[i], 0.8, 42))
 
-        xs_train_mlp = load_csv_file('is{:d}_{:s}_train.csv'.format(isomer_labels[i], 
+        xs_mlp = load_csv_file('is{:d}_{:s}_train.csv'.format(isomer_labels[i], 
                                                                     args.dataset), path=path_datasets)[:args.N_random_points, :dim+2]
-        xs_test_mlp = load_csv_file('is{:d}_{:s}_test.csv'.format(isomer_labels[i], 
-                                                                    args.dataset), path=path_datasets)[:args.N_random_points, :dim+2]
+        #xs_test_mlp = load_csv_file('is{:d}_{:s}_test.csv'.format(isomer_labels[i], 
+        #                                                            args.dataset), path=path_datasets)[:int(args.N_random_points*0.2), :dim+2]
 
-        xs_train = torch.cat((xs_train_md, xs_train_mlp) )
-        xs_test = torch.cat((xs_test_md, xs_test_mlp) )
+        xs_train_mlp, xs_test_mlp = list(split_data_from_dataframe(xs_mlp, 0.8, 42))
+
+        print("Random points: ", args.N_random_points, xs_train_mlp.shape, xs_test_mlp.shape)
+        xs_train = torch.cat((flows_train[i].clone(), xs_train_mlp) )
+        xs_test = torch.cat((flows_test[i].clone(), xs_test_mlp) )
 
         mlps_train.append(xs_train.clone())
         mlps_test.append(xs_test.clone())
@@ -324,6 +327,8 @@ if len(isomer_labels) > 1:
     mixture = True
 
 mpi.world.barrier()
+
+print("MLP sizes datasets before adaptive: ", mlps_train[0].shape, mlps_test[0].shape)
 
 # run adaptive sampling
 adaptive =run_adaptive_sampling(

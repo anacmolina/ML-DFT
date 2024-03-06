@@ -68,7 +68,7 @@ def run_metropolis(model,
     print("Number of steps: {:d}".format(n_steps))
     print("Temperature: {:.1f}K".format(temperature))
     print("Energy Type: {:s}".format(energy_type))
-
+    
     if "mlp" in energy_type:
         #TODO: Add calculator for MLP
         
@@ -85,6 +85,7 @@ def run_metropolis(model,
                 model_mlp_is1 = mlp_models[0]
         
         print("Use Neural Predictor: True")
+        print("DFT fraction: {:.1f}".format(frac_computed))
 
         if train_mlp_models:
 

@@ -30,7 +30,11 @@ def run_adaptive_sampling(
     mlp_init_test=None,
     mlp_hyperparams=None,
     train_mlp_models=True,
-    frac_computed=0.2,
+    scheduler_train_mlp_models=5,
+    frac_computed=0.3,
+    update_frac_computed=True,
+    scheduler_frac_computed=5,
+    min_frac_computed=0.3,
     init_weights=None, 
     update_weights=True,
     scheduler_weights=10,
@@ -153,7 +157,17 @@ def run_adaptive_sampling(
 
         if ('mlp' in energy_type) and (train_mlp_models == True):
 
-            mlp_models = [dict_mlp['model'] for dict_mlp in dict_mlps[i]]
+            mlp_models = [dict_mlp['model'] for dict_mlp in dict_mlps[-1]]
+
+        if update_frac_computed and (i % scheduler_frac_computed == 0) and (i > 0):
+            print('Updating fraction of computed energies')
+            if frac_computed > min_frac_computed:
+                frac_computed = frac_computed / 2
+                if frac_computed < min_frac_computed:
+                    frac_computed = min_frac_computed
+            else:
+                frac_computed = min_frac_computed
+            print('New fraction of computed energies: ', frac_computed)
 
         mcmc = run_metropolis(model = model, 
                                 init = init, 
@@ -242,6 +256,8 @@ def run_adaptive_sampling(
 
             mask_mlp = configs_dft_flatten[:, -1]
 
+            print('DFT computations: ', xs_calc_run.shape, us_calc_run.shape, isomers_calc_run.shape)
+
         for mode in range(n_isomers):
 
             print('Isomer: ', isomer_labels[mode].item())
@@ -306,22 +322,26 @@ def run_adaptive_sampling(
                 #      #fix_iters_per_batch[mode],
                 #      #xs_for_mlps_train[mode].shape[0],
                 #      int(xs_for_mlps_train[mode].shape[0] / new_batch_size)*mlp_hyperparams[mode]['n_iter'] )
-                      
-                dict_new_mlp = train_mlp(
-                    model=mlp_models[mode],
-                    train=xs_for_mlps_train[mode],
-                    test=xs_for_mlps_test[mode],
-                    **mlp_hyperparams[mode],
-                    dim=dim,
-                )
 
-                dict_new_mlps.append(dict_new_mlp)
+                if (i % scheduler_train_mlp_models == 0) and (i > 0):
+                      
+                    dict_new_mlp = train_mlp(
+                        model=mlp_models[mode],
+                        train=xs_for_mlps_train[mode],
+                        test=xs_for_mlps_test[mode],
+                        **mlp_hyperparams[mode],
+                        dim=dim,
+                    )
+
+                    dict_new_mlps.append(dict_new_mlp)
 
         dict_flows.append(dict_new_flows)
 
         if train_mlp_models and use_calc:
 
-            dict_mlps.append(dict_new_mlps)
+            if (i % scheduler_train_mlp_models == 0) and (i > 0):
+
+                dict_mlps.append(dict_new_mlps)
 
         if mixture and update_weights:
         
