@@ -335,7 +335,7 @@ def run_adaptive_sampling(
 
                     dict_new_mlps.append(dict_new_mlp)
 
-                    mlp_hyperparams[mode]['n_iter'] = mlp_hyperparams[mode]['n_iter'] + 3000
+                    #mlp_hyperparams[mode]['n_iter'] = mlp_hyperparams[mode]['n_iter'] + 3000
 
         dict_flows.append(dict_new_flows)
 
