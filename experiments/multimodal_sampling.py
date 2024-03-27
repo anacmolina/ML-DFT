@@ -197,7 +197,7 @@ if 'mlp' in args.energy_type:
                             args.flows_id[i],
                             isomer_labels[i],
                             args.flows_id[i]), 
-                            path=path_flow_models)['dict_mlps'][-1][0]
+                            path=path_flow_models)['dict_mlps'][-3][0]
                             for i in range(len(isomer_labels))]
 
         mlp_models = [mlps_dic[i]['model'] for i in range(len(isomer_labels))]
