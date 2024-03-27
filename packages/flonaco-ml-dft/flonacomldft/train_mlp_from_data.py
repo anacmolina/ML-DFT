@@ -41,6 +41,9 @@ def train_mlp(
     else:
         n_epochs = n_iter
 
+    if n_epochs < 1:
+        n_epochs = 1
+
     print('Number of epochs: ', n_epochs)
 
     if save_splits > 1:
