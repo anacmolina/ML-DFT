@@ -7,6 +7,13 @@ from ase.parallel import paropen
 
 
 def write_ground_state(atoms, path, calc=None):
+    """
+    Compute and write the ground state of the system
+    Args:
+        atoms: ASE atoms object
+        path: path to save the output
+        calc: calculator object
+    """
 
     if calc is None:
         calc = GPAW(h=0.2,
@@ -26,6 +33,11 @@ def write_ground_state(atoms, path, calc=None):
     calc.write(path+'/gs.gpw')
 
 def unoccupied_states(path):
+    """
+    Compute unoccupied states of the system
+    Args:
+        path: path to load the output from the ground state
+    """
 
     calc = GPAW(path+'/gs.gpw')
     
@@ -40,6 +52,11 @@ def unoccupied_states(path):
 
 
 def linear_response(path):
+    """
+    Compute the linear response of the system
+    Args:
+        path: path to load the output from the unoccupied states
+    """
 
     max_energy_diff = 5.5 #eV
     w=0.08
@@ -76,6 +93,11 @@ def linear_response(path):
                            max_energy=10.0)
 
 def lr_get_transitions(path):
+    """
+    Get the transitions of the system
+    Args:
+        path: path to load the output from the linear response
+    """
 
     max_energy_diff = 5.5  # eV
 
@@ -114,6 +136,12 @@ def lr_get_transitions(path):
                          val / 2. * 100))
 
 def compute_optical_spectra(atoms, path):
+    """
+    Compute the optical spectra of the system
+    Args:
+        atoms: ASE atoms object
+        path: path to save the output
+    """
 
     write_ground_state(atoms, path)
     unoccupied_states(path)

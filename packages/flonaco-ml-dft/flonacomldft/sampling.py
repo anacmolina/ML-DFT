@@ -1,6 +1,5 @@
 """
-Script with Metropolis-Hasting algorithm. 
-
+Metropolis-Hasting algorithm
 """
 
 import time
@@ -13,8 +12,7 @@ from flonacomldft.utils.io_utils import save_pickle_file
 from ase.parallel import parprint as print
 from ase.units import kB
 
-#TODO: Add calculator for MLP
-#TODO: Add cv values to return
+
 #TODO: add docstrings
 
 def run_metropolis(model, 

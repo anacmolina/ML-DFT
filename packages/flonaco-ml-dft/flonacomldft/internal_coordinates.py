@@ -1,6 +1,4 @@
-#TODO: CLEAN UP!
-
-## Import modules
+# libraries
 
 import os
 import torch
@@ -12,7 +10,6 @@ from ase.units import kB
 from flonacomldft.utils.silver_isomers_utils import get_construction_table, get_molecule_isomer_minima
 from flonacomldft.collective_variables import get_collective_variables
 
-### Add phase to the angles from internal coordinates
 def add_phase(tensor, phase = 2 * torch.pi):
     """Shift the angles by phase to avoid discontinuities
     Args:
@@ -31,9 +28,21 @@ class Angles_mapping():
 
     """
     def __init__(self, idx_first_angle=5):
+        """
+        Args:
+            idx_first_angle (int): index at which the angles start in the internal coordinates
+        """
         self.idx_first_angle = idx_first_angle
 
     def rads_to_reals(self, x_rads, log_det_jac=None):
+        """
+        Transform from radians to reals using the tan function
+        Args:
+            x_rads (torch.tensor): tensor of angles in radians
+            log_det_jac : log determinant of the jacobian
+        Returns:
+            x_reals (torch.tensor): tensor of angles in reals
+        """
         if log_det_jac is None:
             log_det_jac = 0
 
@@ -81,7 +90,7 @@ class Coordinates_mapping():
             0: self.get_internal_from_molecule(get_molecule_isomer_minima(minima_name+'is0'))[0],
             1: self.get_internal_from_molecule(get_molecule_isomer_minima(minima_name+'is1'))[0] #TODO: becareful with the silver minima file
         } 
-        #self.kb = 8.617333262e-5 # eV/K
+        
         self.kB = kB # eV/K
 
     def _get_xyz_from_molecule(self, molecule):
@@ -179,42 +188,6 @@ class Coordinates_mapping():
 
             zmat_matrix = cc.Zmat(zmat_matrix)
 
-#        if torch.is_tensor(zmat):
-#            zmat = zmat.clone().detach().numpy()
-#        else:
-#            zmat = zmat.copy()
-#                
-#        zmat_matrix = self.construction_table.copy()
-#        
-#        b = np.zeros(6)
-#        a = np.zeros(6)
-#        d = np.zeros(6)
-#        
-#        if len(zmat)==12:
-#         
-#            # reference frame shift - values taken from chemcoord
-#            b[0] = 1.27
-#            a[0:2] = np.array([2.21657, 2.21657])
-#            d[0:3] = np.array([2.21657, 2.21657, 2.21657])
-#
-#            b[1:] = zmat[:5]
-#            a[2:] = zmat[5:9]
-#            d[3:] = zmat[9:]
-#            
-#            a = np.rad2deg(a)
-#            d = np.rad2deg(d)
-#            
-#            b = np.double(b)
-#            a = np.double(a)
-#            d = np.double(d)
-#            
-#            zmat_matrix.insert(0, "atom", self.symbols, True)
-#            zmat_matrix.insert(2, "bond", b, True)
-#            zmat_matrix.insert(4, "angle", a, True)
-#            zmat_matrix.insert(6, "dihedral", d, True)
-#
-#            zmat_matrix = cc.Zmat(zmat_matrix)
-#
         else:
             raise RuntimeError('Data not valid')
       
@@ -476,9 +449,20 @@ class Coordinates_mapping():
 
         return reals, logdetjacs
 
-    #TODO: Fix bug, you need the isomer
     def get_internal_from_real_centered(self, reals, logdetjacs=None, isomer=None, 
                                         temperature=350, energies=None):
+        """
+        Get the internal coordinates from the real centered coordinates
+        Args:
+            reals (torch.tensor): real centered coordinates
+            logdetjacs (torch.tensor): logdetjac tensor
+            isomer (int): isomer label
+            temperature (float): temperature value
+            energies (torch.tensor): potential energy tensor
+        Returns:
+            zmats (torch.tensor): internal coordinates
+            logdetjacs (torch.tensor): logdetjac tensor
+        """
         
         if logdetjacs is None:
             logdetjacs = 0
@@ -486,7 +470,7 @@ class Coordinates_mapping():
         reals, logdetjacs_angle = self.angles_mappings.reals_to_rads(reals)
         logdetjacs = logdetjacs + logdetjacs_angle.requires_grad_(True)
 
-        zmats = reals + self.zmat_minima[isomer] #TODO: Check if this is correct
+        zmats = reals + self.zmat_minima[isomer]
 
         if energies is not None:
             energies = energies - (self.kB * temperature) * logdetjacs_angle
@@ -495,19 +479,42 @@ class Coordinates_mapping():
         return zmats, logdetjacs
     
     def build_molecule_from_real_centered(self, x, isomer, temperature=350):
+        """
+        Builds the molecule from the real centered coordinates
+        Args:
+            x (torch.tensor): real centered coordinates
+            isomer (int): isomer label
+            temperature (float): temperature value
+        Returns:
+            molecule (ase.Atoms): molecule object
+        """
 
         zmat, logdetjac = self.get_internal_from_real_centered(x, isomer=isomer, temperature=temperature)
-        #print(zmat.shape, zmat)
         xyz, logdetjac = self.get_cartesian_from_internal(zmat[0], logdetjac)
         molecule = self._build_molecule_from_xyz(xyz)
 
         return molecule, logdetjac
 
     def get_collective_variables_from_molecule(self, molecule):
+        """
+        Get the collective variables from a molecule
+        Args:
+            molecule: ASE Atoms object
+        Returns:
+            cv (torch.tensor): collective variables tensor
+        """
             
         return torch.tensor(get_collective_variables(molecule)).squeeze()
 
     def get_collective_variables_from_trajectory(self, trajectory, max_samples=None):
+        """
+        Get the collective variables from a trajectory
+        Args:
+            trajectory: ASE trajectory object
+            max_samples: maximum number of samples to consider
+        Returns:
+            cvs (torch.tensor): collective variables tensor
+        """
         
         cvs = []
         
@@ -522,6 +529,13 @@ class Coordinates_mapping():
         return torch.stack(cvs)
 
     def get_collective_variables_from_zmat(self, x):
+        """
+        Get the collective variables from the internal coordinates
+        Args:
+            x: internal coordinates
+        Returns:
+            cv (torch.tensor): collective variables tensor
+        """
 
         if len(x.shape) > 1:
             cvs = []
@@ -537,7 +551,14 @@ class Coordinates_mapping():
             return torch.tensor(get_collective_variables(molecule)).squeeze()
 
     def get_collective_variables_from_real_centered(self, x, isomer):
-
+        """
+        Get the collective variables from the real centered coordinates
+        Args:
+            x: real centered coordinates
+            isomer: isomer label
+        Returns:
+            cv (torch.tensor): collective variables tensor
+        """
         if len(x.shape) == 1:
             x = x.reshape(1, -1)
 
@@ -548,6 +569,14 @@ class Coordinates_mapping():
 
         
 def get_labels_from_construction_table(construction_table, all_labels=False):
+    """
+    Get the labels from the construction table
+    Args:
+        construction_table: construction table
+        all_labels: boolean to get all labels
+    Returns:
+        labels: list of labels
+    """
 
     construction_table = construction_table.copy()
     construction_table['index'] = construction_table.index
@@ -577,6 +606,22 @@ def save_internal_coordinates_to_csv(xs,
                                      add_cvs=True, 
                                      filename='traj.csv', 
                                      path=os.getcwd()):
+    
+    """
+    Save the internal coordinates to a csv file
+    Args:
+        xs: internal coordinates
+        columns: list of columns
+        construction_table: construction table
+        add_potential_energy: boolean to add potential energy
+        add_logdetjac: boolean to add logdetjac
+        add_isomer: boolean to add isomer
+        add_cvs: boolean to add collective variables
+        filename: name of the file
+        path: path to save the file
+    Returns:
+        None    
+    """
 
     if (columns is None) and (construction_table is not None):
         
@@ -602,6 +647,7 @@ def save_internal_coordinates_to_csv(xs,
     df.columns=columns
     df.to_csv(path + '/' + filename, index=False)
 
+#TODO: Check if this function is being used
 def join_data(xs, energies, isomers, logdetjacs=None):
 
     data = torch.cat((xs, 
@@ -616,6 +662,14 @@ def join_data(xs, energies, isomers, logdetjacs=None):
     return data
 
 def get_collective_variables_from_xs(xss, isomerss):
+    """
+    Get the collective variables from real centered coordinates
+    Args:
+        xss: real centered coordinates
+        isomerss: isomer labels
+    Returns:
+        cvss: collective variables tensor
+    """
     cvss = []
 
     coord_mapping = Coordinates_mapping()
@@ -631,7 +685,25 @@ def get_collective_variables_from_xs(xss, isomerss):
     return torch.stack(cvss)
 
 
-def load_DFTAdaptive_folder(folder_path, n_runs, n_steps, n_chains, isomer, temperature=350):
+def load_DFTAdaptive_folder(folder_path, 
+                            n_runs, 
+                            n_steps, 
+                            n_chains, 
+                            isomer, 
+                            temperature=350):
+    
+    """
+    Load atoms objects from a folder with the DFTAdaptive output files and change to internal coordinates
+    Args:
+        folder_path: path to the folder
+        n_runs: number of runs
+        n_steps: number of steps
+        n_chains: number of chains
+        isomer: isomer label
+        temperature: temperature value
+    Returns:
+        zmats: internal coordinates
+    """
 
     zmats = []
     coord_mapping = Coordinates_mapping()

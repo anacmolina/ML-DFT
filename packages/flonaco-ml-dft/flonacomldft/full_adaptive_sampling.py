@@ -9,9 +9,14 @@ from flonacomldft.models.mixture import Mixture
 from ase.parallel import parprint as print
 
 def Transpose(x):
+    """
+    Transpose the input tensor x
+    Args:
+        x: input tensor
+    Returns:
+        The transposed tensor
+    """
     return x.permute(*torch.arange(x.ndim - 1, -1, -1))
-
-#TODO: add docstrings
 
 def run_adaptive_sampling(
     mcmc_init,
@@ -44,6 +49,56 @@ def run_adaptive_sampling(
     device='cpu', 
     ):
 
+    """
+    Adaptive sampling function
+    Args:
+        mcmc_init (tensor): initial configurations for the MCMC
+        n_chains (int): number of chains
+        n_steps (int): number of steps
+        n_runs(int): number of runs
+        flow_init_train (tensor): initial training dataset for the flows
+        dict_flows_init (dict): initial dictionary with the flows models
+        flow_hyperparams (dict): hyperparameters for the flows
+        energy_type (str): type of energy model
+        temperature (int): temperature
+        mixture : boolean to indicate if the flow model is a mixture
+        dim (int): dimension of the input
+        dict_mlps_init: initial dictionary with the MLPs models
+        mlp_init_train: initial training dataset for the MLPs
+        mlp_init_test: initial test dataset for the MLPs
+        mlp_hyperparams: hyperparameters for the MLPs
+        train_mlp_models: boolean to indicate if the MLPs models will be trained
+        scheduler_train_mlp_models: scheduler to train the MLPs models
+        frac_computed: fraction of computed energies
+        update_frac_computed: boolean to update the fraction of computed energies
+        scheduler_frac_computed: scheduler to update the fraction of computed energies
+        min_frac_computed: minimum fraction of computed energies
+        init_weights: initial weights for the mixture model
+        update_weights: boolean to update the weights of the mixture model
+        scheduler_weights: scheduler to update the weights of the mixture model
+        alpha: alpha parameter for the mixture model
+        n_samples_train_flow: number of samples for training the flows
+        folder_name: name of the folder to save the results
+        device: device to run the computations
+    Returns:
+        Dictionary with the results of the adaptive sampling
+            {'xs': chains with configurations,
+            'us': chains with energies,
+            'accs': acceptance rates,
+            'isomers': chains with isomers label,
+            'nlls': negative log-likelihoods,
+            'time_mcmc': time for the MCMC in each step,
+            'time_step_flow': time each time the flow is trained,
+            'time_step_adaptive': time each time the adaptive sampling is run,
+            'xs_proposals': proposed for the configurations in each step,
+            'us_proposals': proposed for the energies in each step,
+            'isomers_proposals': proposed for the isomers in each step,
+            'nlls_proposals': proposed for the negative log-likelihoods in each step,
+            'dict_flows': dictionary with the flows models,
+            'flows_dataset': training dataset for the flows,
+            }
+    """
+
     print('Adaptive sampling')
     print('Number of runs: ', n_runs)
     print('Number of chains: ', n_chains)
@@ -74,12 +129,6 @@ def run_adaptive_sampling(
 
             xs_for_mlps_train = [ mlp_init_train[i] for i in range(n_isomers) ]
             xs_for_mlps_test = [ mlp_init_test[i] for i in range(n_isomers) ]
-
-            #n_samples_train_mlp = torch.tensor( [ xs_for_mlps_train[i].shape[0] for i in range(n_isomers) ] )
-            #mlp_batch_size = torch.tensor( [ mlp_hyperparams[i]['bs'] for i in range(n_isomers) ] )
-#
-            #fix_iters_per_batch = torch.ceil(n_samples_train_mlp / mlp_batch_size).clone().detach().int()
-
 
             print('MLP train dataset shapes: ', [ list(xs_for_mlps_train[i].shape) for i in range(n_isomers) ])
             print('MLP test dataset shapes: ', [ list(xs_for_mlps_test[i].shape) for i in range(n_isomers) ])
@@ -315,14 +364,6 @@ def run_adaptive_sampling(
                 print('MLP train dataset shape: ', list(xs_for_mlps_train[mode].shape))
                 print('MLP test dataset shape: ', list(xs_for_mlps_test[mode].shape))
 
-                #new_batch_size = torch.ceil(xs_for_mlps_train[mode].shape[0] / fix_iters_per_batch[mode]).int().item()
-                #mlp_hyperparams[mode]['bs'] = new_batch_size
-
-                #print("Number of gradient steps per epoch: ", new_batch_size, 
-                #      #fix_iters_per_batch[mode],
-                #      #xs_for_mlps_train[mode].shape[0],
-                #      int(xs_for_mlps_train[mode].shape[0] / new_batch_size)*mlp_hyperparams[mode]['n_iter'] )
-
                 if (i % scheduler_train_mlp_models == 0) and (i > 0):
                       
                     dict_new_mlp = train_mlp(
@@ -334,8 +375,6 @@ def run_adaptive_sampling(
                     )
 
                     dict_new_mlps.append(dict_new_mlp)
-
-                    #mlp_hyperparams[mode]['n_iter'] = mlp_hyperparams[mode]['n_iter'] + 3000
 
         dict_flows.append(dict_new_flows)
 
