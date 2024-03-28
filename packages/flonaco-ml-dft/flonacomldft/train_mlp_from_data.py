@@ -25,6 +25,24 @@ def train_mlp(
     n_partial_loss=10,
     dim=12,  
     ):
+    """
+    Train a MLP model using the mean squared error as loss function.
+    Args:
+        model (): the model to train
+        train (torch.Tensor): the training data
+        test (torch.Tensor): the test data
+        n_iter (int): the number of iterations
+        lr (float): the learning rate
+        bs (int): the batch size
+        use_scheduler (bool): whether to use a scheduler
+        step_scheduler (int): the step size for the scheduler
+        save_splits (int): the number of models to save
+        grad_clip (float): the maximum gradient norm
+        with_tqdm (bool): whether to use tqdm
+        n_partial_loss (int): the number of partial losses to print
+        dim (int): the dimension of the input data
+    """
+
     
     def loss_func(x, y):
         return ((model(x).squeeze() - y)**2).mean()

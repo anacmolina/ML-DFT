@@ -6,7 +6,7 @@ import os
 import torch
 import numpy as np
 from ase.io import read
-#from flonacomldft.utils.silver_isomers_utils import get_molecule_isomer_minima
+
 import argparse
 from flonacomldft.internal_coordinates import Coordinates_mapping
 from flonacomldft.utils.io_utils import load_pickle_file, get_project_path

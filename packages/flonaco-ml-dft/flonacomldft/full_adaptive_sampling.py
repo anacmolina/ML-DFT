@@ -52,51 +52,56 @@ def run_adaptive_sampling(
     """
     Adaptive sampling function
     Args:
-        mcmc_init (tensor): initial configurations for the MCMC
-        n_chains (int): number of chains
-        n_steps (int): number of steps
-        n_runs(int): number of runs
-        flow_init_train (tensor): initial training dataset for the flows
-        dict_flows_init (dict): initial dictionary with the flows models
-        flow_hyperparams (dict): hyperparameters for the flows
-        energy_type (str): type of energy model
-        temperature (int): temperature
-        mixture : boolean to indicate if the flow model is a mixture
-        dim (int): dimension of the input
-        dict_mlps_init: initial dictionary with the MLPs models
-        mlp_init_train: initial training dataset for the MLPs
-        mlp_init_test: initial test dataset for the MLPs
-        mlp_hyperparams: hyperparameters for the MLPs
-        train_mlp_models: boolean to indicate if the MLPs models will be trained
-        scheduler_train_mlp_models: scheduler to train the MLPs models
-        frac_computed: fraction of computed energies
-        update_frac_computed: boolean to update the fraction of computed energies
-        scheduler_frac_computed: scheduler to update the fraction of computed energies
-        min_frac_computed: minimum fraction of computed energies
-        init_weights: initial weights for the mixture model
-        update_weights: boolean to update the weights of the mixture model
-        scheduler_weights: scheduler to update the weights of the mixture model
-        alpha: alpha parameter for the mixture model
-        n_samples_train_flow: number of samples for training the flows
-        folder_name: name of the folder to save the results
-        device: device to run the computations
+        mcmc_init (torch.Tensor): the initial configurations
+        n_chains (int): the number of chains
+        n_steps (int): the number of steps
+        n_runs (int): the number of runs
+        flow_init_train (list): the initial training data for the flows
+        dict_flows_init (list): the initial flow models
+        flow_hyperparams (list): the hyperparameters for the flows
+        energy_type (str): the type of energy model
+        temperature (float): the temperature
+        mixture (bool): whether to use a mixture model
+        dim (int): the dimension of the input data
+        dict_mlps_init (list): the initial MLP models
+        mlp_init_train (list): the initial training data for the MLPs
+        mlp_init_test (list): the initial test data for the MLPs
+        mlp_hyperparams (list): the hyperparameters for the MLPs
+        train_mlp_models (bool): whether to train the MLP models
+        scheduler_train_mlp_models (int): the scheduler for training the MLP models 
+        frac_computed (float): the fraction of computed energies
+        update_frac_computed (bool): whether to update the fraction of computed energies
+        scheduler_frac_computed (int): the scheduler for updating the fraction of computed energies
+        min_frac_computed (float): the minimum fraction of computed energies
+        init_weights (torch.Tensor): the initial weights for the mixture model
+        update_weights (bool): whether to update the weights
+        scheduler_weights (int): the scheduler for updating the weights
+        alpha (float): the alpha parameter for the mixture model
+        n_samples_train_flow (torch.Tensor): the number of samples for training the flows
+        folder_name (str): the folder name
+        device (str): the device
     Returns:
-        Dictionary with the results of the adaptive sampling
-            {'xs': chains with configurations,
-            'us': chains with energies,
-            'accs': acceptance rates,
-            'isomers': chains with isomers label,
-            'nlls': negative log-likelihoods,
-            'time_mcmc': time for the MCMC in each step,
-            'time_step_flow': time each time the flow is trained,
-            'time_step_adaptive': time each time the adaptive sampling is run,
-            'xs_proposals': proposed for the configurations in each step,
-            'us_proposals': proposed for the energies in each step,
-            'isomers_proposals': proposed for the isomers in each step,
-            'nlls_proposals': proposed for the negative log-likelihoods in each step,
-            'dict_flows': dictionary with the flows models,
-            'flows_dataset': training dataset for the flows,
-            }
+        dict: a dictionary containing
+            xs (list): the configurations
+            us (list): the energies
+            accs (list): the acceptance rates
+            isomers (list): the isomers
+            nlls (list): the negative log-likelihoods
+            time_mcmc (list): the time steps
+            time_step_flow (list): the time steps for the flows
+            time_step_adaptive (list): the time steps for the adaptive sampling
+            xs_proposals (list): the proposals
+            us_proposals (list): the energies of the proposals
+            isomers_proposals (list): the isomers of the proposals
+            nlls_proposals (list): the negative log-likelihoods of the proposals
+            dict_flows (list): the flow models
+            flows_dataset (list): the training data for the flows
+            xs_calc (list): the configurations from the DFT calculations
+            us_calc (list): the energies from the DFT calculations
+            isomers_calc (list): the isomers from the DFT calculations
+            inds_calc (list): the indexes from the DFT calculations
+            dict_mlps (list): the MLP models
+            mlps_datasets (dict): the training and test data for the MLPs
     """
 
     print('Adaptive sampling')

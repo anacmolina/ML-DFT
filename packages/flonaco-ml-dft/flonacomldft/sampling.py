@@ -13,8 +13,6 @@ from ase.parallel import parprint as print
 from ase.units import kB
 
 
-#TODO: add docstrings
-
 def run_metropolis(model, 
                     init, 
                     n_chains,
@@ -42,6 +40,38 @@ def run_metropolis(model,
                     train_mlp_scheduler=None,
                  ):
 
+    """
+    Run Metropolis-Hastings algorithm
+    Args:
+        model: Normalizing Flow Model
+        init (torch.Tensor): Initial configurations for the chains
+        n_chains (int): Number of chains
+        n_steps (int): Number of steps
+        id_run (str): Identifier for the run
+        energy_type (str): Type of energy to calculate
+        temperature (float): Temperature
+        mixture (bool): Boolean to indicate if the model is a mixture
+        mlp_models (list): List of MLP models
+        frac_computed (float): Fraction of configurations to compute
+        dim (int): Dimension of the configuration space
+        update_weights (bool): Boolean to indicate if the weights of the mixture model are updated
+        scheduler_weights (int): Number of steps to update the weights
+        alpha (float): Parameter to update weights update
+        return_ratios (bool): Boolean to indicate if the ratios are returned
+        return_proposals (bool): Boolean to indicate if the proposals are returned
+        with_tqdm (bool): Boolean to indicate if tqdm is used
+        device (str): Device to use
+        folder_name (str): Folder name to save the results
+        checkpoints (int): Number of steps to save a checkpoint
+        train_mlp_models (bool): Boolean to indicate if the MLP models are trained
+        mlp_init_train (list): List of initial configurations to train the MLP models
+        mlp_init_test (list): List of initial configurations to test the MLP models
+        mlp_hyperparams (dict): Dictionary with hyperparameters for the MLP models
+        train_mlp_scheduler (int): Scheduler to train the MLP models
+    Returns:
+        dict: Dictionary with the results
+    """
+
     assert init.shape[0] == n_chains
 
     if mixture:
@@ -68,7 +98,6 @@ def run_metropolis(model,
     print("Energy Type: {:s}".format(energy_type))
     
     if "mlp" in energy_type:
-        #TODO: Add calculator for MLP
         
         if (mlp_models is None):
             raise RuntimeError("No model to calculate energy")
@@ -82,7 +111,7 @@ def run_metropolis(model,
             else:
                 model_mlp_is1 = mlp_models[0]
         
-        print("Use Neural Predictor: True")
+        print("Use MLP: True")
         print("DFT fraction: {:.1f}".format(frac_computed))
 
         if train_mlp_models:
@@ -96,7 +125,7 @@ def run_metropolis(model,
 
     else:
         
-        print("No Neural Predictor")
+        print("No MLP")
 
     if ("dft" in energy_type) or ("emt" in energy_type):
 
@@ -170,7 +199,14 @@ def run_metropolis(model,
     else:
         pbar = range(n_steps)
 
-    def write_not_compute(x, isomer, id_run, dt, i):
+    def write_not_compute(id_run, dt, i):
+        """
+        Write file with not computed molecules
+        Args:
+            id_run (str): Identifier for the run
+            dt (int): Step
+            i (int): Chain index
+        """
 
         with open('not_computed_molecules.txt', 'w') as f:
 
@@ -239,53 +275,51 @@ def run_metropolis(model,
 
                 if flag_computed:
 
-                    #try: 
+                    try: 
 
-                    molecule, logdetjac = coord_mapping.build_molecule_from_real_centered(
-                        x_new[i].reshape(1, -1), 
-                        isomer=isomer_new[i].int().item(),
-                    )
-    
-                    input_calculator = {'atoms': molecule, }
-    
-                    if "dft" in energy_type:
-                    
-                        input_calculator['filename'] = 'ag6_{:s}_{:d}_{:d}.out'.format(
-                            str(id_run), dt, i
+                        molecule, logdetjac = coord_mapping.build_molecule_from_real_centered(
+                            x_new[i].reshape(1, -1), 
+                            isomer=isomer_new[i].int().item(),
                         )
-    
-                        mpi.world.barrier()
-    
-                    u = calculator.calculate_potential_energy(**input_calculator)
-    
-                    u_new[i] = coord_mapping.compute_energy_in_new_frame(
-                        u,
-                        logdetjac*(-1),
-                        temperature=temperature,
-                    )
 
-                    #u_new[i] = model_mlp_is0(x_new[i].reshape(1, -1))
+                        input_calculator = {'atoms': molecule, }
 
-                    xs_calc.append(x_new[i].clone().detach())
-                    us_calc.append(u_new[i].clone().detach())
-                    isomers_calc.append(isomer_new[i].clone().detach())
+                        if "dft" in energy_type:
+                        
+                            input_calculator['filename'] = 'ag6_{:s}_{:d}_{:d}.out'.format(
+                                str(id_run), dt, i
+                            )
 
-                    #except:
-#
-                    #    print("Molecule {:d} not computed".format(i))
-#
-                    #    ind_not_computed[i] = 1
-                    #    u_new[i] = 0.0
-#
-                    #    if "dft" in energy_type:
-                    #        
-                    #        rank = mpi.world.rank
-                    #        
-                    #        if rank==0:
-                    #            write_not_compute(x_new[i], isomer_new[i], id_run, dt, i)
-                    #    else:
-                    #        
-                    #        write_not_compute(x_new[i], isomer_new[i], id_run, dt, i)
+                            mpi.world.barrier()
+
+                        u = calculator.calculate_potential_energy(**input_calculator)
+
+                        u_new[i] = coord_mapping.compute_energy_in_new_frame(
+                            u,
+                            logdetjac*(-1),
+                            temperature=temperature,
+                        )
+
+                        xs_calc.append(x_new[i].clone().detach())
+                        us_calc.append(u_new[i].clone().detach())
+                        isomers_calc.append(isomer_new[i].clone().detach())
+
+                    except:
+
+                        print("Molecule {:d} not computed".format(i))
+
+                        ind_not_computed[i] = 1
+                        u_new[i] = 0.0
+
+                        if "dft" in energy_type:
+                            
+                            rank = mpi.world.rank
+                            
+                            if rank==0:
+                                write_not_compute(x_new[i], isomer_new[i], id_run, dt, i)
+                        else:
+                            
+                            write_not_compute(x_new[i], isomer_new[i], id_run, dt, i)
 
         if use_calc and "dft" in energy_type:
 
@@ -330,7 +364,6 @@ def run_metropolis(model,
         else:
 
             isomer_new = isomer_init.clone()
-        
         
         xs.append(x_new.clone().detach())
         us.append(u_new.clone().detach())

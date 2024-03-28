@@ -26,6 +26,32 @@ def train_flow(
         n_partial_loss=10,
         dim=12
     ):
+    """
+    Train a normalizing flow model using the negative log-likelihood as loss function.
+    Args:
+        model (): the model to train
+        train (torch.Tensor): the training data
+        n_iter (int): the number of iterations
+        lr (float): the learning rate
+        bs (int): the batch size
+        test (torch.Tensor): the test data
+        use_scheduler (bool): whether to use a scheduler
+        step_scheduler (int): the step size for the scheduler
+        save_splits (int): the number of models to save
+        grad_clip (float): the maximum gradient norm
+        with_tqdm (bool): whether to use tqdm
+        n_partial_loss (int): the number of partial losses to print
+        dim (int): the dimension of the input data  
+    Returns:
+        dict: a dictionary containing
+            model (torch.nn.Module): the trained model
+            train_losses (list): the training losses
+            avg_train_losses (list): the average training losses
+            grad_norms (list): the gradient norms
+            time_step (list): the time steps
+            test_losses (list): the test losses
+            models (list): the saved models
+    """
 
     def loss_func(x):
         return (model.nll(x)).mean()
@@ -45,6 +71,9 @@ def train_flow(
         n_epochs = round( n_iter * bs / train.shape[0] )
     else:
         n_epochs = n_iter
+
+    if n_epochs < 1:
+        n_epochs = 1
 
     print('Train size: ', train.shape[0])
     print('Batch size: ', bs)

@@ -1,5 +1,3 @@
-#TODO: Review argparse arguments
-
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -106,6 +104,8 @@ parser.add_argument('-nchains', '--n-chains', type=int, default=5)
 parser.add_argument('-nsteps', '--n-steps', type=int, default=10)
 parser.add_argument('-etype', '--energy-type', type=str, default='dft')
 parser.add_argument('-frac', '--frac-computed', type=float, default=0.2)
+parser.add_argument('-scfrac', '--scheduler-frac-computed', type=int, default=5)
+parser.add_argument('-upfrac', '--update-frac-computed', type=bool, default=True)
 parser.add_argument('-tmlp', '--train-mlps', type=bool, default=False)
 parser.add_argument('-load', '--load-models', type=bool, default=False)
 parser.add_argument('-ftype', '--flow-type', type=str, default=None)
@@ -115,6 +115,7 @@ parser.add_argument('-alpha', '--alpha', type=float, default=0.5)
 parser.add_argument('-npsID', '--mlps-id', type=int, nargs='+', default=None)
 parser.add_argument('-nfsID', '--flows-id', type=int, nargs='+', default=None)
 parser.add_argument('-ncycles', '--cycles', type=int, default=None, help='Set window size')
+parser.add_argument('-scnps', '--scheduler-train-mlps-models', type=bool, default=True)
 
 args = parser.parse_args()
 args.date_start = str(date_start)
@@ -350,7 +351,10 @@ adaptive =run_adaptive_sampling(
     mlp_init_test=mlps_test,
     mlp_hyperparams=[mlp_hyperparams, mlp_hyperparams],
     train_mlp_models=args.train_mlps,
+    scheduler_train_mlp_models=args.scheduler_train_mlps_models,
     frac_computed=args.frac_computed,
+    scheduler_frac_computed=args.scheduler_frac_computed,
+    update_frac_computed=args.update_frac_computed,
     init_weights=None,
     update_weights=args.update_weights,
     scheduler_weights=args.scheduler_weights,

@@ -1,7 +1,4 @@
-# TODO: Add this to package
-# TODO: Run this script again
-
-### Import modules
+# libraries
 import argparse
 import time
 import numpy as np
@@ -16,11 +13,11 @@ from flonacomldft.utils.silver_isomers_utils import (
 )
 from flonacomldft.utils.io_utils import save_json_args
 
-### Get start time and process id
+# get start time and process id
 date_start = time.strftime('%Y-%m-%d %H:%M:%S')
 process_id = get_process_id(date_start)
 
-### Define arguments to parse from command line
+# define arguments to parse from command line
 parser = argparse.ArgumentParser(description='Prepare experiment')
 parser.add_argument('-ml', '--mode-label', type=int, default=0)
 parser.add_argument('-gpwmd', '--gpaw-mode', type=str, default='lcao')
@@ -31,10 +28,10 @@ args.date_start = date_start
 
 print(args)
 
-### Get molecule
+# get molecule
 molecule = get_molecule_isomer_minima('is{:d}'.format(args.mode_label))
 
-### Set mode calculation and parameters
+# set mode calculation and parameters
 mode = args.gpaw_mode
 
 molecule.set_cell([16, 16, 16])
@@ -43,7 +40,7 @@ molecule.center()
 
 name = "is{:d}_{:s}_{:d}".format(args.mode_label, args.gpaw_mode, args.process_id)
 
-### Set calculator
+# set calculator
 calc = GPAW(
     mode=args.gpaw_mode,
     h=0.2,
@@ -57,15 +54,15 @@ calc = GPAW(
 
 molecule.calc = calc
 
-### Run optimization
+# run optimization
 opt = BFGS(molecule, trajectory = name + ".traj", logfile = name + ".log")
 opt.run(0.01)
 
-### Get end time
+# get end time
 date_end = time.strftime('%Y-%m-%d %H:%M:%S')
 args.date_end = date_end
 
 args.algorithm = 'optimization.py'
 
-### Save minimization parameters
+# save minimization parameters
 save_json_args(args)

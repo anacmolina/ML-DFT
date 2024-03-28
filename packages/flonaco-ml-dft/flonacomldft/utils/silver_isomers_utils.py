@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 from ase import Atoms
 
+# Isomers of the silver cluster
 isomers = {
-    #'ag6_planar': {
     'is0': {
         'symbols': 'AgAgAgAgAgAg',
         'positions': np.array([[ 7.999201,  5.66275 ,  8.      ],
@@ -13,7 +13,6 @@ isomers = {
                                [ 9.389729,  8.068932,  8.      ],
                                [10.678646,  5.717535,  8.      ]])},
     
-    #'ag6_3d': {
     'is1': {
         'symbols': 'AgAgAgAgAgAg',
         'positions': np.array([[ 6.594017,  5.856863,  7.384655],
@@ -22,9 +21,7 @@ isomers = {
                                [ 8.      ,  7.764723,  8.6508  ],
                                [10.289524,  8.523162,  7.461228],
                                [ 8.      , 10.145127,  7.407456]])},
-#}
-#TODO: Fix this
-#emt_isomers = {
+
     'emt_is0':{
         'symbols': 'AgAgAgAgAgAg',
         'positions': np.array([[ 7.53174253,  6.48514763,  5.        ],
@@ -45,8 +42,38 @@ isomers = {
 } 
 
 
+# Parameters for the calculators
+params_calc = {
+    'LCAO': {'mode': 'lcao',
+              'basis': 'pvalence.dz',
+              'h': 0.2,
+              'xc': 'PBE',
+              'spinpol': True,
+              'symmetry': 'off',
+              },
+
+    'FD': {'mode': 'fd',
+            'h': 0.18,
+            'xc': 'PBE',
+            'eigensolver': 'rmm-diis',
+            'spinpol': True,
+            'symmetry': 'off',
+            'parallel': dict(augment_grids=True,  # use all cores for XC/Poisson
+                sl_auto=True,  # enable ScaLAPACK parallelization
+                use_elpa=True),  # use ELPA for ScaLAPACK
+            },
+}
+
 def get_molecule_isomer_minima(name, vacuum=None, **kwargs):
-    
+    """
+    Get the molecule for the isomer minimum.
+    Args:
+        name (str): the name of the isomer
+        vacuum (float): the vacuum to add
+        kwargs: the keyword arguments for the Atoms object
+    Returns:
+        Atoms: ASE Atoms object
+    """
 
     if name in isomers:
     
@@ -64,31 +91,14 @@ def get_molecule_isomer_minima(name, vacuum=None, **kwargs):
     return molecule
 
 
-params_calc = {
-    'LCAO': {'mode': 'lcao',
-              'basis': 'pvalence.dz',
-              'h': 0.2,
-              'xc': 'PBE',
-              'spinpol': True,
-              'symmetry': 'off',
-              #'nbands': -4,
-              },
-
-    'FD': {'mode': 'fd',
-            'h': 0.18,
-            'xc': 'PBE',
-            'eigensolver': 'rmm-diis',
-            'spinpol': True,
-            'symmetry': 'off',
-            #'nbands': -4,
-            'parallel': dict(augment_grids=True,  # use all cores for XC/Poisson
-                sl_auto=True,  # enable ScaLAPACK parallelization
-                use_elpa=True),  # use ELPA for ScaLAPACK
-            },
-}
-
 def get_molecule_calc_params(name='LCAO'):
-    
+    """
+    Get the molecule calculator parameters.
+    Args:
+        name (str): the name of the calculator
+    Returns:
+        dict: the calculator parameters
+    """
 
     if name in params_calc:
     
@@ -98,17 +108,21 @@ def get_molecule_calc_params(name='LCAO'):
     
         raise RuntimeError("Undefined calculator parameters")
 
-    
     return params
 
 # Construction table for both isomers, pandas dataframe (convention we chose)
 def get_construction_table():
+    """
+    Get the construction table used to obtain the internal coordinates.
+    Returns:
+        pd.DataFrame: the construction table
+    """
 
-   index = np.append(0, np.append(np.arange(2,6), 1))
-   construction_table = pd.DataFrame(index=index)
-      
-   construction_table['b'] = ['origin', 0, 2, 2, 4, 4]
-   construction_table['a'] = ['e_z', 'e_z', 0, 3, 2, 2]
-   construction_table['d'] = ['e_x', 'e_x', 'e_x', 0, 3, 3]
-      
-   return construction_table
+    index = np.append(0, np.append(np.arange(2,6), 1))
+    construction_table = pd.DataFrame(index=index)
+
+    construction_table['b'] = ['origin', 0, 2, 2, 4, 4]
+    construction_table['a'] = ['e_z', 'e_z', 0, 3, 2, 2]
+    construction_table['d'] = ['e_x', 'e_x', 'e_x', 0, 3, 3]
+
+    return construction_table
