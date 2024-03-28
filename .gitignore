@@ -2,6 +2,6 @@
 
 .DS_Store
 *.pyc
-packages/flonaco-ml-dft/flonacomldft/.DS_Store
+packages/flonaco-ml-dft/abflowmc/.DS_Store
 .vscode/settings.json
-packages/flonaco-ml-dft/flonacomldft.egg-info
+packages/flonaco-ml-dft/abflowmc.egg-info

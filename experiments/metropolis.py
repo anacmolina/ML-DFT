@@ -16,7 +16,7 @@ from ase.parallel import parprint as print
 
 # flonaco imports
 # io handling
-from flonacomldft.utils.io_utils import (
+from abflowmc.utils.io_utils import (
     get_path,
     load_pickle_file,
     load_csv_file,
@@ -25,9 +25,9 @@ from flonacomldft.utils.io_utils import (
     set_str_date_to_int
 )
 # sampling 
-from flonacomldft.sampling import run_metropolis
-from flonacomldft.models.mixture import Mixture
-from flonacomldft.internal_coordinates import Coordinates_mapping
+from abflowmc.sampling import run_metropolis
+from abflowmc.models.mixture import Mixture
+from abflowmc.internal_coordinates import Coordinates_mapping
 
 ranks = np.arange(0, mpi.world.size)
 rank = mpi.rank
@@ -190,8 +190,8 @@ save_pickle_file(metropolis_dic, "{:s}_mcmc_dic_{:d}.pkl".format(simulation_name
 save_json_args(args, 'metropolis', args.process_id, path_to_save_results)
 
 import matplotlib.pyplot as plt
-from flonacomldft.utils.plots import set_plot_iteration 
-from flonacomldft.utils.plots import Flonaco_Plotter
+from abflowmc.utils.plots import set_plot_iteration 
+from abflowmc.utils.plots import Flonaco_Plotter
 
 accs = metropolis_dic['accs']
 

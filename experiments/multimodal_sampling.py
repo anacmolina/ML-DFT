@@ -15,7 +15,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # flonaco functions
-from flonacomldft.utils.io_utils import (
+from abflowmc.utils.io_utils import (
     get_project_path,
     load_csv_file,
     load_pickle_file,
@@ -26,17 +26,17 @@ from flonacomldft.utils.io_utils import (
 )
 
 # coordinates handling
-from flonacomldft.internal_coordinates import Coordinates_mapping
-from flonacomldft.utils.data_processing import split_data_from_dataframe
+from abflowmc.internal_coordinates import Coordinates_mapping
+from abflowmc.utils.data_processing import split_data_from_dataframe
 # models building
-from flonacomldft.models.mixture import Mixture
+from abflowmc.models.mixture import Mixture
 # sampling methods
-from flonacomldft.sampling import run_metropolis
+from abflowmc.sampling import run_metropolis
 # collective variables
-from flonacomldft.internal_coordinates import get_collective_variables_from_xs
+from abflowmc.internal_coordinates import get_collective_variables_from_xs
 # plots
 import matplotlib.pyplot as plt
-from flonacomldft.utils.plots import set_plot_sequential_data
+from abflowmc.utils.plots import set_plot_sequential_data
 
 # parallelization
 import gpaw.mpi as mpi
@@ -164,8 +164,6 @@ for i in range(len(isomer_labels)):
                             args.flows_id[i]), 
                             path=path_flow_models)
 
-    #print(model['mlps_datasets'])
-
 flows_dic = [load_pickle_file("results_adaptive_is{:d}_{:d}/adaptive_sampling_is{:d}_{:d}.pkl".format(
                             isomer_labels[i],
                             args.flows_id[i],
@@ -217,9 +215,7 @@ if 'mlp' in args.energy_type:
                             isomer_labels[i],
                             args.flows_id[i]), 
                             path=path_flow_models)['mlps_datasets']
-                #print(len(datasets['mlps_datasets'][0]),
-                #      datasets['mlps_datasets'][0]['train'].shape,
-                #      datasets['mlps_datasets'][0]['test'].shape)
+
                 
                 xs_mlp_train.append(datasets['train'][0])
                 xs_mlp_test.append(datasets['test'][0])

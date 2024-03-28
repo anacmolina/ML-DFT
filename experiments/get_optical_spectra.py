@@ -1,15 +1,15 @@
 import warnings
 warnings.filterwarnings('ignore')
 
-from flonacomldft.optical_spectra import compute_optical_spectra
+from abflowmc.observables.optical_spectra import compute_optical_spectra
 import os
 import torch
 import numpy as np
 from ase.io import read
 
 import argparse
-from flonacomldft.internal_coordinates import Coordinates_mapping
-from flonacomldft.utils.io_utils import load_pickle_file, get_project_path
+from abflowmc.internal_coordinates import Coordinates_mapping
+from abflowmc.utils.io_utils import load_pickle_file, get_project_path
 import gpaw.mpi as mpi
 
 ranks = np.arange(0, mpi.world.size)

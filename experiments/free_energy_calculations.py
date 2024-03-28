@@ -6,7 +6,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-from flonacomldft.utils.io_utils import (
+from abflowmc.utils.io_utils import (
     load_pickle_file,
     load_csv_file,
     set_str_date_to_int, 
@@ -15,12 +15,12 @@ from flonacomldft.utils.io_utils import (
     save_json_args,
     )
 
-from flonacomldft.utils.diagnostics import (
+from abflowmc.utils.diagnostics import (
     Target_Log_Prob, 
     get_participation_ratio,
 )
 
-from flonacomldft.free_energy_computations import (
+from abflowmc.observables.free_energy_computations import (
     compute_TFP_logratio, compute_deepBAR_logratio,
     compute_TFP, compute_BAR
 )
@@ -186,7 +186,7 @@ for isomer_id in mode_labels:
 
 save_pickle_file(dic_results_BAR_mcmc, 'results_BARs.pkl', path=path_fe)
 
-from flonacomldft.internal_coordinates import Coordinates_mapping
+from abflowmc.internal_coordinates import Coordinates_mapping
 
 def get_dataset(name, path, isomer_labels):
 

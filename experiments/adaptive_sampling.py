@@ -15,7 +15,7 @@ import pandas as pd
 
 # flonaco imports
 # io handling
-from flonacomldft.utils.io_utils import (
+from abflowmc.utils.io_utils import (
     get_path,
     get_project_path,
     load_csv_file,
@@ -27,18 +27,18 @@ from flonacomldft.utils.io_utils import (
 # units
 from ase.units import kB
 # data handling
-from flonacomldft.utils.data_processing import split_data_from_dataframe
+from abflowmc.utils.data_processing import split_data_from_dataframe
 # nf training
-from flonacomldft.models.real_nvp import RealNVP_MLP
-from flonacomldft.train_flow_from_data import train_flow
+from abflowmc.models.real_nvp import RealNVP_MLP
+from abflowmc.train_flow_from_data import train_flow
 # sampling and training
-from flonacomldft.full_adaptive_sampling import run_adaptive_sampling
+from abflowmc.full_adaptive_sampling import run_adaptive_sampling
 # plotting
-from flonacomldft.utils.plots import create_report
+from abflowmc.utils.plots import create_report
 # diagnostics
-from flonacomldft.utils.diagnostics import get_participation_ratio_from_nlls
+from abflowmc.utils.diagnostics import get_participation_ratio_from_nlls
 # collective variables
-from flonacomldft.internal_coordinates import get_collective_variables_from_xs
+from abflowmc.internal_coordinates import get_collective_variables_from_xs
 
 # parallelization set up
 import gpaw.mpi as mpi
