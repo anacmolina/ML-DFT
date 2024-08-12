@@ -3,8 +3,8 @@ import pandas as pd
 from ase import Atoms
 
 isomers = {
-    #'ag6_planar': {
-    'is0': {
+
+    'ag6': {'0': {
         'symbols': 'AgAgAgAgAgAg',
         'positions': np.array([[ 7.999201,  5.66275 ,  8.      ],
                                [ 7.986642, 10.350007,  8.      ],
@@ -13,8 +13,8 @@ isomers = {
                                [ 9.389729,  8.068932,  8.      ],
                                [10.678646,  5.717535,  8.      ]])},
     
-    #'ag6_3d': {
-    'is1': {
+    
+            '1': {
         'symbols': 'AgAgAgAgAgAg',
         'positions': np.array([[ 6.594017,  5.856863,  7.384655],
                                [ 9.405983,  5.856863,  7.384655],
@@ -22,44 +22,77 @@ isomers = {
                                [ 8.      ,  7.764723,  8.6508  ],
                                [10.289524,  8.523162,  7.461228],
                                [ 8.      , 10.145127,  7.407456]])},
-#}
-#TODO: Fix this
-#emt_isomers = {
-    'emt_is0':{
-        'symbols': 'AgAgAgAgAgAg',
-        'positions': np.array([[ 7.53174253,  6.48514763,  5.        ],
-                               [10.0723176 ,  5.6827374 ,  5.        ],
-                               [ 5.30556767,  5.02138682,  5.        ],
-                               [ 5.01737006,  7.60446966,  5.        ],
-                               [ 7.15610969,  9.19211691,  5.        ],
-                               [ 9.6463932 ,  8.24673131,  5.        ]])},
+    },
 
-    'emt_is1':{
-        'symbols': 'AgAgAgAgAgAg',
-        'positions': np.array([[7.31189267, 5.21860471, 7.87202555],
-                               [7.37558519, 5.01139179, 5.15837097],
-                               [5.99252155, 7.5906818 , 7.65978813],
-                               [5.00077846, 5.36783447, 6.44066432],
-                               [8.36738115, 7.23469476, 6.3773041 ],
-                               [6.05666685, 7.38362175, 4.94581578]])},
+    'ag8': { '0': {
+        'symbols': 'AgAgAgAgAgAgAgAg',
+        'positions': np.array([[ 5.65151856,  7.77493647,  6.81677953],
+                               [ 7.77019127,  6.32370671,  7.89527028],
+                               [ 8.17812089,  7.59266523,  5.44603277],
+                               [ 9.01514428,  7.42842472, 10.05241499],
+                               [ 8.81561256, 10.19395979,  9.28444985],
+                               [ 9.81102768,  8.28157329,  7.51867661],
+                               [ 6.57749245,  8.53215712,  9.26724566],
+                               [ 7.50507551,  9.85670492,  6.91851273]])},
+
+            '1': {
+        'symbols': 'AgAgAgAgAgAgAgAg',
+        'positions': np.array([[7.68747184, 5.42559624, 6.2787369 ],
+                               [8.70408048, 7.66638587, 5.03402521],
+                               [8.05321644, 5.54541435, 9.00974873],
+                               [5.03144193, 5.03443986, 5.63797309],
+                               [5.57785271, 6.27955338, 8.03771243],
+                               [5.35611683, 9.01942241, 7.8149322 ],
+                               [7.89192442, 7.94539875, 7.65520354],
+                               [5.98700311, 7.62000358, 5.52181059]])},
+    },
+
+#TODO: Include the following isomers in the next isomers update
+#emt_isomers = {
+#    'emt_is0':{
+#        'symbols': 'AgAgAgAgAgAg',
+#        'positions': np.array([[ 7.53174253,  6.48514763,  5.        ],
+#                               [10.0723176 ,  5.6827374 ,  5.        ],
+#                               [ 5.30556767,  5.02138682,  5.        ],
+#                               [ 5.01737006,  7.60446966,  5.        ],
+#                               [ 7.15610969,  9.19211691,  5.        ],
+#                               [ 9.6463932 ,  8.24673131,  5.        ]])},
+#
+#    'emt_is1':{
+#        'symbols': 'AgAgAgAgAgAg',
+#        'positions': np.array([[7.31189267, 5.21860471, 7.87202555],
+#                               [7.37558519, 5.01139179, 5.15837097],
+#                               [5.99252155, 7.5906818 , 7.65978813],
+#                               [5.00077846, 5.36783447, 6.44066432],
+#                               [8.36738115, 7.23469476, 6.3773041 ],
+#                               [6.05666685, 7.38362175, 4.94581578]])},
+
 } 
 
 
-def get_molecule_isomer_minima(name, vacuum=None, **kwargs):
-    
+def get_molecule_isomer_minima(symbols, isomer_label, vacuum=5.0, **kwargs):
 
-    if name in isomers:
+    symbols = symbols.lower()
+    isomer_label = str(isomer_label)    
+
+    if symbols in isomers:
+
+        if isomer_label in isomers[symbols]:
+
+            kwargs.update(isomers[symbols][isomer_label])
+            molecule = Atoms(**kwargs)
+
+            if vacuum is not None:
     
-        kwargs.update(isomers[name])
-        molecule = Atoms(**kwargs)
+                molecule.center(vacuum=vacuum)
+    
+        else:
+    
+            raise RuntimeError("Unknown isomer")
 
     else:
     
-        raise RuntimeError("Unknown isomer")
-    
-    if vacuum is not None:
-    
-        molecule.center(vacuum=vacuum)
+        raise RuntimeError("Unrecognized symbols")
     
     return molecule
 
