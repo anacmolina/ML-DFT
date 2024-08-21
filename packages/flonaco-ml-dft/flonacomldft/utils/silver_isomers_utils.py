@@ -70,7 +70,7 @@ isomers = {
 } 
 
 
-def get_molecule_isomer_minima(symbols, isomer_label, vacuum=5.0, **kwargs):
+def get_molecule_isomer_minima(symbols, isomer_label, vacuum=None, **kwargs):
 
     symbols = symbols.lower()
     isomer_label = str(isomer_label)    

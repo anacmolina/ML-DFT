@@ -107,3 +107,8 @@ def set_str_date_to_int(date):
     id = date.replace(' ', '').replace(':', '').replace('-', '')
     return int(id)
 
+# change int date to string
+def set_int_date_to_str(date_int):
+    date_str = str(date_int)
+    return date_str[:4] + '-' + date_str[4:6] + '-' + date_str[6:8] + ' ' + date_str[8:10] + ':' + date_str[10:12] + ':' + date_str[12:14]
+
