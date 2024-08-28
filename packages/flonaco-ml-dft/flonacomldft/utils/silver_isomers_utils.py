@@ -108,21 +108,21 @@ params_calc = {
               },
 
     'FD': {'mode': 'fd',
-            'h': 0.18,
+            'h': 0.2,
             'xc': 'PBE',
-            'eigensolver': 'rmm-diis',
-            'spinpol': True,
-            'symmetry': 'off',
-            #'nbands': -4,
-            'parallel': dict(augment_grids=True,  # use all cores for XC/Poisson
-                sl_auto=True,  # enable ScaLAPACK parallelization
-                use_elpa=True),  # use ELPA for ScaLAPACK
+            #'eigensolver': 'rmm-diis',
+            #'spinpol': True,
+            #'symmetry': 'off',
+            #'nbands': -4, #TODO: ScaLAPACK parallelization has problems on maestria PC
+            #'parallel': dict(augment_grids=True,  # use all cores for XC/Poisson
+            #    sl_auto=True,  # enable ScaLAPACK parallelization
+            #    use_elpa=True # use ELPA for ScaLAPACK
+            #    ),  
             },
 }
 
-def get_molecule_calc_params(name='LCAO'):
+def get_calculator_params(name='LCAO'):
     
-
     if name in params_calc:
     
         params = params_calc[name]

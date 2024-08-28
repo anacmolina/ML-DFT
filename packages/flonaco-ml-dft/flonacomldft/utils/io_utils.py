@@ -4,6 +4,7 @@ trajectories and trained models.
 """
 
 import os
+import time
 import pickle
 
 import torch
@@ -112,3 +113,7 @@ def set_int_date_to_str(date_int):
     date_str = str(date_int)
     return date_str[:4] + '-' + date_str[4:6] + '-' + date_str[6:8] + ' ' + date_str[8:10] + ':' + date_str[10:12] + ':' + date_str[12:14]
 
+# convert local time to string with format
+def convert_time_to_string(input_time, format="%Y-%m-%d %H:%M:%S"):
+    return_time = time.localtime(input_time)
+    return time.strftime(format, return_time)

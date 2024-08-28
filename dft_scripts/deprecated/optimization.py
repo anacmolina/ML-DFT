@@ -1,4 +1,8 @@
-# TODO: add description
+"""
+Description: 
+This script is used to optimize the geometry of a molecule using the GPAW calculator.
+"""
+
 # TODO: add logging file
 
 # import libraries
@@ -11,7 +15,7 @@ from ase.optimize import BFGS
 
 from flonacomldft.utils.silver_isomers_utils import (
     get_molecule_isomer_minima,
-    get_molecule_calc_params
+    get_calculator_params
 )
 
 from ase.parallel import parprint as print
@@ -63,7 +67,7 @@ mode = args.gpaw_mode
 filename = "{:s}_{:s} {:s} {:s}".format(args.symbols, args.isomer_label, args.gpaw_mode.lower(), args.process_id)
 
 # set calculator
-params_calc = get_molecule_calc_params(name=args.gpaw_mode)
+params_calc = get_calculator_params(name=args.gpaw_mode)
 params_calc['txt'] = filename + ".out"
 
 calc = GPAW(**params_calc)

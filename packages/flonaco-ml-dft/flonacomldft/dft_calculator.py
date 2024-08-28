@@ -52,8 +52,8 @@ class DFTCalculator:
         #mpi.world.barrier()
 
         if params is None:
-            from flonacomldft.utils.silver_isomers_utils import get_molecule_calc_params
-            params = get_molecule_calc_params(predefined_params)
+            from flonacomldft.utils.silver_isomers_utils import get_calculator_params
+            params = get_calculator_params(predefined_params)
 
         if 'txt' not in params:
             params['txt'] = self.path + '/init_calc.out'
