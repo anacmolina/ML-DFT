@@ -122,8 +122,8 @@ def main():
 
     molecule.calc = calc
 
-    #opt = BFGS(molecule, logfile=filename + '.log', trajectory=filename + ".traj")
-    #opt.run(args.fmax)
+    opt = BFGS(molecule, logfile=filename + '.log', trajectory=filename + ".traj")
+    opt.run(args.fmax)
 
     end_time = datetime.datetime.now()
 

@@ -110,7 +110,7 @@ params_calc = {
     'FD': {'mode': 'fd',
             'h': 0.2,
             'xc': 'PBE',
-            #'eigensolver': 'rmm-diis',
+            'eigensolver': 'rmm-diis',
             #'spinpol': True,
             #'symmetry': 'off',
             #'nbands': -4, #TODO: ScaLAPACK parallelization has problems on maestria PC
