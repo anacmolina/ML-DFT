@@ -38,18 +38,11 @@ class DFTCalculator:
         self.file = self.path + '/' + filename
 
         from gpaw import GPAW
-        
-        #import gpaw.mpi as mpi
-        #rank = mpi.world.rank
-        #if rank==0 and os.path.isdir(self.path)==False:
 
         if os.path.isdir(self.path)==False:
-            #print('Folder created: %s Rank: %d '%(self.path, rank))
             os.makedirs(self.path, exist_ok=True)
         else:
             pass
-
-        #mpi.world.barrier()
 
         if params is None:
             from flonacomldft.utils.silver_isomers_utils import get_calculator_params
@@ -58,13 +51,7 @@ class DFTCalculator:
         if 'txt' not in params:
             params['txt'] = self.path + '/init_calc.out'
         
-        #DFT calculator low level precision but faster (takes 1 minute in serial)                                \
-        #self.calculator = GPAW(mode = 'lcao', basis='pvalence.dz', h =0.2, xc = 'PBE', spinpol = True, nbands = -4, txt=self.path + "/init_calc.out")
-
         self.calculator = GPAW(**params)
-
-        #with higher precision, takes longer (about 30 minutes in serial).                      
-        #self.calculator = GPAW(mode = 'fd', h =0.18, xc = 'PBE', eigensolver = 'rmm-diis', spinpol = True, nbands=-4) 
 
     def calculate_potential_energy(self, atoms, filename=None):
         
@@ -80,7 +67,7 @@ class DFTCalculator:
         atoms.set_cell(self.cell)
         atoms.center()
         atoms.set_pbc(True)
-        # print(self.calculator)
+
         atoms.set_calculator(self.calculator)
       
         # Calculating the potential energy
@@ -139,7 +126,7 @@ class Thermostats:
 
 
 def run_molecular_dynamics(atoms, thermostat_params, n_steps, interval, trajectory_filename, return_temperature=True, return_collective_variable=True):
-
+    #TODO: Change the print function to a logger
     from ase.parallel import parprint as print
     from ase.io.trajectory import Trajectory
 
@@ -170,45 +157,3 @@ def run_molecular_dynamics(atoms, thermostat_params, n_steps, interval, trajecto
     dyn.run(n_steps)
 
     return dyn
-
-
-# TODO: Delete this function
-#     def run_molecular_dynamics(self, molecule, iters, filename, starting=True,
-#                                temp=300):
-#         rank = mpi.world.rank
-#         mpi.world.barrier()
-# 
-#         #Setting the cell
-#         molecule.set_cell(self.cell)
-#         molecule.set_pbc(True)
-#         molecule.center()
-# 
-#         # Building calculator
-#         if self.calculator is None:
-#             self.initialize_calculator(filename=filename, rank=rank)
-# 
-#         molecule.set_calculator(self.calculator)
-#     
-#         if starting==True:
-#             # Adding conditions to the MD simulation
-#             MaxwellBoltzmannDistribution(molecule, temperature_K=temp)
-#             Stationary(molecule)
-#             ZeroRotation(molecule)
-#         else:
-#             pass
-# 
-#         mpi.world.barrier()
-# 
-#         # Running the MD
-#         dyn = NVTBerendsen(molecule, 5 * units.fs, taut=50, temperature_K=temp,
-#                            trajectory=self.file+'.traj')
-#         dyn.run(iters)
-#         
-#         # Getting the MD trajectory
-#         mpi.world.barrier()
-#         traj = Trajectory(self.file+'.traj')
-# 
-#         return traj
-
-
-#TODO: Add optimization and optical spectrum methods

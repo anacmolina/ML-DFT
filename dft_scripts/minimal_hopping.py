@@ -1,5 +1,5 @@
 """
-Description: This script runs a molecular dynamics simulation.
+Description: Minimal hopping script for DFT calculations
 """
 
 # import libraries
@@ -7,13 +7,11 @@ import datetime
 import argparse
 import logging
 
-from ase.units import kB, fs
 from gpaw import GPAW
 import gpaw.mpi as mpi
-from ase.md.velocitydistribution import (
-    MaxwellBoltzmannDistribution,
-    Stationary,
-    ZeroRotation,
+from ase.optimize.minimahopping import (
+    MinimaHopping, 
+    MHPlot
 )
 
 from flonacomldft.utils.io_utils import set_str_date_to_int
@@ -21,7 +19,6 @@ from flonacomldft.utils.silver_isomers_utils import (
     get_molecule_isomer_minima,
     get_calculator_params
 )
-from flonacomldft.dft_calculator import run_molecular_dynamics
 
 #set up arguments
 def parse_args():
@@ -29,30 +26,25 @@ def parse_args():
     start_time = datetime.datetime.now()
     id_number = set_str_date_to_int(str(start_time).split('.')[0])
 
-    parser = argparse.ArgumentParser(description="Run molecular dynamics simulation")
-
+    parser = argparse.ArgumentParser(description="Run minimal hopping calculation")
     parser.add_argument('-symbols', '--symbols', type=str, help='Symbols of the molecule')
     parser.add_argument('-isomer', '--isomer-label', type=str, help='Isomer label')
     parser.add_argument('-cell', '--cell', type=float, help='Cell size')
     parser.add_argument('-vacuum', '--vacuum', type=float, help='Vacuum size')
     parser.add_argument('-pbc', '--pbc', type=bool, default=True, help='Periodic boundary conditions')
     parser.add_argument('-gpwmd', '--gpaw-mode', type=str, default='LCAO', help='GPAW mode')
+    #Review this argument
     parser.add_argument('-etype', '--energy-type', type=str, default='dft', help='Energy type')
-    parser.add_argument('-tt', '--thermostat-type', type=str, help='Thermostat type')
-    parser.add_argument('-ns', '--nsteps', type=int, default=100, help='Number of steps')
-    parser.add_argument('-ts', '--time-step', type=float, default=5)
-    parser.add_argument('-ninterval', '--n-interval', type=int, default=1)
-    parser.add_argument('-T', '--temperature', type=float, default=300)
-    parser.add_argument('-taut', '--taut', type=float, default=None) #50
-    parser.add_argument('-f', '--friction', type=float, default=None) #2e-3
-    parser.add_argument('-ap', '--andersen-prob', type=float, default=None) #2e-3
-    
+    parser.add_argument('-ediff0', '--ediff0', type=float, default=0.5, help='Energy convergence criterion')
+    parser.add_argument('-T0', '--temperature0', type=float, default=1000, help='Initial temperature')
+    parser.add_argument('-ns', '--n-steps', type=int, default=100, help='Number of steps')
+
     parser.add_argument('-id', '--process-id', type=int, default=id_number, help='ID of the process (start time by default)')
     parser.add_argument('-s', '--seed', type=int, default=None, help='Seed for random number generator')
-    
+
     args = parser.parse_args()
 
-    filename = "molecular_dynamics_{:s}_{:s}_{:d}".format(args.symbols, args.isomer_label, args.process_id)
+    filename = "minimal_hopping_{:s}_{:s}_{:d}".format(args.symbols, args.isomer_label, args.process_id)
 
     args.filename = filename
 
@@ -89,22 +81,6 @@ def set_cell_or_vacuum(molecule, cell, vacuum):
 
     return molecule
 
-# set molecular dynamics parameters
-def get_molecular_dynamics_params(args):
-
-    md_params = {'thermostat': args.thermostat_type,
-             'timestep': args.time_step * fs,
-             'temperature_K': args.temperature,
-             'taut': args.taut,
-             'andersen_prob': args.andersen_prob,
-             'friction': args.friction,
-    }
-
-    if md_params['thermostat'] == 'berendsen':
-        md_params['taut'] = md_params['taut'] * fs
-
-    return md_params
-
 def main():
 
     args, start_time = parse_args()
@@ -115,12 +91,13 @@ def main():
     if mpi.rank == 0:
 
         logger.addHandler(logging.FileHandler(f"{args.filename}.log"))
-        logger.info("MOLECULAR DYNAMICS")
+        logger.info("MINIMAL HOPPING CALCULATION")
 
         for key, value in vars(args).items():
             if key != "filename" and key != "start_time":
                 logger.info(f"{key}: {value}")
 
+    #TODO: add logger
     molecule = get_molecule_isomer_minima(
         "{:s}".format(args.symbols), "{:s}".format(args.isomer_label)
     )
@@ -139,25 +116,15 @@ def main():
 
     molecule.calc = calc
 
-    MaxwellBoltzmannDistribution(molecule, temperature_K=args.temperature)
-    Stationary(molecule)  # zero linear momentum
-    ZeroRotation(molecule)  # zero angular momentum
-    
-    p = molecule.get_momenta()
-    psum = p.sum(axis=0)/float(len(p))
-    p = p - psum
-    molecule.set_momenta(p)
+    hop = MinimaHopping(molecule,
+                    Ediff0=args.ediff0,
+                    T0=args.temperature0)
 
-    md_params = get_molecular_dynamics_params(args)
+    hop(totalsteps=args.n_steps)
 
-    md = run_molecular_dynamics(molecule, 
-            md_params, 
-            args.nsteps, 
-            args.n_interval, 
-            trajectory_filename = filename + '.traj', 
-            return_temperature = True,
-            return_collective_variable = True)
-    
+    mhplot = MHPlot()
+    mhplot.save_figure('summary.png')
+
     end_time = datetime.datetime.now()
 
     if mpi.rank == 0:
@@ -174,7 +141,5 @@ def main():
             )
         )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-
-

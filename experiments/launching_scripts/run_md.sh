@@ -1,2 +1,2 @@
-mpiexec -np 4 python /home/ana/ML-DFT/dft_scripts/molecular_dynamics.py -symbs ag8 -isomer 0 -vacuum 5 -tt langevin -etype dft -f 0.2 -ns 100
-mpiexec -np 4 python /home/ana/ML-DFT/dft_scripts/molecular_dynamics.py -symbs ag8 -isomer 1 -vacuum 5 -tt langevin -etype dft -f 0.2 -ns 100
+ mpiexec -np 16 python /home/amolina/ML-DFT/dft_scripts/molecular_dynamics.py -symbols ag8 -isomer 0 -gpwmd FD-TPSS -vacuum 5 -tt langevin -ns 200 -f 0.2 -T 300    
+ mpiexec -np 16 python /home/amolina/ML-DFT/dft_scripts/molecular_dynamics.py -symbols ag8 -isomer 1 -gpwmd FD-TPSS -vacuum 5 -tt langevin -ns 200 -f 0.2 -T 300    

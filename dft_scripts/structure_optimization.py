@@ -48,7 +48,7 @@ def parse_args():
 
     args = parser.parse_args()
 
-    filename = "optimization {:s}_{:s} {:d}".format(
+    filename = "optimization_{:s}_{:s}_{:d}".format(
         args.symbols, args.isomer_label, args.process_id
     )
     args.filename = filename
