@@ -66,22 +66,29 @@ class Coordinates_mapping():
     """
 
     def __init__(self, construction_table=get_construction_table(), 
-                symbols=np.full(6, 'Ag'), etype='dft'):
+                calculator_label='LCAO',
+                symbols='ag6', 
+                etype='dft'):
         super().__init__()
         
+        self.calculator_label = calculator_label
         self.construction_table = construction_table.copy()
-        self.symbols = symbols
-        self.Natoms = len(self.symbols) 
+        #self.symbols = symbols
+        #self.Natoms = len(self.symbols) 
         self.angles_mappings = Angles_mapping()
-        if 'emt' in etype:
-            minima_name = 'emt_'
-        else:
-            minima_name = ''    
+        #if 'emt' in etype:
+        #    minima_name = 'emt_'
+        #else:
+        #    minima_name = ''    
         self.zmat_minima = {
-            0: self.get_internal_from_molecule(get_molecule_isomer_minima(minima_name+'is0'))[0],
-            1: self.get_internal_from_molecule(get_molecule_isomer_minima(minima_name+'is1'))[0] #TODO: becareful with the silver minima file
-        } 
-        #self.kb = 8.617333262e-5 # eV/K
+            0: self.get_internal_from_molecule(
+                get_molecule_isomer_minima(self.calculator_label, symbols, 0)
+                )[0],
+            1: self.get_internal_from_molecule(
+                get_molecule_isomer_minima(self.calculator_label, symbols, 1)
+                )[0] #TODO: becareful with the silver minima file
+        }
+        # TODO: Solve symbols and Natoms  
         self.kB = kB # eV/K
 
     def _get_xyz_from_molecule(self, molecule):
