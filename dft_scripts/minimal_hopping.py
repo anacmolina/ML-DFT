@@ -98,8 +98,9 @@ def main():
                 logger.info(f"{key}: {value}")
 
     #TODO: add logger
-    molecule = get_molecule_isomer_minima(
-        "{:s}".format(args.symbols), "{:s}".format(args.isomer_label)
+    molecule = get_molecule_isomer_minima(args.gpaw_mode,
+        "{:s}".format(args.symbols), 
+        "{:s}".format(args.isomer_label)
     )
 
     molecule = set_cell_or_vacuum(molecule, 

@@ -9,7 +9,11 @@ import pandas as pd
 import chemcoord as cc
 from ase.units import kB
 
-from flonacomldft.utils.silver_isomers_utils import get_construction_table, get_molecule_isomer_minima
+from flonacomldft.utils.silver_isomers_utils import (
+    isomers, 
+    get_construction_table, 
+    get_molecule_isomer_minima
+)
 from flonacomldft.collective_variables import get_collective_variables
 
 ### Add phase to the angles from internal coordinates
@@ -67,28 +71,39 @@ class Coordinates_mapping():
 
     def __init__(self, construction_table=get_construction_table(), 
                 calculator_label='LCAO',
-                symbols='ag6', 
+                chemical_formula='ag6', 
                 etype='dft'):
         super().__init__()
         
         self.calculator_label = calculator_label
         self.construction_table = construction_table.copy()
-        #self.symbols = symbols
-        #self.Natoms = len(self.symbols) 
-        self.angles_mappings = Angles_mapping()
-        #if 'emt' in etype:
-        #    minima_name = 'emt_'
-        #else:
-        #    minima_name = ''    
-        self.zmat_minima = {
-            0: self.get_internal_from_molecule(
-                get_molecule_isomer_minima(self.calculator_label, symbols, 0)
-                )[0],
-            1: self.get_internal_from_molecule(
-                get_molecule_isomer_minima(self.calculator_label, symbols, 1)
-                )[0] #TODO: becareful with the silver minima file
-        }
-        # TODO: Solve symbols and Natoms  
+        self.n_isomers = len(isomers[self.calculator_label][chemical_formula.lower()])     
+        self.zmat_minima = {}
+        self.symbols = None
+        self.Natoms = None
+
+        for i in range(self.n_isomers):
+            
+            molecule = get_molecule_isomer_minima(self.calculator_label,
+                                                    chemical_formula.lower(), 
+                                                    i)
+
+            self.Natoms = molecule.get_global_number_of_atoms()
+            self.symbols = np.array(molecule.get_chemical_symbols())
+
+            assert self.Natoms == len(self.symbols), 'Different number of atoms in the isomers'
+
+            self.zmat_minima[i] = self.get_internal_from_molecule(
+                molecule
+                )[0]
+            
+            del molecule
+
+        assert self.symbols is not None, 'No symbols found'
+        assert self.Natoms is not None, 'No number of atoms defined'
+
+        #TODO: becareful with the silver minima file
+        self.angles_mappings = Angles_mapping(self.Natoms-1) 
         self.kB = kB # eV/K
 
     def _get_xyz_from_molecule(self, molecule):
@@ -474,9 +489,10 @@ class Coordinates_mapping():
             logdetjacs = 0
 
         zmats = zmats - self.zmat_minima[isomer]
+        print('zmats: ',zmats)
         reals, logdetjacs_angle = self.angles_mappings.rads_to_reals(zmats)
         logdetjacs += logdetjacs_angle
-
+        print('reals: ', reals)
         if energies is not None:
             energies = energies - (self.kB * temperature) * logdetjacs_angle
             return reals, logdetjacs, energies

@@ -91,8 +91,6 @@ def get_molecule_isomer_minima(calculator_label, symbols, isomer_label, vacuum=N
     symbols = symbols.lower()
     isomer_label = str(isomer_label)
 
-    print(calculator_label, symbols, isomer_label)
-
     if calculator_label in isomers:    
 
         if symbols in isomers[calculator_label]:    
@@ -172,13 +170,29 @@ def get_calculator_params(name='LCAO'):
     return params
 
 # Construction table for both isomers, pandas dataframe (convention we chose)
-def get_construction_table():
+def get_construction_table(chemical_formula='ag6'):
+     
+    chemical_formula = chemical_formula.lower()
+   
+    if chemical_formula == 'ag6':
+       index = np.append(0, np.append(np.arange(2,6), 1))
+       construction_table = pd.DataFrame(index=index)
+       
+       construction_table['b'] = ['origin', 0, 2, 2, 4, 4]
+       construction_table['a'] = ['e_z', 'e_z', 0, 3, 2, 2]
+       construction_table['d'] = ['e_x', 'e_x', 'e_x', 0, 3, 3]
+       
+    elif chemical_formula == 'ag8':
 
-   index = np.append(0, np.append(np.arange(2,6), 1))
-   construction_table = pd.DataFrame(index=index)
+       index = np.array([6, 0, 1, 2, 4, 5, 7, 3])
+       construction_table = pd.DataFrame(index=index)  
+
+       construction_table['b'] = ['origin', 6, 0, 0, 2, 4, 5, 7]
+       construction_table['a'] = ['e_z', 'e_z', 6, 1, 0, 2, 4, 5]
+       construction_table['d'] = ['e_x', 'e_x', 'e_x', 6, 1, 0, 2, 4]
+       
+    else:
+       
+         raise RuntimeError("Undefined construction table")
       
-   construction_table['b'] = ['origin', 0, 2, 2, 4, 4]
-   construction_table['a'] = ['e_z', 'e_z', 0, 3, 2, 2]
-   construction_table['d'] = ['e_x', 'e_x', 'e_x', 0, 3, 3]
-      
-   return construction_table
+    return construction_table

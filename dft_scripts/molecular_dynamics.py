@@ -121,8 +121,9 @@ def main():
             if key != "filename" and key != "start_time":
                 logger.info(f"{key}: {value}")
 
-    molecule = get_molecule_isomer_minima(
-        "{:s}".format(args.symbols), "{:s}".format(args.isomer_label)
+    molecule = get_molecule_isomer_minima(args.gpaw_mode,
+        "{:s}".format(args.symbols), 
+        "{:s}".format(args.isomer_label)
     )
 
     molecule = set_cell_or_vacuum(molecule, 

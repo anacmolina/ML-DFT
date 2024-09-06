@@ -33,7 +33,7 @@ def parse_args():
         "-pbc", "--pbc", type=bool, default=True, help="Periodic boundary conditions"
     )
     parser.add_argument(
-        "-gpwmd", "--gpaw-mode", type=str, default="LCAO", help="GPAW mode"
+        "-gpwmd", "--gpaw-mode", type=str, default="FD-TPSS", help="GPAW mode"
     )
     parser.add_argument(
         "-fmax", "--fmax", type=float, default=0.01, help="Maximum force"
@@ -104,8 +104,9 @@ def main():
             if key != "filename" and key != "start_time":
                 logger.info(f"{key}: {value}")
 
-    molecule = get_molecule_isomer_minima(
-        "{:s}".format(args.symbols), "{:s}".format(args.isomer_label)
+    molecule = get_molecule_isomer_minima(args.gpaw_mode,
+        "{:s}".format(args.symbols), 
+        "{:s}".format(args.isomer_label)
     )
 
     molecule = set_cell_or_vacuum(molecule, 
