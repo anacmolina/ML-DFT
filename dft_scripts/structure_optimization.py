@@ -26,7 +26,7 @@ def parse_args():
     parser.add_argument(
         "-symbols", "--symbols", type=str, help="Symbols of the molecule"
     )
-    parser.add_argument("-isomer", "--isomer-label", type=str, help="Isomer label")
+    parser.add_argument("-isomer", "--isomer-label", type=int, help="Isomer label")
     parser.add_argument("-cell", "--cell", type=float, help="Cell size")
     parser.add_argument("-vacuum", "--vacuum", type=float, help="Vacuum size")
     parser.add_argument(
@@ -48,7 +48,7 @@ def parse_args():
 
     args = parser.parse_args()
 
-    filename = "optimization_{:s}_{:s}_{:d}".format(
+    filename = "optimization_{:s}_{:d}_{:d}".format(
         args.symbols, args.isomer_label, args.process_id
     )
     args.filename = filename
@@ -106,7 +106,7 @@ def main():
 
     molecule = get_molecule_isomer_minima(args.gpaw_mode,
         "{:s}".format(args.symbols), 
-        "{:s}".format(args.isomer_label)
+        "{:d}".format(args.isomer_label)
     )
 
     molecule = set_cell_or_vacuum(molecule, 

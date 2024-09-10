@@ -489,10 +489,10 @@ class Coordinates_mapping():
             logdetjacs = 0
 
         zmats = zmats - self.zmat_minima[isomer]
-        print('zmats: ',zmats)
+        
         reals, logdetjacs_angle = self.angles_mappings.rads_to_reals(zmats)
         logdetjacs += logdetjacs_angle
-        print('reals: ', reals)
+        
         if energies is not None:
             energies = energies - (self.kB * temperature) * logdetjacs_angle
             return reals, logdetjacs, energies
@@ -624,6 +624,41 @@ def save_internal_coordinates_to_csv(xs,
     df = pd.DataFrame(xs.detach().numpy())
     df.columns=columns
     df.to_csv(path + '/' + filename, index=False)
+
+def internal_coordinates_to_csv(xs, 
+                                columns=None, 
+                                construction_table=None,  
+                                add_potential_energy=True, 
+                                add_logdetjac=True, 
+                                add_isomer=True, 
+                                add_cvs=True, 
+                                filename='traj.csv', 
+                                path=os.getcwd()):
+
+    if (columns is None) and (construction_table is not None):
+        
+        columns = get_labels_from_construction_table(construction_table)
+    
+    elif (columns is None) and (construction_table is None):
+        
+        raise RuntimeError("Can not define columns for dataframe")        
+
+    if add_potential_energy:
+        columns = columns + ['potential_energy']
+
+    if add_isomer:
+        columns = columns + ['isomer']
+
+    if add_logdetjac:
+        columns = columns + ['logdetjac']
+
+    if add_cvs:
+        columns = columns + ['C', 'R']
+
+    df = pd.DataFrame(xs.detach().numpy())
+    df.columns=columns
+
+    return df
 
 def join_data(xs, energies, isomers, logdetjacs=None):
 

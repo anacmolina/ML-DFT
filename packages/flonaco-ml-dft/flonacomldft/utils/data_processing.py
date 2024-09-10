@@ -17,7 +17,7 @@ def split_data_from_dataframe(dataset, train_size, sk_seed):
                         lengths=lengths,
                         generator= torch.Generator().manual_seed(sk_seed))
 
-    dataset_splitted = [dataset[data.indices] for data in split]
+    dataset_splitted = [dataset.iloc[data.indices] for data in split]
 
     return tuple(dataset_splitted)
 
