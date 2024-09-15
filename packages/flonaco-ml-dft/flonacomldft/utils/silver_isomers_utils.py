@@ -134,12 +134,12 @@ params_calc = {
             'xc': 'PBE',
             #'eigensolver': 'rmm-diis',
             #'spinpol': True,
-            #'symmetry': 'off',
+            'symmetry': 'off',
             #'nbands': -4, #TODO: ScaLAPACK parallelization has problems on maestria PC
-            #'parallel': dict(augment_grids=True,  # use all cores for XC/Poisson
-            #    sl_auto=True,  # enable ScaLAPACK parallelization
-            #    use_elpa=True # use ELPA for ScaLAPACK
-            #    ),  
+            'parallel': dict(augment_grids=True,  # use all cores for XC/Poisson
+                sl_auto=True,  # enable ScaLAPACK parallelization
+                use_elpa=True # use ELPA for ScaLAPACK
+                ),  
             },
 
     'FD-TPSS': {'mode': 'fd',

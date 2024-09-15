@@ -14,7 +14,10 @@ from ase.optimize.minimahopping import (
     MHPlot
 )
 
-from flonacomldft.utils.io_utils import set_str_date_to_int
+from flonacomldft.utils.io_utils import (
+    set_str_date_to_int,
+    init_logger
+)
 from flonacomldft.utils.silver_isomers_utils import (
     get_molecule_isomer_minima,
     get_calculator_params
@@ -30,7 +33,6 @@ def parse_args():
     parser.add_argument('-symbols', '--symbols', type=str, help='Symbols of the molecule')
     parser.add_argument('-isomer', '--isomer-label', type=str, help='Isomer label')
     parser.add_argument('-cell', '--cell', type=float, help='Cell size')
-    parser.add_argument('-vacuum', '--vacuum', type=float, help='Vacuum size')
     parser.add_argument('-pbc', '--pbc', type=bool, default=True, help='Periodic boundary conditions')
     parser.add_argument('-gpwmd', '--gpaw-mode', type=str, default='LCAO', help='GPAW mode')
     #Review this argument
@@ -50,36 +52,36 @@ def parse_args():
 
     return args, start_time
 
-# set up logger
-def init_logger():
+## set up logger
+#def init_logger():
+#
+#    logging.basicConfig(
+#        level=logging.INFO,
+#        format="%(asctime)s - %(levelname)s - %(message)s",
+#        datefmt='%Y-%m-%d %H:%M:%S'  # Time format
+#    )
+#
+#    logger = logging.getLogger()
+#
+#    return logger
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        datefmt='%Y-%m-%d %H:%M:%S'  # Time format
-    )
-
-    logger = logging.getLogger()
-
-    return logger
-
-# set cell or vacuum
-def set_cell_or_vacuum(molecule, cell, vacuum):
-    
-    if cell is not None and vacuum is None:
-
-        molecule.set_cell([cell, cell, cell])
-        molecule.center()
-
-    elif cell is None and vacuum is not None:
-
-        molecule.center(vacuum=vacuum)
-
-    else:
-        
-        raise ValueError("Cell or vacuum cannot be set at the same time")
-
-    return molecule
+## set cell or vacuum
+#def set_cell_or_vacuum(molecule, cell, vacuum):
+#    
+#    if cell is not None and vacuum is None:
+#
+#        molecule.set_cell([cell, cell, cell])
+#        molecule.center()
+#
+#    elif cell is None and vacuum is not None:
+#
+#        molecule.center(vacuum=vacuum)
+#
+#    else:
+#        
+#        raise ValueError("Cell or vacuum cannot be set at the same time")
+#
+#    return molecule
 
 def main():
 
@@ -103,10 +105,13 @@ def main():
         "{:s}".format(args.isomer_label)
     )
 
-    molecule = set_cell_or_vacuum(molecule, 
-                                  args.cell, 
-                                  args.vacuum, 
-                                  )
+    #molecule = set_cell_or_vacuum(molecule, 
+    #                              args.cell, 
+    #                              args.vacuum, 
+    #                              )
+
+    #fix for cell array
+    molecule.set_cell([args.cell, args.cell, args.cell])
 
     molecule.set_pbc(args.pbc)
 

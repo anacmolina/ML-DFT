@@ -10,7 +10,10 @@ import logging
 from gpaw import GPAW, mpi
 from ase.optimize import BFGS
 
-from flonacomldft.utils.io_utils import set_str_date_to_int
+from flonacomldft.utils.io_utils import (
+    set_str_date_to_int,
+    init_logger
+)
 from flonacomldft.utils.silver_isomers_utils import (
     get_molecule_isomer_minima, 
     get_calculator_params
@@ -55,18 +58,18 @@ def parse_args():
 
     return args, start_time
 
-# set up logger
-def init_logger():
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        datefmt='%Y-%m-%d %H:%M:%S'  # Time format
-    )
-
-    logger = logging.getLogger()
-
-    return logger
+## set up logger
+#def init_logger():
+#
+#    logging.basicConfig(
+#        level=logging.INFO,
+#        format="%(asctime)s - %(levelname)s - %(message)s",
+#        datefmt='%Y-%m-%d %H:%M:%S'  # Time format
+#    )
+#
+#    logger = logging.getLogger()
+#
+#    return logger
 
 # set cell or vacuum
 # TODO: Generalize this function to accept arrays
@@ -91,7 +94,6 @@ def set_cell_or_vacuum(molecule, cell, vacuum):
 def main():
 
     args, start_time = parse_args()
-    filename = args.filename
 
     logger = init_logger()
 
@@ -117,13 +119,13 @@ def main():
     molecule.set_pbc(args.pbc)
 
     params_calc = get_calculator_params(name=args.gpaw_mode)
-    params_calc["txt"] = filename + ".out"
+    params_calc["txt"] = args.filename + ".out"
 
     calc = GPAW(**params_calc)
 
     molecule.calc = calc
 
-    opt = BFGS(molecule, logfile=filename + '.log', trajectory=filename + ".traj")
+    opt = BFGS(molecule, logfile = args.filename + '.log', trajectory=filename + ".traj")
     opt.run(args.fmax)
 
     end_time = datetime.datetime.now()
