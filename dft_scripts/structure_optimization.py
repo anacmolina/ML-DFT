@@ -105,7 +105,7 @@ def main():
         for key, value in vars(args).items():
             if key != "filename" and key != "start_time":
                 logger.info(f"{key}: {value}")
-
+    
     molecule = get_molecule_isomer_minima(args.gpaw_mode,
         "{:s}".format(args.symbols), 
         "{:d}".format(args.isomer_label)
@@ -125,7 +125,7 @@ def main():
 
     molecule.calc = calc
 
-    opt = BFGS(molecule, logfile = args.filename + '.log', trajectory=filename + ".traj")
+    opt = BFGS(molecule, logfile = args.filename + '.log', trajectory=args.filename + ".traj")
     opt.run(args.fmax)
 
     end_time = datetime.datetime.now()

@@ -7,6 +7,8 @@ import datetime
 import argparse
 import logging
 
+import numpy as np
+
 from ase import Atoms
 from gpaw import GPAW, mpi
 from flonacomldft.utils.io_utils import (
@@ -62,7 +64,7 @@ def cell_optimization(molecule, args, logger):
         logger.info("CELL CONVERGENCE")
         logger.info(f'{"cell":<10}{"energy":<12}{"molecule":<12}{"atomization":<15}{"time":<18}')
 
-    for a in range(args.min_cell, args.max_cell, args.step_cell):
+    for a in np.arange(args.min_cell, args.max_cell, args.step_cell):
         #a = 0.2 * 4 * ng
         t1 = datetime.datetime.now()
         c = a / 2
@@ -102,8 +104,6 @@ def cell_optimization(molecule, args, logger):
 
 def h_optimization(molecule, args, logger):
         
-        import numpy as np
-
         if mpi.rank == 0:
             logger.info("H CONVERGENCE")
             logger.info(f'{"h":<8}{"gridpnts":<11}{"molecule":<14}{"atomization":<17}{"time":<20}')
@@ -147,12 +147,11 @@ def h_optimization(molecule, args, logger):
             t2 = datetime.datetime.now()
 
             if mpi.rank == 0:
-                logger.info(f'{h:<8.3f}{ngrindpoints:<11}{e2:<14.3f}{e1-e2:<17.3f}{(t2 - t1).total_seconds():<20.3f}')
+                logger.info(f'{h:<8.3f}{ngrindpoints:<11}{e2:<14.3f}{8 * e1 - e2:<17.3f}{(t2 - t1).total_seconds():<20.3f}')
 
 def main():
 
     args, start_time = parse_args()
-    filename = args.filename
 
     logger = init_logger()
 
