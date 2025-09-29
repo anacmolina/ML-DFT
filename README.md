@@ -45,7 +45,7 @@ conda install pytorch torchvision torchaudio cpuonly -c pytorch
 conda install -c conda-forge scikit-learn
 ```
 
-This code held in the repository was used for the following research:
+The code held in this repository was used for the following research:
 
 **Active Learning of Boltzmann Samplers and Potential Energies with Quantum Mechanical Accuracy**  
 *Ana Molina-Taborda, Pilar Cossio, Olga Lopez-Acevedo and Marylou Gabrié*  
