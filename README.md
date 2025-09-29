@@ -1,6 +1,6 @@
 # ab-flowMC
 
-**ab-flowMC** is a flowMC-based method that accelerates the extraction of thermodynamic observables between free energy minima in molecular systems. By integrating Monte Carlo simulations and Density Functional Theory with the active learning normalizing flows and machine learning potentials, this method achieves efficient and accurate exploration of non-local minima structures with quantum-level precision.
+**ab-flowMC** is a flowMC-based method that accelerates the extraction of thermodynamic observables between free energy minima in molecular systems. By integrating Monte Carlo simulations and Density Functional Theory with the active learning of normalizing flows and machine learning potentials, this method achieves efficient and accurate exploration of non-local minima structures with quantum-level precision.
 
 ## Installation
 
@@ -54,3 +54,7 @@ DOI: https://doi.org/10.1021/acs.jctc.4c00506
 
 There is also a preprint available at ArXiv.
 DOI: https://doi.org/10.48550/arXiv.2401.16487
+
+## License
+
+Distributed under the MIT License. See LICENSE.md for more information.
