@@ -1,15 +1,15 @@
 import setuptools
 
 long_description = """
-Python package for sampling with real-nvp flows.
+Python package for ab-flowMC simulations.
 """
 
 setuptools.setup(
     name="flonacomldft",
     version="0.0.1",
     author="Ana Molina Taborda, Marylou Gabrié",
-    author_email="marylou.gabrie@polytechnique.edu",
-    description="python package for sampling ab-initio force fields potential with real-nvp flows",
+    author_email="anac.molina@udea.edu.co, marylou.gabrie@polytechnique.edu",
+    description="Python package for ab-flowMC simulations",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="",

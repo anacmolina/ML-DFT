@@ -5,8 +5,8 @@
 ## Installation
 
 ```bash
-git clone https://github.com/anacmolina/ab-flowMC.git
-cd ab-flowMC
+git clone https://github.com/anacmolina/ML-DFT.git
+cd ML-DFT/packages/flonacomldft
 pip install -e .
 ```
 
